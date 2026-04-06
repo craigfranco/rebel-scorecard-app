@@ -88,7 +88,7 @@ export default function Documents() {
     },
   });
 
-  const extractAndImportKpis = async (file_url, properties) => {
+  const extractAndImportKpis = async (file_url, properties, month, year) => {
     setUploadStatus('AI is extracting KPI data…');
     const result = await base44.integrations.Core.ExtractDataFromUploadedFile({
       file_url,
@@ -97,14 +97,14 @@ export default function Documents() {
         properties: {
           rows: {
             type: 'array',
-            description: 'One row per hotel per month found in the file',
+            description: 'One row per hotel/property found in the file. Extract all rows.',
             items: {
               type: 'object',
               properties: {
-                hotel_name: { type: 'string', description: 'Hotel or property name' },
-                month: { type: 'string', description: 'Month name or number e.g. January, 1' },
-                year: { type: 'string', description: 'Year e.g. 2026' },
-                revpar_index_change: { type: 'string', description: 'RevPAR Index % change vs prior year' },
+                hotel_name: { type: 'string', description: 'Hotel or property name. Column may be called Property, Hotel, Name, etc.' },
+                month: { type: 'string', description: 'Month name or number if present in the file, e.g. January or 1. Leave blank if not in file.' },
+                year: { type: 'string', description: 'Year if present in the file, e.g. 2026. Leave blank if not in file.' },
+                revpar_index_change: { type: 'string', description: 'RevPAR Index % change vs prior year. Column may be called RevPAR Index % Chg, RGI % Change, Index Change, etc.' },
                 budgeted_gop_actual: { type: 'string', description: 'Actual GOP dollars achieved' },
                 budgeted_gop_target: { type: 'string', description: 'Budgeted/target GOP dollars' },
                 gop_margin_actual: { type: 'string', description: 'GOP margin % this period' },
@@ -124,8 +124,9 @@ export default function Documents() {
     let ok = 0, fail = 0;
     for (const r of rawRows) {
       const hotelName = r.hotel_name || '';
-      const month = parseMonth(r.month || '');
-      const year = parseYear(r.year || '', r.month || '');
+      // Use month/year from file if present, otherwise fall back to the period selected during upload
+      const rowMonth = parseMonth(r.month || '') || month;
+      const rowYear = parseYear(r.year || '', r.month || '') || year;
       const matched = bestMatch(hotelName, properties);
 
       const change = parseFloat((r.revpar_index_change || '').replace('%', ''));
@@ -137,7 +138,7 @@ export default function Documents() {
       const gssPrior = parseFloat(r.gss_prior || '');
 
       const hasData = !isNaN(change) || !isNaN(gopActual) || !isNaN(gopMarginActual) || !isNaN(gssActual);
-      if (!matched || !month || !hasData) { fail++; continue; }
+      if (!matched || !rowMonth || !hasData) { fail++; continue; }
 
       const patch = {};
       if (!isNaN(change)) patch.revpar_index_change = change;
@@ -148,11 +149,11 @@ export default function Documents() {
       if (!isNaN(gssActual)) patch.gss_actual = gssActual;
       if (!isNaN(gssPrior)) patch.gss_prior = gssPrior;
 
-      const existing = await base44.entities.ScoreEntry.filter({ property_id: matched.id, month, year });
+      const existing = await base44.entities.ScoreEntry.filter({ property_id: matched.id, month: rowMonth, year: rowYear });
       if (existing.length > 0) {
         await base44.entities.ScoreEntry.update(existing[0].id, patch);
       } else {
-        await base44.entities.ScoreEntry.create({ property_id: matched.id, month, year, quarter: getQuarterFromMonth(month), ...patch });
+        await base44.entities.ScoreEntry.create({ property_id: matched.id, month: rowMonth, year: rowYear, quarter: getQuarterFromMonth(rowMonth), ...patch });
       }
       ok++;
     }
@@ -185,7 +186,7 @@ export default function Documents() {
     queryClient.invalidateQueries({ queryKey: ['documents'] });
 
     if (KPI_DOC_TYPES.includes(docType)) {
-      const result = await extractAndImportKpis(file_url, properties);
+      const result = await extractAndImportKpis(file_url, properties, periodMonth, periodYear);
       if (!result.skipped) {
         setImportResult(result);
       }
