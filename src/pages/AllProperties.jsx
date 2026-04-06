@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
-import { Search, TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { Search, TrendingUp, TrendingDown, Minus, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -36,6 +36,8 @@ export default function AllProperties() {
   const [search, setSearch] = useState('');
   const [timeFilter, setTimeFilter] = useState('month');
   const [selectedMonth, setSelectedMonth] = useState(CURRENT_MONTH);
+  const [sortCol, setSortCol] = useState('score');
+  const [sortDir, setSortDir] = useState('desc');
 
   const { data: properties = [] } = useQuery({
     queryKey: ['properties'],
@@ -74,9 +76,16 @@ export default function AllProperties() {
       return { property: p, entry, scorecard };
     })
     .sort((a, b) => {
-      const sa = a.scorecard?.total.total ?? -1;
-      const sb = b.scorecard?.total.total ?? -1;
-      return sb - sa;
+      let av, bv;
+      if (sortCol === 'score') { av = a.scorecard?.total.total ?? -1; bv = b.scorecard?.total.total ?? -1; }
+      else if (sortCol === 'name') { av = a.property.name; bv = b.property.name; }
+      else if (sortCol === 'brand') { av = a.property.parent_brand || ''; bv = b.property.parent_brand || ''; }
+      else if (sortCol === 'gm') { av = a.property.gm_name || ''; bv = b.property.gm_name || ''; }
+      else if (sortCol === 'status') { av = a.scorecard ? (a.scorecard.total.pass ? 1 : 0) : -1; bv = b.scorecard ? (b.scorecard.total.pass ? 1 : 0) : -1; }
+      else { av = a.scorecard?.total.total ?? -1; bv = b.scorecard?.total.total ?? -1; }
+      
+      if (typeof av === 'string') return sortDir === 'asc' ? av.localeCompare(bv) : bv.localeCompare(av);
+      return sortDir === 'asc' ? av - bv : bv - av;
     });
 
   const passing = rows.filter(r => r.scorecard && !Object.values(r.scorecard).some(v => v?.incomplete) && r.scorecard.total.pass).length;
@@ -88,6 +97,16 @@ export default function AllProperties() {
     : timeFilter === 'quarter'
     ? `Q${getQuarterFromMonth(selectedMonth)} ${CURRENT_YEAR}`
     : `YTD through ${MONTHS[selectedMonth - 1]} ${CURRENT_YEAR}`;
+
+  const handleSort = (col) => {
+    if (sortCol === col) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
+    else { setSortCol(col); setSortDir('desc'); }
+  };
+
+  const SortIcon = ({ col }) => {
+    if (sortCol !== col) return <ChevronsUpDown className="w-3 h-3 opacity-40" />;
+    return sortDir === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />;
+  };
 
   return (
     <div className="p-4 lg:p-8 space-y-6 max-w-7xl mx-auto">
@@ -157,15 +176,25 @@ export default function AllProperties() {
             <thead>
               <tr className="bg-muted/50 text-muted-foreground text-xs uppercase tracking-wide">
                 <th className="py-3 px-4 text-left font-semibold w-8">#</th>
-                <th className="py-3 px-4 text-left font-semibold">Property</th>
-                <th className="py-3 px-4 text-center font-semibold">Brand</th>
-                <th className="py-3 px-4 text-center font-semibold">GM</th>
+                <th className="py-3 px-4 text-left font-semibold cursor-pointer" onClick={() => handleSort('name')}>
+                  <div className="flex items-center gap-1">Property <SortIcon col="name" /></div>
+                </th>
+                <th className="py-3 px-4 text-center font-semibold cursor-pointer" onClick={() => handleSort('brand')}>
+                  <div className="flex items-center justify-center gap-1">Brand <SortIcon col="brand" /></div>
+                </th>
+                <th className="py-3 px-4 text-center font-semibold cursor-pointer" onClick={() => handleSort('gm')}>
+                  <div className="flex items-center justify-center gap-1">GM <SortIcon col="gm" /></div>
+                </th>
                 <th className="py-3 px-4 text-center font-semibold">GOP</th>
                 <th className="py-3 px-4 text-center font-semibold">Margin</th>
                 <th className="py-3 px-4 text-center font-semibold">RGI</th>
                 <th className="py-3 px-4 text-center font-semibold">GSS</th>
-                <th className="py-3 px-4 text-center font-semibold">Score</th>
-                <th className="py-3 px-4 text-center font-semibold">Status</th>
+                <th className="py-3 px-4 text-center font-semibold cursor-pointer" onClick={() => handleSort('score')}>
+                  <div className="flex items-center justify-center gap-1">Score <SortIcon col="score" /></div>
+                </th>
+                <th className="py-3 px-4 text-center font-semibold cursor-pointer" onClick={() => handleSort('status')}>
+                  <div className="flex items-center justify-center gap-1">Status <SortIcon col="status" /></div>
+                </th>
               </tr>
             </thead>
             <tbody>
