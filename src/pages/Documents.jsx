@@ -158,7 +158,7 @@ export default function Documents() {
       const hasData = !isNaN(change) || !isNaN(gopActual) || !isNaN(gopMarginActual) || !isNaN(gssActual);
       
       if (!matched || !rowMonth || !hasData) {
-        console.log(`Row rejected: "${hotelName}" | matched=${!!matched} | month=${rowMonth} | hasData=${hasData} | change=${change}`);
+        console.log(`Row rejected: "${hotelName}"`, { matched: !!matched, month: rowMonth, hasData, rawChange: r.revpar_index_change, parsedChange: change, rawGop: r.budgeted_gop_actual, rawMargin: r.gop_margin_actual });
         fail++;
         continue;
       }
