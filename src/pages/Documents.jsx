@@ -106,6 +106,7 @@ export default function Documents() {
   });
 
   const extractAndImportKpis = async (file_url, properties, month, year) => {
+    console.log('Starting extraction for:', file_url);
     setUploadStatus('AI is extracting KPI data…');
     const result = await base44.integrations.Core.ExtractDataFromUploadedFile({
       file_url,
@@ -135,6 +136,7 @@ export default function Documents() {
       },
     });
 
+    console.log('Extraction result:', result);
     const rawRows = Array.isArray(result?.output) ? result.output : result?.output?.rows || [];
     console.log('Total rows extracted:', rawRows.length);
     if (rawRows.length > 0) console.log('First row sample:', JSON.stringify(rawRows[0], null, 2));
