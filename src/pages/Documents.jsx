@@ -3,12 +3,12 @@ import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { Upload, FileText, Download, Trash2, Building2, Globe, Loader2, CheckCircle, AlertCircle, Sparkles } from 'lucide-react';
+import { Upload, FileText, Download, Trash2, Building2, Globe, Loader2, CheckCircle, AlertCircle, Sparkles, RefreshCw } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { MONTHS, getQuarterFromMonth } from '../lib/scoring';
 
 const CURRENT_YEAR = 2026;
-const CURRENT_MONTH = 3;
+const CURRENT_MONTH = 1;
 const DOC_TYPES = ['GOP Report', 'RGI/STR Report', 'GSS Report', 'Other'];
 const KPI_DOC_TYPES = ['GOP Report', 'RGI/STR Report', 'GSS Report'];
 const FILE_TYPE_MAP = { pdf: 'PDF', xlsx: 'Excel', xls: 'Excel', csv: 'CSV' };
@@ -69,6 +69,7 @@ export default function Documents() {
   const [importResult, setImportResult] = useState(null);
   const [filterScope, setFilterScope] = useState('all');
   const [filterProperty, setFilterProperty] = useState('');
+  const [reextractingId, setReextractingId] = useState(null);
 
   const { data: properties = [] } = useQuery({
     queryKey: ['properties'],
@@ -195,6 +196,23 @@ export default function Documents() {
     setUploadStatus('');
     setUploading(false);
     toast({ title: 'Uploaded!', description: `${file.name} saved successfully.` });
+  };
+
+  const handleReextract = async (doc) => {
+    setReextractingId(doc.id);
+    const month = doc.period_month || CURRENT_MONTH;
+    const year = doc.period_year || CURRENT_YEAR;
+    const result = await extractAndImportKpis(doc.file_url, properties, month, year);
+    setReextractingId(null);
+    if (!result.skipped) {
+      setImportResult(result);
+      toast({
+        title: result.ok > 0 ? 'KPI data updated!' : 'No data extracted',
+        description: result.ok > 0
+          ? `${result.ok} hotel record${result.ok > 1 ? 's' : ''} updated.`
+          : 'No matching hotel data found in this file.',
+      });
+    }
   };
 
   const filteredDocs = documents
@@ -370,6 +388,16 @@ export default function Documents() {
                     </td>
                     <td className="py-3 px-4 text-center">
                       <div className="flex items-center justify-center gap-2">
+                        {KPI_DOC_TYPES.includes(doc.doc_type) && (
+                          <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-primary hover:text-primary"
+                            title="Re-extract KPI data"
+                            disabled={reextractingId === doc.id}
+                            onClick={() => handleReextract(doc)}>
+                            {reextractingId === doc.id
+                              ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                              : <RefreshCw className="w-3.5 h-3.5" />}
+                          </Button>
+                        )}
                         <a href={doc.file_url} target="_blank" rel="noopener noreferrer">
                           <Button size="sm" variant="ghost" className="h-7 w-7 p-0">
                             <Download className="w-3.5 h-3.5" />
