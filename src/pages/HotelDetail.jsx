@@ -147,7 +147,7 @@ export default function HotelDetail() {
       const kpiRows = scorecard ? [
         { label: 'Budgeted GOP', weight: '35%', target: '100% of Budget', actual: activeEntry.budgeted_gop_actual != null ? `$${(activeEntry.budgeted_gop_actual / 1000).toFixed(0)}K` : '—', score: scorecard.gop.score, max: 35, pass: scorecard.gop.pass },
         { label: 'GOP Margin Improvement', weight: '35%', target: '+0.1% vs PY', actual: activeEntry.gop_margin_actual != null ? `${activeEntry.gop_margin_actual.toFixed(1)}%` : '—', score: scorecard.gopMargin.score, max: 35, pass: scorecard.gopMargin.pass },
-        { label: 'RGI Improvement', weight: '15%', target: '0.1%+ improvement', actual: activeEntry.rgi_actual != null ? activeEntry.rgi_actual.toFixed(2) : '—', score: scorecard.rgi.score, max: 15, pass: scorecard.rgi.pass },
+        { label: 'RevPAR Index % Change (STR RGI)', weight: '15%', target: '≥ +0.1% YOY', actual: activeEntry.revpar_index_change != null ? `${activeEntry.revpar_index_change.toFixed(2)}%` : '—', score: scorecard.rgi.score, max: 15, pass: scorecard.rgi.pass },
         { label: `GSS — ${scorecard.gssStd.label}`, weight: '15%', target: `+${scorecard.gssStd.target} YOY`, actual: activeEntry.gss_actual != null ? String(activeEntry.gss_actual) : '—', score: scorecard.gss.score, max: 15, pass: scorecard.gss.pass },
       ] : [];
 
@@ -331,7 +331,7 @@ export default function HotelDetail() {
                 {[
                   { label: 'Budgeted GOP', weight: '35%', target: '100% of Budget', actual: activeEntry.budgeted_gop_actual != null ? `$${(activeEntry.budgeted_gop_actual / 1000).toFixed(0)}K` : '—', score: scorecard.gop.score, max: 35, pass: scorecard.gop.pass },
                   { label: 'GOP Margin Improvement', weight: '35%', target: '+0.1% vs PY', actual: activeEntry.gop_margin_actual != null ? `${activeEntry.gop_margin_actual.toFixed(1)}%` : '—', score: scorecard.gopMargin.score, max: 35, pass: scorecard.gopMargin.pass },
-                  { label: 'RGI Improvement', weight: '15%', target: '0.1%+ improvement', actual: activeEntry.rgi_actual != null ? activeEntry.rgi_actual.toFixed(2) : '—', score: scorecard.rgi.score, max: 15, pass: scorecard.rgi.pass },
+                  { label: 'RevPAR Index % Change (STR RGI)', weight: '15%', target: '≥ +0.1% YOY', actual: activeEntry.revpar_index_change != null ? `${activeEntry.revpar_index_change.toFixed(2)}%` : '—', score: scorecard.rgi.score, max: 15, pass: scorecard.rgi.pass },
                   { label: `GSS — ${scorecard.gssStd.label}`, weight: '15%', target: `+${scorecard.gssStd.target} YOY`, actual: activeEntry.gss_actual != null ? String(activeEntry.gss_actual) : '—', score: scorecard.gss.score, max: 15, pass: scorecard.gss.pass },
                 ].map((row, i) => (
                   <tr key={i} className={`border-b border-border ${i % 2 === 0 ? '' : 'bg-muted/20'}`}>

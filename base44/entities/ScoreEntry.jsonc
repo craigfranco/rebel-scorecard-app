@@ -33,13 +33,9 @@
       "type": "number",
       "description": "GOP margin % prior year"
     },
-    "rgi_actual": {
+    "revpar_index_change": {
       "type": "number",
-      "description": "RGI this period"
-    },
-    "rgi_prior": {
-      "type": "number",
-      "description": "RGI prior year"
+      "description": "STR RevPAR Index % change YOY (e.g. 2.5 = +2.5%)"
     },
     "gss_actual": {
       "type": "number",

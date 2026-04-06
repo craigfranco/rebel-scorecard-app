@@ -27,14 +27,13 @@ export function calcGOPMarginScore(actual, prior) {
   return { score: Math.round(score * 10) / 10, diff: Math.round(diff * 100) / 100, pass };
 }
 
-export function calcRGIScore(actual, prior) {
-  if (!prior || prior === 0) return { score: 0, diff: 0, pass: false };
-  const diffPct = ((actual - prior) / prior) * 100;
+export function calcRGIScore(revparIndexChange) {
+  const pct = revparIndexChange || 0;
   let score = 0;
-  if (diffPct >= 2.1) score = 15;
-  else if (diffPct >= 0.1) score = 7.5;
-  const pass = diffPct >= 0.1;
-  return { score, diff: Math.round(diffPct * 100) / 100, pass };
+  if (pct >= 2.1) score = 15;
+  else if (pct >= 0.1) score = 7.5;
+  const pass = pct >= 0.1;
+  return { score, diff: Math.round(pct * 100) / 100, pass };
 }
 
 export function calcGSSScore(actual, prior, gssTarget) {
@@ -53,7 +52,7 @@ export function calculateScorecard(entry, property) {
   const gssStd = getGssStandard(property?.parent_brand || 'Independent');
   const gop = calcGOPScore(entry.budgeted_gop_actual || 0, entry.budgeted_gop_target || 0);
   const gopMargin = calcGOPMarginScore(entry.gop_margin_actual || 0, entry.gop_margin_prior || 0);
-  const rgi = calcRGIScore(entry.rgi_actual || 0, entry.rgi_prior || 0);
+  const rgi = calcRGIScore(entry.revpar_index_change || 0);
   const gss = calcGSSScore(entry.gss_actual || 0, entry.gss_prior || 0, gssStd.target);
   const total = calcTotalScore(gop.score, gopMargin.score, rgi.score, gss.score);
   return {

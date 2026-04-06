@@ -13,7 +13,7 @@ const CURRENT_MONTH = 3;
 const KPI_TABS = [
   { key: 'gop', label: 'Budgeted GOP', max: 35 },
   { key: 'gopMargin', label: 'GOP Margin', max: 35 },
-  { key: 'rgi', label: 'RGI', max: 15 },
+  { key: 'rgi', label: 'RevPAR Index (RGI)', max: 15 },
   { key: 'gss', label: 'GSS', max: 15 },
   { key: 'forecast', label: 'Forecast Kicker', max: null },
   { key: 'redzone', label: 'Red Zone Kicker', max: null },
@@ -104,8 +104,8 @@ export default function KpiBreakdown() {
         kpiData = sc.rgi;
         score = sc.rgi.score;
         pass = sc.rgi.pass;
-        actual = entry.rgi_actual != null ? entry.rgi_actual.toFixed(2) : '—';
-        target = entry.rgi_prior != null ? `PY: ${entry.rgi_prior.toFixed(2)}` : '—';
+        actual = entry.revpar_index_change != null ? `${entry.revpar_index_change.toFixed(2)}%` : '—';
+        target = '≥ +0.1% YOY';
       } else if (activeKpi === 'gss') {
         kpiData = sc.gss;
         score = sc.gss.score;
