@@ -136,6 +136,8 @@ export default function Documents() {
     });
 
     const rawRows = Array.isArray(result?.output) ? result.output : result?.output?.rows || [];
+    console.log('Total rows extracted:', rawRows.length);
+    if (rawRows.length > 0) console.log('First row sample:', JSON.stringify(rawRows[0], null, 2));
     if (!rawRows.length) return { ok: 0, fail: 0, skipped: true };
 
     let ok = 0, fail = 0;
