@@ -48,7 +48,7 @@ function bestMatch(name, properties) {
     const score = matches / Math.max(needleWords.length, hayWords.length);
     if (score > bestScore) { bestScore = score; best = p; }
   }
-  return bestScore >= 0.35 ? best : null;
+  return bestScore >= 0.25 ? best : null;
 }
 
 function parseMonth(raw) {
