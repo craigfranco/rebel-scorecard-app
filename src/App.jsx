@@ -11,6 +11,9 @@ import AllProperties from '@/pages/AllProperties';
 import KpiReference from '@/pages/KpiReference';
 import Settings from '@/pages/Settings';
 import SeedOnMount from '@/components/SeedOnMount';
+import KpiBreakdown from '@/pages/KpiBreakdown';
+import Documents from '@/pages/Documents';
+import HotelDetail from '@/pages/HotelDetail';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -47,6 +50,9 @@ const AuthenticatedApp = () => {
         <Route path="/properties" element={<AllProperties />} />
         <Route path="/kpi-reference" element={<KpiReference />} />
         <Route path="/settings" element={<Settings />} />
+        <Route path="/kpi-breakdown" element={<KpiBreakdown />} />
+        <Route path="/documents" element={<Documents />} />
+        <Route path="/hotel/:id" element={<HotelDetail />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>

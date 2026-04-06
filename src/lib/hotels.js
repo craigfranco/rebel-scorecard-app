@@ -1,6 +1,5 @@
 // Real hotel data from Rebel Deployment app
 export const HOTELS = [
-  { name: "nyma The New York Manhattan Hotel", parent_brand: "Independent", sub_brand: "Independent", city: "New York", state: "NY", gm_name: "Axel Fischer" },
   { name: "Sheraton Orlando North Hotel", parent_brand: "Marriott", sub_brand: "Sheraton", city: "Maitland", state: "FL", gm_name: "Raluca Avacaritei" },
   { name: "Ink 48 Hotel", parent_brand: "Independent", sub_brand: "Independent", city: "New York", state: "NY", gm_name: "Craig Kepple" },
   { name: "Residence Inn Riverside Moreno Valley", parent_brand: "Marriott", sub_brand: "Residence Inn", city: "Moreno Valley", state: "CA", gm_name: "Swami Eichner" },
@@ -9,7 +8,6 @@ export const HOTELS = [
   { name: "Life Hotel New York", parent_brand: "Independent", sub_brand: "Independent", city: "New York", state: "NY", gm_name: "Axel Fischer" },
   { name: "The Renwick", parent_brand: "Independent", sub_brand: "Independent", city: "New York", state: "NY", gm_name: "Oumar Kane" },
   { name: "DoubleTree by Hilton Somerset Hotel and Conference Center", parent_brand: "Hilton", sub_brand: "DoubleTree", city: "Somerset", state: "NJ", gm_name: "Amr Saad" },
-  { name: "Hotel at Times Square", parent_brand: "Independent", sub_brand: "Independent", city: "New York", state: "NY", gm_name: "Raluca Avacaritei" },
   { name: "El Encanto Santa Barbara", parent_brand: "Independent", sub_brand: "Leading Hotels", city: "Santa Barbara", state: "CA", gm_name: "Gary Obligacion" },
   { name: "Courtyard by Marriott Los Angeles Pasadena/Monrovia", parent_brand: "Marriott", sub_brand: "Courtyard", city: "Monrovia", state: "CA", gm_name: "Joseph Valencia" },
   { name: "Delta Hotels Woodbridge", parent_brand: "Marriott", sub_brand: "Delta", city: "Woodbridge", state: "NJ", gm_name: "Eric Gonzalez" },

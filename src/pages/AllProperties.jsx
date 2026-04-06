@@ -109,8 +109,10 @@ export default function AllProperties() {
                 <tr key={property.id} className="border-b border-border hover:bg-muted/20 transition-colors">
                   <td className="py-3 px-4 text-muted-foreground text-xs font-medium">{idx + 1}</td>
                   <td className="py-3 px-4">
-                    <div className="font-semibold text-foreground text-sm">{property.name}</div>
-                    <div className="text-xs text-muted-foreground">{property.city}, {property.state}</div>
+                    <Link to={`/hotel/${property.id}`} className="hover:underline">
+                      <div className="font-semibold text-foreground text-sm">{property.name}</div>
+                      <div className="text-xs text-muted-foreground">{property.city}, {property.state}</div>
+                    </Link>
                   </td>
                   <td className="py-3 px-4 text-center">
                     <span className="text-xs bg-muted px-2 py-1 rounded-full font-medium">{property.parent_brand || '—'}</span>

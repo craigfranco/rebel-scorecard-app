@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { Link, useLocation, Outlet } from 'react-router-dom';
-import { LayoutDashboard, BookOpen, Building2, Settings, Menu, X, BarChart3 } from 'lucide-react';
+import { LayoutDashboard, BookOpen, Building2, Settings, Menu, BarChart3, PieChart, FolderOpen } from 'lucide-react';
 
 const NAV_ITEMS = [
   { path: '/', icon: LayoutDashboard, label: 'Dashboard' },
   { path: '/properties', icon: Building2, label: 'All Properties' },
+  { path: '/kpi-breakdown', icon: PieChart, label: 'KPI Breakdown' },
+  { path: '/documents', icon: FolderOpen, label: 'Documents' },
   { path: '/kpi-reference', icon: BookOpen, label: 'KPI Reference' },
   { path: '/settings', icon: Settings, label: 'Settings' },
 ];

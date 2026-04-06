@@ -1,0 +1,61 @@
+{
+  "name": "Document",
+  "type": "object",
+  "properties": {
+    "filename": {
+      "type": "string"
+    },
+    "file_url": {
+      "type": "string"
+    },
+    "file_type": {
+      "type": "string",
+      "enum": [
+        "PDF",
+        "Excel",
+        "CSV",
+        "Other"
+      ]
+    },
+    "doc_type": {
+      "type": "string",
+      "enum": [
+        "GOP Report",
+        "RGI/STR Report",
+        "GSS Report",
+        "Other"
+      ]
+    },
+    "scope": {
+      "type": "string",
+      "enum": [
+        "company-wide",
+        "hotel-specific"
+      ],
+      "default": "company-wide"
+    },
+    "property_id": {
+      "type": "string",
+      "description": "Property ID if hotel-specific, null if company-wide"
+    },
+    "period_month": {
+      "type": "integer",
+      "description": "1-12"
+    },
+    "period_year": {
+      "type": "integer"
+    },
+    "uploaded_by": {
+      "type": "string"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "filename",
+    "file_url",
+    "doc_type",
+    "scope"
+  ]
+}
