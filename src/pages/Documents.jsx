@@ -7,6 +7,22 @@ import { Upload, FileText, Download, Trash2, Building2, Globe, Loader2, CheckCir
 import { useToast } from '@/components/ui/use-toast';
 import { MONTHS, getQuarterFromMonth } from '../lib/scoring';
 
+const KPI_TAG_STYLES = {
+  'GOP Report':     { label: 'GOP',     bg: 'bg-emerald-50', text: 'text-emerald-700' },
+  'RGI/STR Report': { label: 'RGI/STR', bg: 'bg-blue-50',    text: 'text-blue-700' },
+  'GSS Report':     { label: 'GSS',     bg: 'bg-purple-50',  text: 'text-purple-700' },
+  'Other':          { label: 'Other',   bg: 'bg-muted',      text: 'text-muted-foreground' },
+};
+
+function KpiTag({ docType }) {
+  const style = KPI_TAG_STYLES[docType] || KPI_TAG_STYLES['Other'];
+  return (
+    <span className={`inline-flex items-center text-xs font-semibold px-2 py-0.5 rounded-full ${style.bg} ${style.text}`}>
+      {style.label}
+    </span>
+  );
+}
+
 const CURRENT_YEAR = 2026;
 const CURRENT_MONTH = 1;
 const DOC_TYPES = ['GOP Report', 'RGI/STR Report', 'GSS Report', 'Other'];
@@ -359,11 +375,13 @@ export default function Documents() {
                 filteredDocs.map(doc => (
                   <tr key={doc.id} className="border-b border-border hover:bg-muted/20 transition-colors">
                     <td className="py-3 px-4">
-                      <div className="flex items-center gap-2">
-                        <FileText className="w-4 h-4 text-muted-foreground shrink-0" />
-                        <span className="font-medium text-sm">{doc.filename}</span>
-                      </div>
-                      <div className="text-xs text-muted-foreground ml-6">{doc.doc_type}</div>
+                     <div className="flex items-center gap-2">
+                       <FileText className="w-4 h-4 text-muted-foreground shrink-0" />
+                       <span className="font-medium text-sm">{doc.filename}</span>
+                     </div>
+                     <div className="flex items-center gap-1.5 ml-6 mt-0.5">
+                       <KpiTag docType={doc.doc_type} />
+                     </div>
                     </td>
                     <td className="py-3 px-4 text-center">
                       <span className="text-xs bg-muted px-2 py-1 rounded-full font-medium">{doc.file_type}</span>

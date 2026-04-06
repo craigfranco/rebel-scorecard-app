@@ -84,6 +84,9 @@ module.exports = {
   safelist: [
     'text-pass', 'text-fail', 'bg-pass', 'bg-fail',
     'border-pass', 'border-fail',
+    'bg-emerald-50', 'text-emerald-700',
+    'bg-blue-50', 'text-blue-700',
+    'bg-purple-50', 'text-purple-700',
   ],
   plugins: [require("tailwindcss-animate")],
 }
