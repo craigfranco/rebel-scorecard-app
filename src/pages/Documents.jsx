@@ -136,11 +136,17 @@ export default function Documents() {
       },
     });
 
+    console.log('=== EXTRACTION RESULT ===');
+    console.log('Full result object:', result);
+    console.log('result.status:', result?.status);
     console.log('result.output:', result?.output);
     console.log('result.output.rows:', result?.output?.rows);
     const rawRows = result?.output?.rows || [];
-    console.log('Total rows extracted:', rawRows.length);
-    if (rawRows.length > 0) console.log('First row:', JSON.stringify(rawRows[0], null, 2));
+    console.log('=== TOTAL ROWS:', rawRows.length);
+    if (rawRows.length > 0) {
+      console.log('=== FIRST ROW ===');
+      console.log(JSON.stringify(rawRows[0], null, 2));
+    }
     if (!rawRows.length) return { ok: 0, fail: 0, skipped: true };
 
     let ok = 0, fail = 0;
