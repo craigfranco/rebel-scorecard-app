@@ -136,11 +136,11 @@ export default function Documents() {
       },
     });
 
-    console.log('result.output type:', typeof result?.output, 'is array?', Array.isArray(result?.output));
     console.log('result.output:', result?.output);
-    const rawRows = Array.isArray(result?.output) ? result.output : result?.output?.rows || [];
+    console.log('result.output.rows:', result?.output?.rows);
+    const rawRows = result?.output?.rows || [];
     console.log('Total rows extracted:', rawRows.length);
-    if (rawRows.length > 0) console.log('First row:', JSON.stringify(rawRows[0]));
+    if (rawRows.length > 0) console.log('First row:', JSON.stringify(rawRows[0], null, 2));
     if (!rawRows.length) return { ok: 0, fail: 0, skipped: true };
 
     let ok = 0, fail = 0;
