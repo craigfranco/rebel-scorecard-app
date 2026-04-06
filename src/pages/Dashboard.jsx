@@ -138,6 +138,7 @@ export default function Dashboard() {
       score: scorecard.gop.score,
       maxScore: 35,
       pass: scorecard.gop.pass,
+      incomplete: scorecard.gop.incomplete,
     },
     {
       measure: 'GOP Margin Improvement',
@@ -148,6 +149,7 @@ export default function Dashboard() {
       score: scorecard.gopMargin.score,
       maxScore: 35,
       pass: scorecard.gopMargin.pass,
+      incomplete: scorecard.gopMargin.incomplete,
     },
     {
       measure: 'RevPAR Index % Change (STR RGI)',
@@ -158,6 +160,7 @@ export default function Dashboard() {
       score: scorecard.rgi.score,
       maxScore: 15,
       pass: scorecard.rgi.pass,
+      incomplete: scorecard.rgi.incomplete,
     },
     {
       measure: `GSS — ${scorecard.gssStd.label}`,
@@ -168,6 +171,7 @@ export default function Dashboard() {
       score: scorecard.gss.score,
       maxScore: 15,
       pass: scorecard.gss.pass,
+      incomplete: scorecard.gss.incomplete,
     },
   ] : [];
 
@@ -290,22 +294,33 @@ export default function Dashboard() {
                       <KpiRow key={i} {...row} />
                     ))}
                   </tbody>
-                  {scorecard && (
-                    <tfoot>
-                      <tr style={{ backgroundColor: '#2d4b5e' }}>
-                        <td colSpan={5} className="py-3 px-4 font-bold text-white text-sm">Total Score</td>
-                        <td className="py-3 px-4 text-center font-black text-white text-lg">{scorecard.total.total}</td>
-                        <td className="py-3 px-4 text-center">
-                          <span
-                            className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold text-white"
-                            style={{ backgroundColor: scorecard.total.pass ? '#4CAF50' : '#ef4444' }}
-                          >
-                            {scorecard.total.pass ? '✓ PASS' : '✗ FAIL'}
-                          </span>
-                        </td>
-                      </tr>
-                    </tfoot>
-                  )}
+                  {scorecard && (() => {
+                    const anyIncomplete = kpiRows.some(r => r.incomplete);
+                    return (
+                      <tfoot>
+                        <tr style={{ backgroundColor: '#2d4b5e' }}>
+                          <td colSpan={5} className="py-3 px-4 font-bold text-white text-sm">Total Score</td>
+                          <td className="py-3 px-4 text-center font-black text-white text-lg">
+                            {anyIncomplete ? '—' : scorecard.total.total}
+                          </td>
+                          <td className="py-3 px-4 text-center">
+                            {anyIncomplete ? (
+                              <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-white/20 text-white">
+                                INCOMPLETE
+                              </span>
+                            ) : (
+                              <span
+                                className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold text-white"
+                                style={{ backgroundColor: scorecard.total.pass ? '#4CAF50' : '#ef4444' }}
+                              >
+                                {scorecard.total.pass ? '✓ PASS' : '✗ FAIL'}
+                              </span>
+                            )}
+                          </td>
+                        </tr>
+                      </tfoot>
+                    );
+                  })()}
                 </table>
               </div>
             </div>

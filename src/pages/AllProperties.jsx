@@ -3,14 +3,39 @@ import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import { Search, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { Input } from '@/components/ui/input';
-import { calculateScorecard } from '../lib/scoring';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { calculateScorecard, MONTHS, getQuarterFromMonth } from '../lib/scoring';
 import { Link } from 'react-router-dom';
 
 const CURRENT_YEAR = 2026;
 const CURRENT_MONTH = 3;
 
+function aggregateEntries(arr) {
+  if (!arr.length) return null;
+  const last = [...arr].sort((a, b) => b.month - a.month)[0];
+  const totalActualGOP = arr.reduce((s, e) => s + (e.budgeted_gop_actual ?? 0), 0);
+  const totalTargetGOP = arr.reduce((s, e) => s + (e.budgeted_gop_target ?? 0), 0);
+  // For margin, RGI, GSS — use the most recent entry that has the value
+  const withMargin = arr.filter(e => e.gop_margin_actual != null);
+  const withRGI = arr.filter(e => e.revpar_index_change != null);
+  const withGSS = arr.filter(e => e.gss_actual != null);
+  return {
+    ...last,
+    budgeted_gop_actual: arr.some(e => e.budgeted_gop_actual != null) ? totalActualGOP : null,
+    budgeted_gop_target: arr.some(e => e.budgeted_gop_target != null) ? totalTargetGOP : null,
+    gop_margin_actual: withMargin.length ? withMargin.sort((a,b)=>b.month-a.month)[0].gop_margin_actual : null,
+    gop_margin_prior: withMargin.length ? withMargin.sort((a,b)=>b.month-a.month)[0].gop_margin_prior : null,
+    revpar_index_change: withRGI.length ? withRGI.sort((a,b)=>b.month-a.month)[0].revpar_index_change : null,
+    gss_actual: withGSS.length ? withGSS.sort((a,b)=>b.month-a.month)[0].gss_actual : null,
+    gss_prior: withGSS.length ? withGSS.sort((a,b)=>b.month-a.month)[0].gss_prior : null,
+  };
+}
+
 export default function AllProperties() {
   const [search, setSearch] = useState('');
+  const [timeFilter, setTimeFilter] = useState('month');
+  const [selectedMonth, setSelectedMonth] = useState(CURRENT_MONTH);
 
   const { data: properties = [] } = useQuery({
     queryKey: ['properties'],
@@ -22,11 +47,21 @@ export default function AllProperties() {
     queryFn: () => base44.entities.ScoreEntry.filter({ year: CURRENT_YEAR }),
   });
 
-  const getLatestEntry = (propertyId) => {
-    const propEntries = allEntries
-      .filter(e => e.property_id === propertyId && e.month <= CURRENT_MONTH)
-      .sort((a, b) => b.month - a.month);
-    return propEntries[0] || null;
+  const getEntryForProperty = (propertyId) => {
+    const propEntries = allEntries.filter(e => e.property_id === propertyId);
+    if (!propEntries.length) return null;
+
+    if (timeFilter === 'month') {
+      return propEntries.find(e => e.month === selectedMonth) || null;
+    }
+    if (timeFilter === 'quarter') {
+      const q = getQuarterFromMonth(selectedMonth);
+      const qEntries = propEntries.filter(e => getQuarterFromMonth(e.month) === q && e.month <= selectedMonth);
+      return aggregateEntries(qEntries);
+    }
+    // YTD
+    const ytdEntries = propEntries.filter(e => e.month <= selectedMonth);
+    return aggregateEntries(ytdEntries);
   };
 
   const rows = properties
@@ -34,7 +69,7 @@ export default function AllProperties() {
       (p.city || '').toLowerCase().includes(search.toLowerCase()) ||
       (p.parent_brand || '').toLowerCase().includes(search.toLowerCase()))
     .map(p => {
-      const entry = getLatestEntry(p.id);
+      const entry = getEntryForProperty(p.id);
       const scorecard = entry ? calculateScorecard(entry, p) : null;
       return { property: p, entry, scorecard };
     })
@@ -44,17 +79,46 @@ export default function AllProperties() {
       return sb - sa;
     });
 
-  const passing = rows.filter(r => r.scorecard?.total.pass).length;
-  const failing = rows.filter(r => r.scorecard && !r.scorecard.total.pass).length;
+  const passing = rows.filter(r => r.scorecard && !Object.values(r.scorecard).some(v => v?.incomplete) && r.scorecard.total.pass).length;
+  const failing = rows.filter(r => r.scorecard && !Object.values(r.scorecard).some(v => v?.incomplete) && !r.scorecard.total.pass).length;
   const noData = rows.filter(r => !r.scorecard).length;
+
+  const periodLabel = timeFilter === 'month'
+    ? `${MONTHS[selectedMonth - 1]} ${CURRENT_YEAR}`
+    : timeFilter === 'quarter'
+    ? `Q${getQuarterFromMonth(selectedMonth)} ${CURRENT_YEAR}`
+    : `YTD through ${MONTHS[selectedMonth - 1]} ${CURRENT_YEAR}`;
 
   return (
     <div className="p-4 lg:p-8 space-y-6 max-w-7xl mx-auto">
       {/* Header */}
       <div className="rounded-2xl text-white p-6 shadow-lg" style={{ background: 'linear-gradient(135deg, #2d4b5e 0%, #1e3547 100%)' }}>
-        <h1 className="text-2xl font-bold">All Properties</h1>
-        <p className="text-white/70 text-sm mt-1">Portfolio-wide scorecard overview — ranked by performance score</p>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div>
+            <h1 className="text-2xl font-bold">All Properties</h1>
+            <p className="text-white/70 text-sm mt-1">Portfolio-wide scorecard — {periodLabel}</p>
+          </div>
+          <Select value={String(selectedMonth)} onValueChange={v => setSelectedMonth(Number(v))}>
+            <SelectTrigger className="w-48 bg-white/10 border-white/20 text-white">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {MONTHS.map((m, i) => (
+                <SelectItem key={i + 1} value={String(i + 1)}>{m} {CURRENT_YEAR}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
+
+      {/* Time filter */}
+      <Tabs value={timeFilter} onValueChange={setTimeFilter}>
+        <TabsList className="bg-card border border-border shadow-sm">
+          <TabsTrigger value="month">Month</TabsTrigger>
+          <TabsTrigger value="quarter">Quarter</TabsTrigger>
+          <TabsTrigger value="ytd">YTD</TabsTrigger>
+        </TabsList>
+      </Tabs>
 
       {/* Stats */}
       <div className="grid grid-cols-3 gap-4">
@@ -105,62 +169,57 @@ export default function AllProperties() {
               </tr>
             </thead>
             <tbody>
-              {rows.map(({ property, scorecard }, idx) => (
-                <tr key={property.id} className="border-b border-border hover:bg-muted/20 transition-colors">
-                  <td className="py-3 px-4 text-muted-foreground text-xs font-medium">{idx + 1}</td>
-                  <td className="py-3 px-4">
-                    <Link to={`/hotel/${property.id}`} className="hover:underline">
-                      <div className="font-semibold text-foreground text-sm">{property.name}</div>
-                      <div className="text-xs text-muted-foreground">{property.city}, {property.state}</div>
-                    </Link>
-                  </td>
-                  <td className="py-3 px-4 text-center">
-                    <span className="text-xs bg-muted px-2 py-1 rounded-full font-medium">{property.parent_brand || '—'}</span>
-                  </td>
-                  <td className="py-3 px-4 text-center text-xs text-muted-foreground">{property.gm_name || '—'}</td>
-                  <td className="py-3 px-4 text-center">
-                    {scorecard ? (
-                      <ScoreCell score={scorecard.gop.score} max={35} pass={scorecard.gop.pass} />
-                    ) : <span className="text-muted-foreground text-xs">—</span>}
-                  </td>
-                  <td className="py-3 px-4 text-center">
-                    {scorecard ? (
-                      <ScoreCell score={scorecard.gopMargin.score} max={35} pass={scorecard.gopMargin.pass} />
-                    ) : <span className="text-muted-foreground text-xs">—</span>}
-                  </td>
-                  <td className="py-3 px-4 text-center">
-                    {scorecard ? (
-                      <ScoreCell score={scorecard.rgi.score} max={15} pass={scorecard.rgi.pass} />
-                    ) : <span className="text-muted-foreground text-xs">—</span>}
-                  </td>
-                  <td className="py-3 px-4 text-center">
-                    {scorecard ? (
-                      <ScoreCell score={scorecard.gss.score} max={15} pass={scorecard.gss.pass} />
-                    ) : <span className="text-muted-foreground text-xs">—</span>}
-                  </td>
-                  <td className="py-3 px-4 text-center">
-                    {scorecard ? (
-                      <span className="text-lg font-black" style={{ color: scorecard.total.pass ? '#4CAF50' : '#ef4444' }}>
-                        {scorecard.total.total}
-                      </span>
-                    ) : <span className="text-muted-foreground text-xs">—</span>}
-                  </td>
-                  <td className="py-3 px-4 text-center">
-                    {scorecard ? (
-                      <span
-                        className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold text-white"
-                        style={{ backgroundColor: scorecard.total.pass ? '#4CAF50' : '#ef4444' }}
-                      >
-                        {scorecard.total.pass ? 'PASS' : 'FAIL'}
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-muted text-muted-foreground">
-                        NO DATA
-                      </span>
-                    )}
-                  </td>
-                </tr>
-              ))}
+              {rows.map(({ property, scorecard }, idx) => {
+                const anyIncomplete = scorecard && [scorecard.gop, scorecard.gopMargin, scorecard.rgi, scorecard.gss].some(k => k?.incomplete);
+                return (
+                  <tr key={property.id} className="border-b border-border hover:bg-muted/20 transition-colors">
+                    <td className="py-3 px-4 text-muted-foreground text-xs font-medium">{idx + 1}</td>
+                    <td className="py-3 px-4">
+                      <Link to={`/hotel/${property.id}`} className="hover:underline">
+                        <div className="font-semibold text-foreground text-sm">{property.name}</div>
+                        <div className="text-xs text-muted-foreground">{property.city}, {property.state}</div>
+                      </Link>
+                    </td>
+                    <td className="py-3 px-4 text-center">
+                      <span className="text-xs bg-muted px-2 py-1 rounded-full font-medium">{property.parent_brand || '—'}</span>
+                    </td>
+                    <td className="py-3 px-4 text-center text-xs text-muted-foreground">{property.gm_name || '—'}</td>
+                    <td className="py-3 px-4 text-center">
+                      {scorecard ? <ScoreCell score={scorecard.gop.score} max={35} pass={scorecard.gop.pass} incomplete={scorecard.gop.incomplete} /> : <span className="text-muted-foreground text-xs">—</span>}
+                    </td>
+                    <td className="py-3 px-4 text-center">
+                      {scorecard ? <ScoreCell score={scorecard.gopMargin.score} max={35} pass={scorecard.gopMargin.pass} incomplete={scorecard.gopMargin.incomplete} /> : <span className="text-muted-foreground text-xs">—</span>}
+                    </td>
+                    <td className="py-3 px-4 text-center">
+                      {scorecard ? <ScoreCell score={scorecard.rgi.score} max={15} pass={scorecard.rgi.pass} incomplete={scorecard.rgi.incomplete} /> : <span className="text-muted-foreground text-xs">—</span>}
+                    </td>
+                    <td className="py-3 px-4 text-center">
+                      {scorecard ? <ScoreCell score={scorecard.gss.score} max={15} pass={scorecard.gss.pass} incomplete={scorecard.gss.incomplete} /> : <span className="text-muted-foreground text-xs">—</span>}
+                    </td>
+                    <td className="py-3 px-4 text-center">
+                      {scorecard ? (
+                        <span className="text-lg font-black" style={{ color: anyIncomplete ? '#94a3b8' : (scorecard.total.pass ? '#4CAF50' : '#ef4444') }}>
+                          {anyIncomplete ? '—' : scorecard.total.total}
+                        </span>
+                      ) : <span className="text-muted-foreground text-xs">—</span>}
+                    </td>
+                    <td className="py-3 px-4 text-center">
+                      {!scorecard ? (
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-muted text-muted-foreground">NO DATA</span>
+                      ) : anyIncomplete ? (
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-muted text-muted-foreground">INCOMPLETE</span>
+                      ) : (
+                        <span
+                          className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold text-white"
+                          style={{ backgroundColor: scorecard.total.pass ? '#4CAF50' : '#ef4444' }}
+                        >
+                          {scorecard.total.pass ? 'PASS' : 'FAIL'}
+                        </span>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -169,7 +228,8 @@ export default function AllProperties() {
   );
 }
 
-function ScoreCell({ score, max, pass }) {
+function ScoreCell({ score, max, pass, incomplete }) {
+  if (incomplete) return <span className="text-xs font-bold text-muted-foreground">—</span>;
   return (
     <div className="flex flex-col items-center gap-1">
       <span className="text-xs font-bold" style={{ color: pass ? '#4CAF50' : '#ef4444' }}>

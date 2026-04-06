@@ -14,33 +14,37 @@ export function getGssStandard(parentBrand) {
 }
 
 export function calcGOPScore(actual, target) {
-  if (!target || target === 0) return { score: 0, pct: 0, pass: false };
+  if (actual == null || target == null) return { score: 0, pct: 0, pass: false, incomplete: true };
+  if (!target || target === 0) return { score: 0, pct: 0, pass: false, incomplete: true };
   const pct = actual / target;
   const score = Math.min(35, Math.max(0, pct * 35));
-  return { score: Math.round(score * 10) / 10, pct: Math.round(pct * 1000) / 10, pass: pct >= 1.0 };
+  return { score: Math.round(score * 10) / 10, pct: Math.round(pct * 1000) / 10, pass: pct >= 1.0, incomplete: false };
 }
 
 export function calcGOPMarginScore(actual, prior) {
+  if (actual == null || prior == null) return { score: 0, diff: 0, pass: false, incomplete: true };
   const diff = actual - prior;
   const pass = diff >= 0.1;
   const score = Math.min(35, Math.max(0, (diff / 5) * 35));
-  return { score: Math.round(score * 10) / 10, diff: Math.round(diff * 100) / 100, pass };
+  return { score: Math.round(score * 10) / 10, diff: Math.round(diff * 100) / 100, pass, incomplete: false };
 }
 
 export function calcRGIScore(revparIndexChange) {
-  const pct = revparIndexChange || 0;
+  if (revparIndexChange == null) return { score: 0, diff: 0, pass: false, incomplete: true };
+  const pct = revparIndexChange;
   let score = 0;
   if (pct >= 2.1) score = 15;
   else if (pct >= 0.1) score = 7.5;
   const pass = pct >= 0.1;
-  return { score, diff: Math.round(pct * 100) / 100, pass };
+  return { score, diff: Math.round(pct * 100) / 100, pass, incomplete: false };
 }
 
 export function calcGSSScore(actual, prior, gssTarget) {
+  if (actual == null || prior == null) return { score: 0, diff: 0, pass: false, incomplete: true };
   const diff = actual - prior;
   const pass = diff >= gssTarget;
   const score = pass ? 15 : Math.min(14, Math.max(0, (diff / gssTarget) * 15));
-  return { score: Math.round(score * 10) / 10, diff: Math.round(diff * 100) / 100, pass };
+  return { score: Math.round(score * 10) / 10, diff: Math.round(diff * 100) / 100, pass, incomplete: false };
 }
 
 export function calcTotalScore(gopScore, gopMarginScore, rgiScore, gssScore) {
@@ -50,10 +54,20 @@ export function calcTotalScore(gopScore, gopMarginScore, rgiScore, gssScore) {
 
 export function calculateScorecard(entry, property) {
   const gssStd = getGssStandard(property?.parent_brand || 'Independent');
-  const gop = calcGOPScore(entry.budgeted_gop_actual || 0, entry.budgeted_gop_target || 0);
-  const gopMargin = calcGOPMarginScore(entry.gop_margin_actual || 0, entry.gop_margin_prior || 0);
-  const rgi = calcRGIScore(entry.revpar_index_change || 0);
-  const gss = calcGSSScore(entry.gss_actual || 0, entry.gss_prior || 0, gssStd.target);
+  const gop = calcGOPScore(
+    entry.budgeted_gop_actual != null ? entry.budgeted_gop_actual : null,
+    entry.budgeted_gop_target != null ? entry.budgeted_gop_target : null
+  );
+  const gopMargin = calcGOPMarginScore(
+    entry.gop_margin_actual != null ? entry.gop_margin_actual : null,
+    entry.gop_margin_prior != null ? entry.gop_margin_prior : null
+  );
+  const rgi = calcRGIScore(entry.revpar_index_change != null ? entry.revpar_index_change : null);
+  const gss = calcGSSScore(
+    entry.gss_actual != null ? entry.gss_actual : null,
+    entry.gss_prior != null ? entry.gss_prior : null,
+    gssStd.target
+  );
   const total = calcTotalScore(gop.score, gopMargin.score, rgi.score, gss.score);
   return {
     gop,

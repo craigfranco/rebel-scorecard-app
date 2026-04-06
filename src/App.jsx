@@ -7,7 +7,7 @@ import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import AppLayout from '@/components/layout/AppLayout';
 import Dashboard from '@/pages/Dashboard';
-import AllProperties from '@/pages/AllProperties';
+import AllProperties from '@/pages/AllProperties.jsx';
 import KpiReference from '@/pages/KpiReference';
 import Settings from '@/pages/Settings';
 import SeedOnMount from '@/components/SeedOnMount';

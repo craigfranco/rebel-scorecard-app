@@ -1,14 +1,16 @@
 import React, { useEffect, useState } from 'react';
 
-export default function KpiRow({ measure, weight, target, actual, ytdActual, score, maxScore, pass }) {
+export default function KpiRow({ measure, weight, target, actual, ytdActual, score, maxScore, pass, incomplete }) {
   const [barWidth, setBarWidth] = useState(0);
 
   useEffect(() => {
-    const timer = setTimeout(() => setBarWidth((score / maxScore) * 100), 200);
+    const timer = setTimeout(() => setBarWidth(incomplete ? 0 : (score / maxScore) * 100), 200);
     return () => clearTimeout(timer);
-  }, [score, maxScore]);
+  }, [score, maxScore, incomplete]);
 
-  const passColor = pass ? '#4CAF50' : '#ef4444';
+  const activeColor = pass ? '#4CAF50' : '#ef4444';
+  const barColor = incomplete ? '#cbd5e1' : activeColor;
+  const scoreColor = incomplete ? '#94a3b8' : activeColor;
 
   return (
     <tr className="border-b border-border hover:bg-muted/30 transition-colors">
@@ -22,21 +24,27 @@ export default function KpiRow({ measure, weight, target, actual, ytdActual, sco
           <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
             <div
               className="h-full rounded-full transition-all duration-1000 ease-out"
-              style={{ width: `${barWidth}%`, backgroundColor: passColor }}
+              style={{ width: `${barWidth}%`, backgroundColor: barColor }}
             />
           </div>
-          <span className="text-sm font-bold w-12 text-right" style={{ color: passColor }}>
-            {score.toFixed(1)}
+          <span className="text-sm font-bold w-12 text-right" style={{ color: scoreColor }}>
+            {incomplete ? '—' : score.toFixed(1)}
           </span>
         </div>
       </td>
       <td className="py-3 px-4 text-center">
-        <span
-          className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold text-white"
-          style={{ backgroundColor: passColor }}
-        >
-          {pass ? 'PASS' : 'FAIL'}
-        </span>
+        {incomplete ? (
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-muted text-muted-foreground">
+            N/A
+          </span>
+        ) : (
+          <span
+            className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold text-white"
+            style={{ backgroundColor: activeColor }}
+          >
+            {pass ? 'PASS' : 'FAIL'}
+          </span>
+        )}
       </td>
     </tr>
   );
