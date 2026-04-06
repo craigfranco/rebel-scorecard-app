@@ -2,78 +2,63 @@ import React, { useState, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
-import { Upload, CheckCircle, AlertCircle, Loader2, Download, ChevronRight } from 'lucide-react';
+import { Upload, CheckCircle, AlertCircle, Loader2, Download, ChevronRight, FileSpreadsheet } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { MONTHS, getQuarterFromMonth } from '@/lib/scoring';
 
-// --- CSV/Excel parser (uses built-in FileReader; Excel via simple binary parse) ---
-function parseCsv(text) {
-  const lines = text.trim().split('\n').filter(l => l.trim());
-  if (lines.length < 2) return [];
-  const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, '').toLowerCase());
-  return lines.slice(1).map(line => {
-    const vals = line.split(',').map(v => v.trim().replace(/^"|"$/g, ''));
-    const obj = {};
-    headers.forEach((h, i) => { obj[h] = vals[i] || ''; });
-    return obj;
-  });
-}
-
-// Fuzzy match: lowercase + strip punctuation, pick best partial match
+// Fuzzy match hotel name to known properties
 function bestMatch(name, properties) {
+  if (!name) return null;
   const norm = s => s.toLowerCase().replace(/[^a-z0-9 ]/g, '').replace(/\s+/g, ' ').trim();
   const needle = norm(name);
   let best = null, bestScore = 0;
   for (const p of properties) {
     const hay = norm(p.name);
-    if (hay === needle) return p; // exact
-    // Score: count matching words
+    if (hay === needle) return p;
     const needleWords = needle.split(' ');
     const hayWords = hay.split(' ');
-    const matches = needleWords.filter(w => hayWords.includes(w)).length;
+    const matches = needleWords.filter(w => w.length > 2 && hayWords.includes(w)).length;
     const score = matches / Math.max(needleWords.length, hayWords.length);
     if (score > bestScore) { bestScore = score; best = p; }
   }
-  return bestScore >= 0.4 ? best : null;
+  return bestScore >= 0.35 ? best : null;
 }
 
-// Parse month: accepts "Jan", "January", "1", "01", "2026-01", "1/2026"
+// Parse month name or number
 function parseMonth(raw) {
   if (!raw) return null;
   const r = raw.toString().trim();
-  const monthNames = MONTHS.map(m => m.toLowerCase());
-  // "January 2026" or "Jan 2026"
-  for (let i = 0; i < monthNames.length; i++) {
-    if (r.toLowerCase().startsWith(monthNames[i].slice(0, 3))) return i + 1;
+  const names = MONTHS.map(m => m.toLowerCase());
+  for (let i = 0; i < names.length; i++) {
+    if (r.toLowerCase().startsWith(names[i].slice(0, 3))) return i + 1;
   }
-  // numeric
   const n = parseInt(r, 10);
   if (!isNaN(n) && n >= 1 && n <= 12) return n;
-  // ISO: 2026-01
   const iso = r.match(/(\d{4})-(\d{2})/);
   if (iso) return parseInt(iso[2], 10);
   return null;
 }
 
 function parseYear(raw, monthRaw) {
-  if (!raw) {
-    // try to extract year from monthRaw
-    const m = (monthRaw || '').toString().match(/\b(20\d{2})\b/);
-    if (m) return parseInt(m[1], 10);
-    return new Date().getFullYear();
+  if (raw) {
+    const n = parseInt(raw.toString(), 10);
+    if (!isNaN(n) && n > 2000) return n;
   }
-  const n = parseInt(raw.toString(), 10);
-  return isNaN(n) ? new Date().getFullYear() : n;
+  const m = (monthRaw || '').toString().match(/\b(20\d{2})\b/);
+  if (m) return parseInt(m[1], 10);
+  return new Date().getFullYear();
 }
 
 export default function StrImport() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const fileInputRef = useRef();
-  const [rows, setRows] = useState(null); // parsed preview rows
+  const [rows, setRows] = useState(null);
   const [importing, setImporting] = useState(false);
+  const [extracting, setExtracting] = useState(false);
   const [results, setResults] = useState(null);
   const [dragOver, setDragOver] = useState(false);
+  const [fileName, setFileName] = useState('');
 
   const { data: properties = [] } = useQuery({
     queryKey: ['properties'],
@@ -82,60 +67,74 @@ export default function StrImport() {
 
   const handleFile = async (file) => {
     if (!file) return;
-    const ext = file.name.split('.').pop().toLowerCase();
-    let rawRows = [];
+    setFileName(file.name);
+    setRows(null);
+    setResults(null);
+    setExtracting(true);
 
-    if (ext === 'csv') {
-      const text = await file.text();
-      rawRows = parseCsv(text);
-    } else if (ext === 'xlsx' || ext === 'xls') {
-      // Use LLM extraction for Excel
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
-      const result = await base44.integrations.Core.ExtractDataFromUploadedFile({
-        file_url,
-        json_schema: {
-          type: 'object',
-          properties: {
-            rows: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  hotel_name: { type: 'string' },
-                  month: { type: 'string' },
-                  year: { type: 'string' },
-                  revpar_index_change: { type: 'string' },
-                },
+    // Upload the file first
+    const { file_url } = await base44.integrations.Core.UploadFile({ file });
+
+    // Use AI extraction to pull all KPI data regardless of file format/layout
+    const result = await base44.integrations.Core.ExtractDataFromUploadedFile({
+      file_url,
+      json_schema: {
+        type: 'object',
+        properties: {
+          rows: {
+            type: 'array',
+            description: 'One row per hotel per month found in the file',
+            items: {
+              type: 'object',
+              properties: {
+                hotel_name: { type: 'string', description: 'Hotel or property name' },
+                month: { type: 'string', description: 'Month name or number (e.g. January, Jan, 1)' },
+                year: { type: 'string', description: 'Year (e.g. 2026)' },
+                revpar_index_change: { type: 'string', description: 'RevPAR Index % change vs prior year (e.g. 2.5 or -1.2). Also called RGI, Index Change, MPI change, ARI change, RevPAR Index' },
+                budgeted_gop_actual: { type: 'string', description: 'Actual GOP achieved this period in dollars' },
+                budgeted_gop_target: { type: 'string', description: 'Budgeted/target GOP for this period in dollars' },
+                gop_margin_actual: { type: 'string', description: 'GOP margin % this period' },
+                gop_margin_prior: { type: 'string', description: 'GOP margin % prior year same period' },
+                gss_actual: { type: 'string', description: 'Guest satisfaction score this period (GSS, ITR, Stay Score, Overall Experience, etc.)' },
+                gss_prior: { type: 'string', description: 'Guest satisfaction score prior year' },
               },
             },
           },
         },
-      });
-      rawRows = result?.output?.rows || [];
-    } else {
-      toast({ title: 'Unsupported file', description: 'Please upload a CSV or Excel file.', variant: 'destructive' });
+      },
+    });
+
+    setExtracting(false);
+
+    const rawRows = result?.output?.rows || [];
+    if (!rawRows.length) {
+      toast({ title: 'No data found', description: 'The AI could not extract hotel data from this file. Make sure it contains hotel names, months, and KPI values.', variant: 'destructive' });
       return;
     }
 
-    // Normalize column names & match hotels
-    const preview = rawRows
-      .filter(r => r.hotel_name || r['hotel name'] || r.hotel || r.property)
-      .map(r => {
-        const hotelName = r.hotel_name || r['hotel name'] || r.hotel || r.property || '';
-        const monthRaw = r.month || r['period month'] || r.period || r.date || '';
-        const yearRaw = r.year || r['period year'] || '';
-        const changeRaw = r.revpar_index_change || r['revpar index change'] || r['rgi'] || r['revpar % change'] || r['index change'] || r['str rgi'] || r['% change'] || '';
+    const preview = rawRows.map(r => {
+      const hotelName = r.hotel_name || '';
+      const monthRaw = r.month || '';
+      const yearRaw = r.year || '';
+      const month = parseMonth(monthRaw);
+      const year = parseYear(yearRaw, monthRaw);
+      const matched = bestMatch(hotelName, properties);
 
-        const month = parseMonth(monthRaw);
-        const year = parseYear(yearRaw, monthRaw);
-        const change = parseFloat(changeRaw.toString().replace('%', ''));
-        const matched = bestMatch(hotelName, properties);
+      const change = parseFloat((r.revpar_index_change || '').toString().replace('%', ''));
+      const gopActual = parseFloat((r.budgeted_gop_actual || '').toString().replace(/[$,]/g, ''));
+      const gopTarget = parseFloat((r.budgeted_gop_target || '').toString().replace(/[$,]/g, ''));
+      const gopMarginActual = parseFloat((r.gop_margin_actual || '').toString().replace('%', ''));
+      const gopMarginPrior = parseFloat((r.gop_margin_prior || '').toString().replace('%', ''));
+      const gssActual = parseFloat((r.gss_actual || '').toString());
+      const gssPrior = parseFloat((r.gss_prior || '').toString());
 
-        return { hotelName, monthRaw, month, year, change, matched, error: !matched || isNaN(change) || !month };
-      });
+      const hasAnyData = !isNaN(change) || !isNaN(gopActual) || !isNaN(gopMarginActual) || !isNaN(gssActual);
+      const error = !matched || !month || !hasAnyData;
+
+      return { hotelName, month, year, matched, change, gopActual, gopTarget, gopMarginActual, gopMarginPrior, gssActual, gssPrior, error };
+    });
 
     setRows(preview);
-    setResults(null);
   };
 
   const handleImport = async () => {
@@ -144,26 +143,33 @@ export default function StrImport() {
     const ok = [], fail = [];
 
     for (const row of rows) {
-      if (row.error) { fail.push(row.hotelName); continue; }
-      // Fetch existing entry for this property+month+year
+      if (row.error) { fail.push(row.hotelName || '(unknown)'); continue; }
+
       const existing = await base44.entities.ScoreEntry.filter({
         property_id: row.matched.id,
         month: row.month,
         year: row.year,
       });
 
-      const data = {
-        property_id: row.matched.id,
-        month: row.month,
-        year: row.year,
-        quarter: getQuarterFromMonth(row.month),
-        revpar_index_change: row.change,
-      };
+      const patch = {};
+      if (!isNaN(row.change)) patch.revpar_index_change = row.change;
+      if (!isNaN(row.gopActual)) patch.budgeted_gop_actual = row.gopActual;
+      if (!isNaN(row.gopTarget)) patch.budgeted_gop_target = row.gopTarget;
+      if (!isNaN(row.gopMarginActual)) patch.gop_margin_actual = row.gopMarginActual;
+      if (!isNaN(row.gopMarginPrior)) patch.gop_margin_prior = row.gopMarginPrior;
+      if (!isNaN(row.gssActual)) patch.gss_actual = row.gssActual;
+      if (!isNaN(row.gssPrior)) patch.gss_prior = row.gssPrior;
 
       if (existing.length > 0) {
-        await base44.entities.ScoreEntry.update(existing[0].id, { revpar_index_change: row.change });
+        await base44.entities.ScoreEntry.update(existing[0].id, patch);
       } else {
-        await base44.entities.ScoreEntry.create(data);
+        await base44.entities.ScoreEntry.create({
+          property_id: row.matched.id,
+          month: row.month,
+          year: row.year,
+          quarter: getQuarterFromMonth(row.month),
+          ...patch,
+        });
       }
       ok.push(row.hotelName);
     }
@@ -171,14 +177,14 @@ export default function StrImport() {
     queryClient.invalidateQueries({ queryKey: ['score-entries'] });
     setResults({ ok, fail });
     setImporting(false);
-    toast({ title: `Import complete`, description: `${ok.length} updated, ${fail.length} skipped.` });
+    toast({ title: 'Import complete', description: `${ok.length} updated, ${fail.length} skipped.` });
   };
 
   const downloadTemplate = () => {
-    const csv = `hotel_name,month,year,revpar_index_change\nSheraton Orlando North Hotel,January,2026,2.5\nInk 48 Hotel,January,2026,-1.2`;
+    const csv = `hotel_name,month,year,revpar_index_change,budgeted_gop_actual,budgeted_gop_target,gop_margin_actual,gop_margin_prior,gss_actual,gss_prior\nSheraton Orlando North Hotel,January,2026,2.5,850000,900000,32.5,31.2,72,70\nInk 48 Hotel,January,2026,-1.2,320000,300000,28.1,29.0,85,83`;
     const blob = new Blob([csv], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a'); a.href = url; a.download = 'str_import_template.csv'; a.click();
+    const a = document.createElement('a'); a.href = url; a.download = 'str_kpi_template.csv'; a.click();
   };
 
   const validRows = rows?.filter(r => !r.error) || [];
@@ -191,57 +197,71 @@ export default function StrImport() {
         <div className="flex items-center gap-2 text-white/60 text-xs mb-1">
           <span>Balanced Scorecard</span><ChevronRight className="w-3 h-3" /><span>STR Import</span>
         </div>
-        <h1 className="text-2xl font-bold">STR RevPAR Index Import</h1>
-        <p className="text-white/70 text-sm mt-1">Upload a CSV or Excel file to bulk-import RevPAR Index % change data by hotel and month.</p>
+        <h1 className="text-2xl font-bold">KPI Data Import</h1>
+        <p className="text-white/70 text-sm mt-1">
+          Upload your STR, GOP, or GSS report — AI will extract hotel names, months, and KPI values automatically.
+        </p>
       </div>
 
-      {/* Template download */}
-      <div className="bg-card rounded-2xl border border-border shadow-sm p-5 flex items-center justify-between gap-4">
+      {/* Info panel */}
+      <div className="bg-card rounded-2xl border border-border shadow-sm p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <p className="font-semibold text-sm">Required columns</p>
+          <p className="font-semibold text-sm">Supported KPIs extracted automatically</p>
+          <p className="text-xs text-muted-foreground mt-1">
+            RevPAR Index % Change (RGI) · GOP Actual & Budget · GOP Margin (actual & prior) · GSS Score (actual & prior)
+          </p>
           <p className="text-xs text-muted-foreground mt-0.5">
-            <code className="bg-muted px-1 rounded">hotel_name</code> · <code className="bg-muted px-1 rounded">month</code> · <code className="bg-muted px-1 rounded">year</code> · <code className="bg-muted px-1 rounded">revpar_index_change</code>
-            <span className="ml-2 text-muted-foreground">(e.g. 2.5 for +2.5%, -1.2 for -1.2%)</span>
+            Accepts <strong>any</strong> Excel, CSV, or PDF layout — AI maps columns intelligently.
           </p>
         </div>
         <Button variant="outline" size="sm" onClick={downloadTemplate} className="gap-2 shrink-0">
-          <Download className="w-4 h-4" /> Download Template
+          <Download className="w-4 h-4" /> CSV Template
         </Button>
       </div>
 
       {/* Upload zone */}
       <div
-        className={`bg-card rounded-2xl border-2 border-dashed p-12 text-center cursor-pointer transition-all shadow-sm ${dragOver ? 'border-primary bg-primary/5' : 'border-border hover:border-muted-foreground/40'}`}
+        className={`bg-card rounded-2xl border-2 border-dashed p-14 text-center cursor-pointer transition-all shadow-sm ${dragOver ? 'border-primary bg-primary/5' : 'border-border hover:border-muted-foreground/40'}`}
         onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
         onDragLeave={() => setDragOver(false)}
         onDrop={(e) => { e.preventDefault(); setDragOver(false); handleFile(e.dataTransfer.files[0]); }}
-        onClick={() => fileInputRef.current?.click()}
+        onClick={() => !extracting && fileInputRef.current?.click()}
       >
-        <input ref={fileInputRef} type="file" accept=".csv,.xlsx,.xls" className="hidden"
+        <input ref={fileInputRef} type="file" accept=".csv,.xlsx,.xls,.pdf" className="hidden"
           onChange={e => handleFile(e.target.files[0])} />
-        <Upload className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
-        <p className="font-semibold">Drag & drop your STR file here, or click to browse</p>
-        <p className="text-xs text-muted-foreground mt-1">CSV or Excel (.xlsx / .xls)</p>
+        {extracting ? (
+          <div className="flex flex-col items-center gap-3">
+            <Loader2 className="w-10 h-10 text-primary animate-spin mx-auto" />
+            <p className="font-semibold">AI is extracting data from <span className="text-primary">{fileName}</span>…</p>
+            <p className="text-xs text-muted-foreground">This may take 10–20 seconds</p>
+          </div>
+        ) : (
+          <div className="flex flex-col items-center gap-2">
+            <FileSpreadsheet className="w-10 h-10 text-muted-foreground mx-auto mb-1" />
+            <p className="font-semibold">Drag & drop your report here, or click to browse</p>
+            <p className="text-xs text-muted-foreground">CSV, Excel (.xlsx / .xls), or PDF</p>
+          </div>
+        )}
       </div>
 
       {/* Preview table */}
       {rows && rows.length > 0 && (
         <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
-          <div className="px-6 py-4 border-b border-border flex items-center justify-between">
+          <div className="px-6 py-4 border-b border-border flex items-center justify-between gap-4">
             <div>
-              <h2 className="font-bold text-foreground">Preview — {rows.length} rows</h2>
+              <h2 className="font-bold text-foreground">Preview — {rows.length} rows found</h2>
               <p className="text-xs text-muted-foreground mt-0.5">
-                <span className="text-green-600 font-medium">{validRows.length} ready</span>
-                {invalidRows.length > 0 && <span className="text-red-500 font-medium ml-2">{invalidRows.length} will be skipped</span>}
+                <span className="text-green-600 font-medium">{validRows.length} ready to import</span>
+                {invalidRows.length > 0 && <span className="text-red-500 font-medium ml-3">{invalidRows.length} will be skipped</span>}
               </p>
             </div>
             <Button
               onClick={handleImport}
               disabled={importing || validRows.length === 0}
               style={{ backgroundColor: '#2d4b5e' }}
-              className="gap-2"
+              className="gap-2 shrink-0"
             >
-              {importing ? <><Loader2 className="w-4 h-4 animate-spin" /> Importing...</> : `Import ${validRows.length} Records`}
+              {importing ? <><Loader2 className="w-4 h-4 animate-spin" /> Importing…</> : `Import ${validRows.length} Records`}
             </Button>
           </div>
 
@@ -251,25 +271,39 @@ export default function StrImport() {
                 <tr className="bg-muted/50 text-muted-foreground text-xs uppercase tracking-wide">
                   <th className="py-3 px-4 text-left">Hotel (from file)</th>
                   <th className="py-3 px-4 text-left">Matched Property</th>
-                  <th className="py-3 px-4 text-center">Month</th>
-                  <th className="py-3 px-4 text-center">Year</th>
-                  <th className="py-3 px-4 text-center">RGI % Change</th>
+                  <th className="py-3 px-4 text-center">Month / Year</th>
+                  <th className="py-3 px-4 text-center">RGI %</th>
+                  <th className="py-3 px-4 text-center">GOP Actual</th>
+                  <th className="py-3 px-4 text-center">GOP Margin</th>
+                  <th className="py-3 px-4 text-center">GSS</th>
                   <th className="py-3 px-4 text-center">Status</th>
                 </tr>
               </thead>
               <tbody>
                 {rows.map((row, i) => (
-                  <tr key={i} className={`border-b border-border ${row.error ? 'bg-red-50/50' : 'hover:bg-muted/20'}`}>
-                    <td className="py-3 px-4 text-sm font-medium">{row.hotelName}</td>
-                    <td className="py-3 px-4 text-sm text-muted-foreground">{row.matched?.name || <span className="text-red-500">No match found</span>}</td>
-                    <td className="py-3 px-4 text-center text-sm">{row.month ? MONTHS[row.month - 1] : <span className="text-red-500">?</span>}</td>
-                    <td className="py-3 px-4 text-center text-sm">{row.year}</td>
-                    <td className="py-3 px-4 text-center font-mono font-semibold">
-                      {isNaN(row.change) ? <span className="text-red-500">?</span> : (
+                  <tr key={i} className={`border-b border-border ${row.error ? 'bg-red-50/40' : 'hover:bg-muted/20'}`}>
+                    <td className="py-3 px-4 font-medium text-sm">{row.hotelName}</td>
+                    <td className="py-3 px-4 text-sm text-muted-foreground">
+                      {row.matched?.name || <span className="text-red-500 text-xs">No match</span>}
+                    </td>
+                    <td className="py-3 px-4 text-center text-sm">
+                      {row.month ? `${MONTHS[row.month - 1]} ${row.year}` : <span className="text-red-500">?</span>}
+                    </td>
+                    <td className="py-3 px-4 text-center font-mono text-sm">
+                      {!isNaN(row.change) ? (
                         <span className={row.change >= 0 ? 'text-green-600' : 'text-red-500'}>
                           {row.change >= 0 ? '+' : ''}{row.change.toFixed(2)}%
                         </span>
-                      )}
+                      ) : <span className="text-muted-foreground">—</span>}
+                    </td>
+                    <td className="py-3 px-4 text-center text-sm text-muted-foreground">
+                      {!isNaN(row.gopActual) ? `$${(row.gopActual / 1000).toFixed(0)}K` : '—'}
+                    </td>
+                    <td className="py-3 px-4 text-center text-sm text-muted-foreground">
+                      {!isNaN(row.gopMarginActual) ? `${row.gopMarginActual}%` : '—'}
+                    </td>
+                    <td className="py-3 px-4 text-center text-sm text-muted-foreground">
+                      {!isNaN(row.gssActual) ? row.gssActual : '—'}
                     </td>
                     <td className="py-3 px-4 text-center">
                       {row.error
@@ -293,8 +327,8 @@ export default function StrImport() {
             <div className="flex items-start gap-2 text-green-700 bg-green-50 rounded-xl p-4">
               <CheckCircle className="w-5 h-5 shrink-0 mt-0.5" />
               <div>
-                <p className="font-semibold text-sm">{results.ok.length} records imported successfully</p>
-                <p className="text-xs mt-1">{results.ok.join(', ')}</p>
+                <p className="font-semibold text-sm">{results.ok.length} records saved successfully</p>
+                <p className="text-xs mt-1 leading-relaxed">{results.ok.join(' · ')}</p>
               </div>
             </div>
           )}
@@ -302,8 +336,8 @@ export default function StrImport() {
             <div className="flex items-start gap-2 text-red-700 bg-red-50 rounded-xl p-4">
               <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
               <div>
-                <p className="font-semibold text-sm">{results.fail.length} rows skipped</p>
-                <p className="text-xs mt-1">{results.fail.join(', ')}</p>
+                <p className="font-semibold text-sm">{results.fail.length} rows skipped (no hotel match or missing month/data)</p>
+                <p className="text-xs mt-1 leading-relaxed">{results.fail.join(' · ')}</p>
               </div>
             </div>
           )}
