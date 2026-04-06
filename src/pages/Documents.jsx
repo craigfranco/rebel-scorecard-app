@@ -137,16 +137,10 @@ export default function Documents() {
       },
     });
 
-    console.log('=== EXTRACTION RESULT ===');
-    console.log('Full result object:', result);
-    console.log('result.status:', result?.status);
-    console.log('result.output:', result?.output);
-    console.log('result.output.rows:', result?.output?.rows);
     const rawRows = result?.output?.rows || [];
-    console.log('=== TOTAL ROWS:', rawRows.length);
+    console.log('=== EXTRACTION: got', rawRows.length, 'rows');
     if (rawRows.length > 0) {
-      console.log('=== FIRST ROW ===');
-      console.log(JSON.stringify(rawRows[0], null, 2));
+      console.log('First row:', JSON.stringify(rawRows[0], null, 2));
     }
     if (!rawRows.length) return { ok: 0, fail: 0, skipped: true };
 
@@ -166,9 +160,11 @@ export default function Documents() {
       const hasData = !isNaN(change) || !isNaN(gopActual) || !isNaN(gopMarginActual) || !isNaN(gssActual);
       
       if (!matched || !hasData) {
+        console.log(`Skipped "${hotelName}": matched=${!!matched}, hasData=${hasData}, change=${change}, gop=${gopActual}, margin=${gopMarginActual}, gss=${gssActual}`);
         fail++;
         continue;
       }
+      console.log(`Importing "${hotelName}" (${matched.name}): change=${change}, gop=${gopActual}, margin=${gopMarginActual}, gss=${gssActual}`);
 
       const patch = {};
       if (!isNaN(change)) patch.revpar_index_change = change;
