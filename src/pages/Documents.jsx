@@ -135,13 +135,8 @@ export default function Documents() {
       },
     });
 
-    const rawRows = result?.output?.rows || [];
-    console.log('Extraction result:', result);
-    console.log('Raw rows:', rawRows);
-    if (!rawRows.length) {
-      console.warn('No rows extracted from file');
-      return { ok: 0, fail: 0, skipped: true };
-    }
+    const rawRows = Array.isArray(result?.output) ? result.output : result?.output?.rows || [];
+    if (!rawRows.length) return { ok: 0, fail: 0, skipped: true };
 
     let ok = 0, fail = 0;
     for (const r of rawRows) {
