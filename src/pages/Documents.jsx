@@ -141,7 +141,6 @@ export default function Documents() {
     let ok = 0, fail = 0;
     for (const r of rawRows) {
       const hotelName = r.hotel_name || '';
-      // Use month/year from file if present, otherwise fall back to the period selected during upload
       const rowMonth = parseMonth(r.month || '') || month;
       const rowYear = parseYear(r.year || '', r.month || '') || year;
       const matched = bestMatch(hotelName, properties);
@@ -155,7 +154,12 @@ export default function Documents() {
       const gssPrior = parseFloat(r.gss_prior || '');
 
       const hasData = !isNaN(change) || !isNaN(gopActual) || !isNaN(gopMarginActual) || !isNaN(gssActual);
-      if (!matched || !rowMonth || !hasData) { fail++; continue; }
+      
+      if (!matched || !rowMonth || !hasData) {
+        console.log(`Row rejected: "${hotelName}" | matched=${!!matched} | month=${rowMonth} | hasData=${hasData} | change=${change}`);
+        fail++;
+        continue;
+      }
 
       const patch = {};
       if (!isNaN(change)) patch.revpar_index_change = change;
