@@ -1,0 +1,81 @@
+{
+  "name": "ScoreEntry",
+  "type": "object",
+  "properties": {
+    "property_id": {
+      "type": "string",
+      "description": "Reference to Property"
+    },
+    "month": {
+      "type": "integer",
+      "description": "1-12"
+    },
+    "year": {
+      "type": "integer"
+    },
+    "quarter": {
+      "type": "integer",
+      "description": "1-4"
+    },
+    "budgeted_gop_actual": {
+      "type": "number",
+      "description": "Actual GOP achieved"
+    },
+    "budgeted_gop_target": {
+      "type": "number",
+      "description": "Budgeted GOP target"
+    },
+    "gop_margin_actual": {
+      "type": "number",
+      "description": "GOP margin % this period"
+    },
+    "gop_margin_prior": {
+      "type": "number",
+      "description": "GOP margin % prior year"
+    },
+    "rgi_actual": {
+      "type": "number",
+      "description": "RGI this period"
+    },
+    "rgi_prior": {
+      "type": "number",
+      "description": "RGI prior year"
+    },
+    "gss_actual": {
+      "type": "number",
+      "description": "GSS score this period"
+    },
+    "gss_prior": {
+      "type": "number",
+      "description": "GSS score prior year"
+    },
+    "forecast_kicker": {
+      "type": "boolean",
+      "description": "3 of 4 quarterly forecasts within +/-3%"
+    },
+    "red_zone_kicker": {
+      "type": "boolean",
+      "description": "Exits and stays out of Red Zone"
+    },
+    "key_wins": {
+      "type": "string"
+    },
+    "previous_results": {
+      "type": "string"
+    },
+    "next_priorities": {
+      "type": "string"
+    },
+    "prepared_by": {
+      "type": "string"
+    },
+    "reviewed_by": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "property_id",
+    "month",
+    "year"
+  ]
+}

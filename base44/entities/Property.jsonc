@@ -1,0 +1,43 @@
+{
+  "name": "Property",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Hotel name"
+    },
+    "parent_brand": {
+      "type": "string",
+      "description": "Parent brand (Marriott, Hilton, IHG, Hyatt, Choice, Independent)"
+    },
+    "sub_brand": {
+      "type": "string",
+      "description": "Sub-brand (e.g. Courtyard, DoubleTree)"
+    },
+    "city": {
+      "type": "string"
+    },
+    "state": {
+      "type": "string"
+    },
+    "gm_name": {
+      "type": "string",
+      "description": "General Manager name"
+    },
+    "gss_metric": {
+      "type": "string",
+      "description": "GSS metric label (auto-derived from brand)"
+    },
+    "gss_target": {
+      "type": "number",
+      "description": "GSS improvement target"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true
+    }
+  },
+  "required": [
+    "name"
+  ]
+}
