@@ -12,9 +12,8 @@ import KpiReference from '@/pages/KpiReference';
 import Settings from '@/pages/Settings';
 import SeedOnMount from '@/components/SeedOnMount';
 import KpiBreakdown from '@/pages/KpiBreakdown';
-import Documents from '@/pages/Documents';
+import Documents from '@/pages/Documents.jsx';
 import HotelDetail from '@/pages/HotelDetail';
-import StrImport from '@/pages/StrImport';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -54,7 +53,6 @@ const AuthenticatedApp = () => {
         <Route path="/kpi-breakdown" element={<KpiBreakdown />} />
         <Route path="/documents" element={<Documents />} />
         <Route path="/hotel/:id" element={<HotelDetail />} />
-        <Route path="/str-import" element={<StrImport />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>
