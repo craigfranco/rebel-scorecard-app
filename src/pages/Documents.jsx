@@ -153,8 +153,6 @@ export default function Documents() {
     let ok = 0, fail = 0;
     for (const r of rawRows) {
       const hotelName = r.hotel_name || '';
-      const rowMonth = parseMonth(r.month || '') || month;
-      const rowYear = parseYear(r.year || '', r.month || '') || year;
       const matched = bestMatch(hotelName, properties);
 
       const change = parseFloat((r.revpar_index_change || '').replace('%', ''));
@@ -167,8 +165,7 @@ export default function Documents() {
 
       const hasData = !isNaN(change) || !isNaN(gopActual) || !isNaN(gopMarginActual) || !isNaN(gssActual);
       
-      if (!matched || !rowMonth || !hasData) {
-        console.log(`Row rejected: "${hotelName}"`, { matched: !!matched, month: rowMonth, hasData, rawChange: r.revpar_index_change, parsedChange: change, rawGop: r.budgeted_gop_actual, rawMargin: r.gop_margin_actual });
+      if (!matched || !hasData) {
         fail++;
         continue;
       }
@@ -182,11 +179,11 @@ export default function Documents() {
       if (!isNaN(gssActual)) patch.gss_actual = gssActual;
       if (!isNaN(gssPrior)) patch.gss_prior = gssPrior;
 
-      const existing = await base44.entities.ScoreEntry.filter({ property_id: matched.id, month: rowMonth, year: rowYear });
+      const existing = await base44.entities.ScoreEntry.filter({ property_id: matched.id, month, year });
       if (existing.length > 0) {
         await base44.entities.ScoreEntry.update(existing[0].id, patch);
       } else {
-        await base44.entities.ScoreEntry.create({ property_id: matched.id, month: rowMonth, year: rowYear, quarter: getQuarterFromMonth(rowMonth), ...patch });
+        await base44.entities.ScoreEntry.create({ property_id: matched.id, month, year, quarter: getQuarterFromMonth(month), ...patch });
       }
       ok++;
     }
