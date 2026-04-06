@@ -114,11 +114,11 @@ export default function Documents() {
         properties: {
           rows: {
             type: 'array',
-            description: 'Extract ALL data rows from the spreadsheet (skip header row). One row per hotel/property.',
+            description: 'Extract ALL data rows from the spreadsheet (skip header row). One row per hotel/property. Look for the first text column—that is usually the hotel/property name.',
             items: {
               type: 'object',
               properties: {
-                hotel_name: { type: 'string', description: 'Hotel/property name from the "Property" column. REQUIRED. Extract exactly as spelled.' },
+                hotel_name: { type: 'string', description: 'REQUIRED. Hotel/property name. This is usually in the leftmost column labeled "Property", "Hotel", "Name", or similar. Extract the exact text as it appears.' },
                 month: { type: 'string', description: 'Month name or number if present in the file. Leave blank if not found.' },
                 year: { type: 'string', description: 'Year from the file, e.g. 2026. Leave blank if not found.' },
                 revpar_index_change: { type: 'string', description: 'RevPAR Index % Chg column value. Include the number only, no % symbol.' },
