@@ -3,7 +3,7 @@ import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import { Search, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { Input } from '@/components/ui/input';
-import { calculateScorecard } from '@/lib/scoring';
+import { calculateScorecard } from '../lib/scoring';
 import { Link } from 'react-router-dom';
 
 const CURRENT_YEAR = 2026;

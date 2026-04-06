@@ -11,7 +11,8 @@ import ScoreGauge from '@/components/scorecard/ScoreGauge';
 import KpiRow from '@/components/scorecard/KpiRow';
 import KickerBadge from '@/components/scorecard/KickerBadge';
 import NotesPanel from '@/components/scorecard/NotesPanel';
-import { calculateScorecard, MONTHS, getQuarterFromMonth } from '@/lib/scoring';
+import { calculateScorecard, MONTHS, getQuarterFromMonth } from '../lib/scoring';
+import SeedOnMount from '../components/SeedOnMount';
 
 const CURRENT_YEAR = 2026;
 const CURRENT_MONTH = 3; // March (for demo)
@@ -172,6 +173,7 @@ export default function Dashboard() {
 
   return (
     <div className="p-4 lg:p-8 space-y-6 max-w-7xl mx-auto">
+      <SeedOnMount />
       {/* Header */}
       <div className="rounded-2xl text-white p-6 shadow-lg" style={{ background: 'linear-gradient(135deg, #2d4b5e 0%, #1e3547 100%)' }}>
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">

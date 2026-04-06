@@ -5,22 +5,27 @@ import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
-
 import AppLayout from '@/components/layout/AppLayout';
 import Dashboard from '@/pages/Dashboard';
 import AllProperties from '@/pages/AllProperties';
-import KPIReference from '@/pages/KPIReference';
-import SettingsPage from '@/pages/SettingsPage';
+import KpiReference from '@/pages/KpiReference';
+import Settings from '@/pages/Settings';
+import SeedOnMount from '@/components/SeedOnMount';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
 
   if (isLoadingPublicSettings || isLoadingAuth) {
     return (
-      <div className="fixed inset-0 flex items-center justify-center bg-background">
+      <div className="fixed inset-0 flex items-center justify-center" style={{ backgroundColor: '#f0f4f7' }}>
         <div className="flex flex-col items-center gap-3">
-          <div className="w-10 h-10 border-4 border-muted border-t-primary rounded-full animate-spin"></div>
-          <p className="text-sm text-muted-foreground">Loading Scorecard...</p>
+          <div className="w-10 h-10 rounded-2xl flex items-center justify-center" style={{ backgroundColor: '#2d4b5e' }}>
+            <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            </svg>
+          </div>
+          <div className="text-sm font-medium text-muted-foreground">Loading Balanced Scorecard...</div>
+          <div className="w-6 h-6 border-2 border-muted border-t-primary rounded-full animate-spin"></div>
         </div>
       </div>
     );
@@ -40,8 +45,8 @@ const AuthenticatedApp = () => {
       <Route element={<AppLayout />}>
         <Route path="/" element={<Dashboard />} />
         <Route path="/properties" element={<AllProperties />} />
-        <Route path="/reference" element={<KPIReference />} />
-        <Route path="/settings" element={<SettingsPage />} />
+        <Route path="/kpi-reference" element={<KpiReference />} />
+        <Route path="/settings" element={<Settings />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>
