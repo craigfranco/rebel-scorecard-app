@@ -123,8 +123,10 @@ export default function Documents() {
                 revpar_index_change: { type: 'string', description: 'RevPAR Index % Chg column value if present, otherwise empty string.' },
                 budgeted_gop_actual: { type: 'string', description: 'GOP value if present, otherwise empty string.' },
                 budgeted_gop_target: { type: 'string', description: 'GOP target if present, otherwise empty string.' },
-                gop_margin_actual: { type: 'string', description: 'GOP margin if present, otherwise empty string.' },
-                gop_margin_prior: { type: 'string', description: 'Prior GOP margin if present, otherwise empty string.' },
+                gop_margin_actual: { type: 'string', description: 'GOP margin % actual if present, otherwise empty string.' },
+                gop_margin_budget: { type: 'string', description: 'GOP margin % budget/target if present, otherwise empty string.' },
+                gop_margin_prior: { type: 'string', description: 'Prior GOP margin % if present, otherwise empty string.' },
+                gop_margin_variance: { type: 'string', description: 'Variance between actual and budget GOP margin if calculable, otherwise empty string.' },
                 gss_actual: { type: 'string', description: 'GSS score if present, otherwise empty string.' },
                 gss_prior: { type: 'string', description: 'Prior GSS score if present, otherwise empty string.' },
                 month: { type: 'string', description: 'Month number or name if in file, otherwise empty string.' },
@@ -153,7 +155,9 @@ export default function Documents() {
       const gopActual = parseFloat((r.budgeted_gop_actual || '').replace(/[$,]/g, ''));
       const gopTarget = parseFloat((r.budgeted_gop_target || '').replace(/[$,]/g, ''));
       const gopMarginActual = parseFloat((r.gop_margin_actual || '').replace('%', ''));
+      const gopMarginBudget = parseFloat((r.gop_margin_budget || '').replace('%', ''));
       const gopMarginPrior = parseFloat((r.gop_margin_prior || '').replace('%', ''));
+      const gopMarginVariance = parseFloat((r.gop_margin_variance || '').replace('%', ''));
       const gssActual = parseFloat(r.gss_actual || '');
       const gssPrior = parseFloat(r.gss_prior || '');
 
@@ -171,6 +175,8 @@ export default function Documents() {
       if (!isNaN(gopActual)) patch.budgeted_gop_actual = gopActual;
       if (!isNaN(gopTarget)) patch.budgeted_gop_target = gopTarget;
       if (!isNaN(gopMarginActual)) patch.gop_margin_actual = gopMarginActual;
+      if (!isNaN(gopMarginBudget)) patch.gop_margin_budget = gopMarginBudget;
+      if (!isNaN(gopMarginVariance)) patch.gop_margin_variance = gopMarginVariance;
       if (!isNaN(gopMarginPrior)) patch.gop_margin_prior = gopMarginPrior;
       if (!isNaN(gssActual)) patch.gss_actual = gssActual;
       if (!isNaN(gssPrior)) patch.gss_prior = gssPrior;

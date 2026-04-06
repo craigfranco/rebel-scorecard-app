@@ -27,7 +27,15 @@
     },
     "gop_margin_actual": {
       "type": "number",
-      "description": "GOP margin % this period"
+      "description": "GOP margin % actual this period"
+    },
+    "gop_margin_budget": {
+      "type": "number",
+      "description": "GOP margin % budget/target this period"
+    },
+    "gop_margin_variance": {
+      "type": "number",
+      "description": "Variance between actual and budget GOP margin (actual - budget)"
     },
     "gop_margin_prior": {
       "type": "number",
