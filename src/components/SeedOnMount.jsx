@@ -38,7 +38,7 @@ export default function SeedOnMount() {
             gss_bonus_percentage: 15,
           },
           {
-            title: 'Asst. GM / EC Members',
+            title: 'Asst. General Manager / EC Member',
             max_bonus_percentage: 40,
             gop_bonus_percentage: 10,
             gop_margin_bonus_percentage: 10,
