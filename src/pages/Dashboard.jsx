@@ -384,35 +384,6 @@ export default function Dashboard() {
           {/* KPI Quadrant */}
           <KpiQuadrant scorecard={scorecard} />
 
-          {/* Manual KPI Data Entry */}
-          {timeFilter === 'month' && (
-            <div className="bg-card rounded-2xl border border-border shadow-sm p-6 space-y-4">
-              <h2 className="font-bold text-foreground text-sm">Manual KPI Data Entry</h2>
-              <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                <div className="space-y-1">
-                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Actual GOP ($)</label>
-                  <Input type="number" value={kpiInputs.budgeted_gop_actual} onChange={e => setKpiInputs(k => ({ ...k, budgeted_gop_actual: e.target.value }))} placeholder="e.g. 250000" className="text-sm" />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Budget GOP ($)</label>
-                  <Input type="number" value={kpiInputs.budgeted_gop_target} onChange={e => setKpiInputs(k => ({ ...k, budgeted_gop_target: e.target.value }))} placeholder="e.g. 240000" className="text-sm" />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Prior Year GOP ($)</label>
-                  <Input type="number" value={kpiInputs.budgeted_gop_prior} onChange={e => setKpiInputs(k => ({ ...k, budgeted_gop_prior: e.target.value }))} placeholder="e.g. 230000" className="text-sm" />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Actual Margin (%)</label>
-                  <Input type="number" value={kpiInputs.gop_margin_actual} onChange={e => setKpiInputs(k => ({ ...k, gop_margin_actual: e.target.value }))} placeholder="e.g. 32.5" className="text-sm" />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Last Year Margin (%)</label>
-                  <Input type="number" value={kpiInputs.gop_margin_prior} onChange={e => setKpiInputs(k => ({ ...k, gop_margin_prior: e.target.value }))} placeholder="e.g. 31.0" className="text-sm" />
-                </div>
-              </div>
-            </div>
-          )}
-
           {/* Notes panels */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <NotesPanel title="Key Wins & Risks" icon="🏆" value={notes.key_wins} onChange={v => setNotes(n => ({ ...n, key_wins: v }))} placeholder="Document key wins and risks for this period..." />
