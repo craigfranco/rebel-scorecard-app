@@ -22,6 +22,7 @@ const REBEL_PL_MAPPING = {
   budgeted_gop_target: 2,
   gop_margin_budget:   3,
   budgeted_gop_prior:  6,
+  gop_margin_prior:    7,
 };
 
 export default function ImportWizard({ file, properties, onClose, onSuccess }) {
