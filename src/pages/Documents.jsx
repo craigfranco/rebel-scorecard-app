@@ -88,7 +88,7 @@ export default function Documents() {
   const [reextractingId, setReextractingId] = useState(null);
   const [clearMonth, setClearMonth] = useState(CURRENT_MONTH);
   const [clearYear] = useState(CURRENT_YEAR);
-  const [clearPropertyId, setClearPropertyId] = useState('all');
+  const [clearDocType, setClearDocType] = useState('all');
   const [clearing, setClearing] = useState(false);
 
   const { data: properties = [] } = useQuery({
@@ -248,19 +248,30 @@ export default function Documents() {
     }
   };
 
+  const DOC_TYPE_FIELDS = {
+    'GOP Report': ['budgeted_gop_actual', 'budgeted_gop_target', 'gop_margin_actual', 'gop_margin_budget', 'gop_margin_variance', 'gop_margin_prior'],
+    'RGI/STR Report': ['revpar_index_change'],
+    'GSS Report': ['gss_actual', 'gss_prior'],
+  };
+
   const handleClearKpiData = async () => {
-    const propertyLabel = clearPropertyId === 'all' ? 'all properties' : properties.find(p => p.id === clearPropertyId)?.name || 'selected property';
-    if (!window.confirm(`Delete scorecard data for ${MONTHS[clearMonth - 1]} ${clearYear} — ${propertyLabel}? This cannot be undone.`)) return;
+    const label = clearDocType === 'all' ? 'all KPI types' : clearDocType;
+    if (!window.confirm(`Clear ${label} data for ${MONTHS[clearMonth - 1]} ${clearYear}? This cannot be undone.`)) return;
     setClearing(true);
-    const filter = { month: clearMonth, year: clearYear };
-    if (clearPropertyId !== 'all') filter.property_id = clearPropertyId;
-    const entries = await base44.entities.ScoreEntry.filter(filter);
+    const entries = await base44.entities.ScoreEntry.filter({ month: clearMonth, year: clearYear });
     for (const e of entries) {
-      await base44.entities.ScoreEntry.delete(e.id);
+      if (clearDocType === 'all') {
+        await base44.entities.ScoreEntry.delete(e.id);
+      } else {
+        const fields = DOC_TYPE_FIELDS[clearDocType] || [];
+        const patch = {};
+        fields.forEach(f => { patch[f] = null; });
+        await base44.entities.ScoreEntry.update(e.id, patch);
+      }
     }
     queryClient.invalidateQueries({ queryKey: ['score-entries'] });
     setClearing(false);
-    toast({ title: 'Cleared', description: `${entries.length} record${entries.length !== 1 ? 's' : ''} deleted for ${MONTHS[clearMonth - 1]} ${clearYear}.` });
+    toast({ title: 'Cleared', description: `${label} data cleared for ${MONTHS[clearMonth - 1]} ${clearYear} (${entries.length} record${entries.length !== 1 ? 's' : ''}).` });
   };
 
   const filteredDocs = documents
@@ -351,11 +362,13 @@ export default function Documents() {
               <p className="text-xs text-muted-foreground">Delete all scorecard entries for a specific period</p>
             </div>
           </div>
-          <Select value={clearPropertyId} onValueChange={setClearPropertyId}>
-            <SelectTrigger className="w-52 text-sm"><SelectValue /></SelectTrigger>
+          <Select value={clearDocType} onValueChange={setClearDocType}>
+            <SelectTrigger className="w-44 text-sm"><SelectValue /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Properties</SelectItem>
-              {properties.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
+              <SelectItem value="all">All KPI Types</SelectItem>
+              <SelectItem value="GOP Report">GOP</SelectItem>
+              <SelectItem value="RGI/STR Report">RGI/STR</SelectItem>
+              <SelectItem value="GSS Report">GSS</SelectItem>
             </SelectContent>
           </Select>
           <Select value={String(clearMonth)} onValueChange={v => setClearMonth(Number(v))}>
