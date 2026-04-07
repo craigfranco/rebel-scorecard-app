@@ -4,6 +4,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Edit2, Trash2 } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
+import { getClosedQuarters, calculateEstimatedAnnualSalary } from '@/lib/salaryCalculation';
 import StaffEditModal from './StaffEditModal';
 
 const JOB_CLASS_ORDER = {
@@ -22,6 +23,7 @@ export default function StaffTable({ staff = [], jobClassifications = [] }) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [editingStaffId, setEditingStaffId] = useState(null);
+  const closedQuarters = getClosedQuarters();
 
   const deleteMutation = useMutation({
     mutationFn: (id) => base44.entities.Staff.delete(id),
@@ -53,20 +55,13 @@ export default function StaffTable({ staff = [], jobClassifications = [] }) {
     (a, b) => (JOB_CLASS_ORDER[a] ?? 999) - (JOB_CLASS_ORDER[b] ?? 999)
   );
 
-  const calculateAnnualTotal = (s) => {
-    const salaries = [s.salary_q1, s.salary_q2, s.salary_q3, s.salary_q4].filter(Boolean);
-    if (salaries.length === 0) return null;
-    return salaries.reduce((sum, sal) => sum + sal, 0);
+  const getDisplayedQ1 = (s) => {
+    return s.salary_q1 ? `$${s.salary_q1.toLocaleString()}` : '—';
   };
 
-  const formatAnnualSalary = (s) => {
-    const total = calculateAnnualTotal(s);
-    if (!total) return '—';
-    const allEqual = s.salary_q1 === s.salary_q2 && s.salary_q2 === s.salary_q3 && s.salary_q3 === s.salary_q4;
-    if (allEqual && s.salary_q1) {
-      return `$${total.toLocaleString()}/yr`;
-    }
-    return `$${total.toLocaleString()} (variable)`;
+  const formatEstimatedAnnual = (s) => {
+    const estimated = calculateEstimatedAnnualSalary(s, closedQuarters);
+    return estimated > 0 ? `$${estimated.toLocaleString('en-US', { maximumFractionDigits: 0 })}` : '—';
   };
 
   if (staff.length === 0) {
@@ -87,10 +82,7 @@ export default function StaffTable({ staff = [], jobClassifications = [] }) {
                 <th className="py-3 px-4 text-left font-semibold">Name</th>
                 <th className="py-3 px-4 text-center font-semibold">Job Classification</th>
                 <th className="py-3 px-4 text-center font-semibold">Q1 Salary</th>
-                <th className="py-3 px-4 text-center font-semibold">Q2 Salary</th>
-                <th className="py-3 px-4 text-center font-semibold">Q3 Salary</th>
-                <th className="py-3 px-4 text-center font-semibold">Q4 Salary</th>
-                <th className="py-3 px-4 text-center font-semibold">Annual Total</th>
+                <th className="py-3 px-4 text-center font-semibold">Est. Annual</th>
                 <th className="py-3 px-4 text-center font-semibold">Status</th>
                 <th className="py-3 px-4 text-center font-semibold"></th>
               </tr>
@@ -100,14 +92,12 @@ export default function StaffTable({ staff = [], jobClassifications = [] }) {
                 <React.Fragment key={classTitle}>
                   {/* Group Header */}
                   <tr className="bg-muted/50 border-t border-border">
-                    <td colSpan={9} className="py-3 px-4 font-bold text-sm">
+                    <td colSpan={6} className="py-3 px-4 font-bold text-sm">
                       {JOB_CLASS_LABELS[classTitle] || classTitle} ({groupedStaff[classTitle].length})
                     </td>
                   </tr>
                   {/* Group Rows */}
                   {groupedStaff[classTitle].map((s, idx) => {
-                    const annualTotal = calculateAnnualTotal(s);
-                    const isLastInGroup = idx === groupedStaff[classTitle].length - 1;
                     return (
                       <tr
                         key={s.id}
@@ -118,20 +108,11 @@ export default function StaffTable({ staff = [], jobClassifications = [] }) {
                         <td className="py-3 px-4 font-medium">{s.name}</td>
                         <td className="py-3 px-4 text-center text-muted-foreground text-xs">{classTitle}</td>
                         <td className="py-3 px-4 text-center text-muted-foreground">
-                          {s.salary_q1 ? `$${s.salary_q1.toLocaleString()}` : '—'}
-                        </td>
-                        <td className="py-3 px-4 text-center text-muted-foreground">
-                          {s.salary_q2 ? `$${s.salary_q2.toLocaleString()}` : '—'}
-                        </td>
-                        <td className="py-3 px-4 text-center text-muted-foreground">
-                          {s.salary_q3 ? `$${s.salary_q3.toLocaleString()}` : '—'}
-                        </td>
-                        <td className="py-3 px-4 text-center text-muted-foreground">
-                          {s.salary_q4 ? `$${s.salary_q4.toLocaleString()}` : '—'}
+                          {getDisplayedQ1(s)}
                         </td>
                         <td className="py-3 px-4 text-center font-semibold">
-                           {formatAnnualSalary(s)}
-                         </td>
+                          {formatEstimatedAnnual(s)}
+                        </td>
                         <td className="py-3 px-4 text-center">
                           <span
                             className={`inline-block px-2 py-1 rounded text-xs font-semibold ${

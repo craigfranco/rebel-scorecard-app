@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Save, X } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
+import { getClosedQuarters, calculateEstimatedAnnualSalary } from '@/lib/salaryCalculation';
 
 const Switch = ({ checked, onChange }) => (
   <button
@@ -24,6 +25,7 @@ export default function StaffEditModal({ staffId, onClose, jobClassifications })
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [formData, setFormData] = useState(null);
+  const closedQuarters = getClosedQuarters();
 
 
 
@@ -40,13 +42,20 @@ export default function StaffEditModal({ staffId, onClose, jobClassifications })
   }, [staff]);
 
   const updateMutation = useMutation({
-    mutationFn: (data) =>
-      base44.entities.Staff.update(staffId, {
+    mutationFn: (data) => {
+      const updateData = {
         name: data.name,
         job_classification_id: data.job_classification_id,
-        salary_q1: parseFloat(data.salary_q1) || 0,
         is_active: data.is_active,
-      }),
+      };
+      
+      // Only save salaries for closed quarters
+      for (const q of closedQuarters) {
+        updateData[`salary_q${q}`] = parseFloat(data[`salary_q${q}`]) || 0;
+      }
+      
+      return base44.entities.Staff.update(staffId, updateData);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['staff'] });
       toast({ title: 'Updated', description: 'Staff member updated successfully.' });
@@ -110,22 +119,65 @@ export default function StaffEditModal({ staffId, onClose, jobClassifications })
           </div>
 
           <div className="space-y-3">
-            <div>
-              <label className="text-xs text-muted-foreground font-semibold mb-2 block">Q1 Salary (Jan–Mar 2026)</label>
-              <Input
-                type="number"
-                placeholder="0"
-                value={formData.salary_q1 || ''}
-                onChange={(e) => setFormData({ ...formData, salary_q1: e.target.value })}
-              />
-            </div>
+            {/* Q1 */}
+            {closedQuarters.includes(1) && (
+              <div>
+                <label className="text-xs text-muted-foreground font-semibold mb-2 block">Q1 Salary (Jan–Mar 2026)</label>
+                <Input
+                  type="number"
+                  placeholder="$0"
+                  value={formData.salary_q1 || ''}
+                  onChange={(e) => setFormData({ ...formData, salary_q1: e.target.value })}
+                />
+              </div>
+            )}
+
+            {/* Q2 */}
+            {closedQuarters.includes(2) && (
+              <div>
+                <label className="text-xs text-muted-foreground font-semibold mb-2 block">Q2 Salary (Apr–Jun 2026)</label>
+                <Input
+                  type="number"
+                  placeholder="$0"
+                  value={formData.salary_q2 || ''}
+                  onChange={(e) => setFormData({ ...formData, salary_q2: e.target.value })}
+                />
+              </div>
+            )}
+
+            {/* Q3 */}
+            {closedQuarters.includes(3) && (
+              <div>
+                <label className="text-xs text-muted-foreground font-semibold mb-2 block">Q3 Salary (Jul–Sep 2026)</label>
+                <Input
+                  type="number"
+                  placeholder="$0"
+                  value={formData.salary_q3 || ''}
+                  onChange={(e) => setFormData({ ...formData, salary_q3: e.target.value })}
+                />
+              </div>
+            )}
+
+            {/* Q4 */}
+            {closedQuarters.includes(4) && (
+              <div>
+                <label className="text-xs text-muted-foreground font-semibold mb-2 block">Q4 Salary (Oct–Dec 2026)</label>
+                <Input
+                  type="number"
+                  placeholder="$0"
+                  value={formData.salary_q4 || ''}
+                  onChange={(e) => setFormData({ ...formData, salary_q4: e.target.value })}
+                />
+              </div>
+            )}
+
+            {/* Estimated Annual Salary */}
             <div>
               <label className="text-xs text-muted-foreground font-semibold mb-2 block">Estimated Annual Salary</label>
               <div className="p-3 bg-muted/30 rounded">
                 <p className="text-sm font-semibold text-foreground">
-                  ${((parseFloat(formData.salary_q1) || 0) * 4).toLocaleString('en-US', { maximumFractionDigits: 0 })}
+                  ${calculateEstimatedAnnualSalary(formData, closedQuarters).toLocaleString('en-US', { maximumFractionDigits: 0 })}
                 </p>
-                <p className="text-xs text-muted-foreground mt-1">(Q1 × 4)</p>
               </div>
             </div>
           </div>

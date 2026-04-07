@@ -15,15 +15,24 @@ export default function SeedOnMount() {
     seeded.current = true;
 
     const run = async () => {
-      // Clean corrupted staff record (old auto-fill bug)
+      // Clean corrupted staff records (old auto-fill bug)
       try {
-        await base44.entities.Staff.update('69d5741d46151f76a40c8e42', {
-          salary_q2: null,
-          salary_q3: null,
-          salary_q4: null,
-        });
+        const allStaff = await base44.entities.Staff.list('name', 500);
+        for (const staff of allStaff) {
+          const q1 = parseFloat(staff.salary_q1) || 0;
+          const q2 = parseFloat(staff.salary_q2) || 0;
+          
+          // Detect corruption: if salary_q2 ≈ salary_q1/4, null it out
+          if (q1 > 0 && q2 > 0 && Math.abs(q2 - q1 / 4) < 1) {
+            await base44.entities.Staff.update(staff.id, {
+              salary_q2: null,
+              salary_q3: null,
+              salary_q4: null,
+            });
+          }
+        }
       } catch (e) {
-        // Record may not exist, silently continue
+        // Silently continue if cleanup fails
       }
 
       const existing = await base44.entities.Property.list('name', 5);

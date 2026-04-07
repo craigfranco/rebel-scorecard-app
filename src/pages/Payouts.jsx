@@ -8,6 +8,7 @@ import { Plus, Save, ChevronRight, Check, X } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { calculateQuarterlyBonus, calculateAnnualBonus, getMetricStatus } from '@/lib/bonusCalculation';
 import { calculateScorecard, MONTHS, getQuarterFromMonth } from '@/lib/scoring';
+import { getClosedQuarters, calculateEstimatedAnnualSalary } from '@/lib/salaryCalculation';
 import StaffTable from '@/components/payouts/StaffTable';
 import BonusSummaryTable from '@/components/payouts/BonusSummaryTable';
 import PayoutBreakdownCard from '@/components/payouts/PayoutBreakdownCard';
@@ -30,6 +31,7 @@ const Switch = ({ checked, onChange }) => (
 export default function Payouts() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const closedQuarters = getClosedQuarters();
 
   const [selectedPropertyId, setSelectedPropertyId] = useState('');
   const [selectedYear, setSelectedYear] = useState(CURRENT_YEAR);
@@ -40,15 +42,12 @@ export default function Payouts() {
     property_id: '', 
     job_classification_id: '', 
     salary_q1: '',
+    salary_q2: '',
+    salary_q3: '',
+    salary_q4: '',
     year: CURRENT_YEAR,
     is_active: true
   });
-
-  // Calculate estimated annual salary based on Q1 only (Q1 × 4)
-  const getEstimatedAnnualSalary = (staff) => {
-    const q1 = parseFloat(staff.salary_q1) || 0;
-    return q1 * 4;
-  };
 
   // Fetch data
   const { data: properties = [] } = useQuery({
@@ -96,14 +95,20 @@ export default function Payouts() {
   // Mutations
   const addStaffMutation = useMutation({
     mutationFn: (data) => {
-      return base44.entities.Staff.create({
+      const createData = {
         name: data.name,
         property_id: data.property_id,
         job_classification_id: data.job_classification_id,
         year: data.year,
         is_active: data.is_active,
-        salary_q1: parseFloat(data.salary_q1) || 0,
-      });
+      };
+      
+      // Only save salaries for closed quarters
+      for (const q of closedQuarters) {
+        createData[`salary_q${q}`] = parseFloat(data[`salary_q${q}`]) || 0;
+      }
+      
+      return base44.entities.Staff.create(createData);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['staff', selectedPropertyId, selectedYear] });
@@ -113,6 +118,9 @@ export default function Payouts() {
         property_id: selectedPropertyId, 
         job_classification_id: '', 
         salary_q1: '',
+        salary_q2: '',
+        salary_q3: '',
+        salary_q4: '',
         year: CURRENT_YEAR,
         is_active: true
       });
@@ -134,7 +142,7 @@ export default function Payouts() {
 
     const entry = staffEntries[staffEntries.length - 1];
     const scorecard = calculateScorecard(entry, selectedProperty);
-    const estimatedAnnualSalary = getEstimatedAnnualSalary(selectedStaff);
+    const estimatedAnnualSalary = calculateEstimatedAnnualSalary(selectedStaff, closedQuarters);
 
     const quarterlyBonus = calculateQuarterlyBonus(
       { ...selectedStaff, annual_salary: estimatedAnnualSalary },
@@ -223,6 +231,9 @@ export default function Payouts() {
               property_id: selectedPropertyId, 
               job_classification_id: '', 
               salary_q1: '',
+              salary_q2: '',
+              salary_q3: '',
+              salary_q4: '',
               year: CURRENT_YEAR,
               is_active: true
             });
@@ -288,22 +299,60 @@ export default function Payouts() {
 
                   <div>
                     <div className="space-y-3">
-                      <div>
-                        <label className="text-xs text-muted-foreground font-semibold mb-2 block">Q1 Salary (Jan–Mar 2026)</label>
-                        <Input
-                          placeholder="0"
-                          type="number"
-                          value={newStaff.salary_q1 || ''}
-                          onChange={e => setNewStaff({ ...newStaff, salary_q1: e.target.value })}
-                        />
-                      </div>
+                      {closedQuarters.includes(1) && (
+                        <div>
+                          <label className="text-xs text-muted-foreground font-semibold mb-2 block">Q1 Salary (Jan–Mar 2026)</label>
+                          <Input
+                            placeholder="$0"
+                            type="number"
+                            value={newStaff.salary_q1 || ''}
+                            onChange={e => setNewStaff({ ...newStaff, salary_q1: e.target.value })}
+                          />
+                        </div>
+                      )}
+
+                      {closedQuarters.includes(2) && (
+                        <div>
+                          <label className="text-xs text-muted-foreground font-semibold mb-2 block">Q2 Salary (Apr–Jun 2026)</label>
+                          <Input
+                            placeholder="$0"
+                            type="number"
+                            value={newStaff.salary_q2 || ''}
+                            onChange={e => setNewStaff({ ...newStaff, salary_q2: e.target.value })}
+                          />
+                        </div>
+                      )}
+
+                      {closedQuarters.includes(3) && (
+                        <div>
+                          <label className="text-xs text-muted-foreground font-semibold mb-2 block">Q3 Salary (Jul–Sep 2026)</label>
+                          <Input
+                            placeholder="$0"
+                            type="number"
+                            value={newStaff.salary_q3 || ''}
+                            onChange={e => setNewStaff({ ...newStaff, salary_q3: e.target.value })}
+                          />
+                        </div>
+                      )}
+
+                      {closedQuarters.includes(4) && (
+                        <div>
+                          <label className="text-xs text-muted-foreground font-semibold mb-2 block">Q4 Salary (Oct–Dec 2026)</label>
+                          <Input
+                            placeholder="$0"
+                            type="number"
+                            value={newStaff.salary_q4 || ''}
+                            onChange={e => setNewStaff({ ...newStaff, salary_q4: e.target.value })}
+                          />
+                        </div>
+                      )}
+
                       <div>
                         <label className="text-xs text-muted-foreground font-semibold mb-2 block">Estimated Annual Salary</label>
                         <div className="p-3 bg-muted/30 rounded">
                           <p className="text-sm font-semibold text-foreground">
-                            ${((parseFloat(newStaff.salary_q1) || 0) * 4).toLocaleString('en-US', { maximumFractionDigits: 0 })}
+                            ${calculateEstimatedAnnualSalary(newStaff, closedQuarters).toLocaleString('en-US', { maximumFractionDigits: 0 })}
                           </p>
-                          <p className="text-xs text-muted-foreground mt-1">(Q1 × 4)</p>
                         </div>
                       </div>
                     </div>
