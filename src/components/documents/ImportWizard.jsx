@@ -113,6 +113,8 @@ export default function ImportWizard({ file, properties, onClose, onSuccess }) {
       if (row.gop_margin_budget != null)   patch.gop_margin_budget   = row.gop_margin_budget;
       if (row.gop_margin_prior != null)    patch.gop_margin_prior    = row.gop_margin_prior;
       if (row.revpar_index_change != null) patch.revpar_index_change = row.revpar_index_change;
+      if (row.revpar_index != null)        patch.revpar_index        = row.revpar_index;
+      if (row.revpar_index_prior != null)  patch.revpar_index_prior  = row.revpar_index_prior;
       if (row.gss_actual != null)          patch.gss_actual          = row.gss_actual;
       if (row.gss_prior != null)           patch.gss_prior           = row.gss_prior;
 

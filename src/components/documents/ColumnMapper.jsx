@@ -12,7 +12,9 @@ const KPI_FIELDS = {
   ],
   'RGI/STR Report': [
     { key: 'hotel_name',          label: 'Hotel / Property Name', required: true },
-    { key: 'revpar_index_change', label: 'RevPAR Index Change % (YOY)', required: true },
+    { key: 'revpar_index_change', label: 'RevPAR Index % Change (YOY)', required: true },
+    { key: 'revpar_index',        label: 'RevPAR Index (current period)' },
+    { key: 'revpar_index_prior',  label: 'RevPAR Index (prior year)' },
   ],
   'GSS Report': [
     { key: 'hotel_name',          label: 'Hotel / Property Name', required: true },

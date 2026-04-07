@@ -104,8 +104,8 @@ export default function KpiBreakdown() {
         kpiData = sc.rgi;
         score = sc.rgi.score;
         pass = sc.rgi.pass;
-        actual = entry.revpar_index_change != null ? `${entry.revpar_index_change.toFixed(2)}%` : '—';
-        target = '≥ +0.1% YOY';
+        actual = entry.revpar_index != null ? entry.revpar_index.toFixed(1) : '—';
+        target = entry.revpar_index_prior != null ? entry.revpar_index_prior.toFixed(1) : '—';
       } else if (activeKpi === 'gss') {
         kpiData = sc.gss;
         score = sc.gss.score;
@@ -230,8 +230,12 @@ export default function KpiBreakdown() {
                 <th className="py-3 px-4 text-center font-semibold cursor-pointer" onClick={() => handleSort('gm')}>
                   <div className="flex items-center justify-center gap-1">GM <SortIcon col="gm" /></div>
                 </th>
-                <th className="py-3 px-4 text-center font-semibold">Actual</th>
-                <th className="py-3 px-4 text-center font-semibold">Target</th>
+                <th className="py-3 px-4 text-center font-semibold">
+                  {activeKpi === 'rgi' ? 'RGI Index' : 'Actual'}
+                </th>
+                <th className="py-3 px-4 text-center font-semibold">
+                  {activeKpi === 'rgi' ? 'Prior Year Index' : 'Target'}
+                </th>
                 <th className="py-3 px-4 text-center font-semibold cursor-pointer" onClick={() => handleSort('score')}>
                   <div className="flex items-center justify-center gap-1">Score <SortIcon col="score" /></div>
                 </th>
@@ -255,8 +259,22 @@ export default function KpiBreakdown() {
                       <div className="text-xs text-muted-foreground">{property.city}, {property.state}</div>
                     </td>
                     <td className="py-3 px-4 text-center text-xs text-muted-foreground">{property.gm_name || '—'}</td>
-                    <td className="py-3 px-4 text-center font-medium text-sm">{entry ? actual : '—'}</td>
-                    <td className="py-3 px-4 text-center text-xs text-muted-foreground">{entry ? target : '—'}</td>
+                    <td className="py-3 px-4 text-center font-medium text-sm">
+                     {entry ? actual : '—'}
+                     {entry && activeKpi === 'rgi' && entry.revpar_index_change != null && (
+                       <div className="text-xs text-muted-foreground mt-0.5">
+                         {entry.revpar_index_change >= 0 ? '+' : ''}{entry.revpar_index_change.toFixed(2)}% YOY
+                       </div>
+                     )}
+                    </td>
+                    <td className="py-3 px-4 text-center text-xs text-muted-foreground">
+                     {entry ? target : '—'}
+                     {entry && activeKpi === 'rgi' && entry.revpar_index != null && entry.revpar_index_prior != null && (
+                       <div className="mt-0.5">
+                         Δ {(entry.revpar_index - entry.revpar_index_prior) >= 0 ? '+' : ''}{(entry.revpar_index - entry.revpar_index_prior).toFixed(1)} pts
+                       </div>
+                     )}
+                    </td>
                     <td className="py-3 px-4 text-center">
                       {entry && score !== null ? (
                         <span className="font-bold text-sm">

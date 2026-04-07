@@ -173,8 +173,21 @@ export default function Dashboard() {
       measure: 'RevPAR Index % Change (STR RGI)',
       weight: '15%',
       target: '0.1%-2.0% partial / 2.1%+ full',
-      actual: activeEntry.revpar_index_change != null ? `${activeEntry.revpar_index_change.toFixed(2)}%` : '—',
-      ytdActual: '—',
+      actual: (() => {
+        const parts = [];
+        if (activeEntry.revpar_index != null) parts.push(`Index: ${activeEntry.revpar_index.toFixed(1)}`);
+        if (activeEntry.revpar_index_change != null) parts.push(`Change: ${activeEntry.revpar_index_change >= 0 ? '+' : ''}${activeEntry.revpar_index_change.toFixed(2)}%`);
+        return parts.length ? parts.join(' | ') : '—';
+      })(),
+      ytdActual: (() => {
+        const parts = [];
+        if (activeEntry.revpar_index_prior != null) parts.push(`PY Index: ${activeEntry.revpar_index_prior.toFixed(1)}`);
+        if (activeEntry.revpar_index != null && activeEntry.revpar_index_prior != null) {
+          const diff = activeEntry.revpar_index - activeEntry.revpar_index_prior;
+          parts.push(`Δ ${diff >= 0 ? '+' : ''}${diff.toFixed(1)} pts`);
+        }
+        return parts.length ? parts.join(' | ') : '—';
+      })(),
       score: scorecard.rgi.score,
       maxScore: 15,
       pass: scorecard.rgi.pass,

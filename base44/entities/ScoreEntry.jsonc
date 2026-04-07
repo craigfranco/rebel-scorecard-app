@@ -45,6 +45,14 @@
       "type": "number",
       "description": "STR RevPAR Index % change YOY (e.g. 2.5 = +2.5%)"
     },
+    "revpar_index": {
+      "type": "number",
+      "description": "Actual RGI index value for current period (e.g. 105.3 means 105.3% of competitive set)"
+    },
+    "revpar_index_prior": {
+      "type": "number",
+      "description": "RGI index value for same period prior year"
+    },
     "gss_actual": {
       "type": "number",
       "description": "GSS score this period"

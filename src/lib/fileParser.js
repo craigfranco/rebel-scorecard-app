@@ -138,7 +138,9 @@ export function autoDetectMapping(headers, docType) {
   if (docType === 'RGI/STR Report') {
     return {
       ...base,
-      revpar_index_change: find('revpar', 'rgi', 'str', 'index') ?? null,
+      revpar_index_change: find('changepct', 'changeyoy', 'change', 'pct') ?? find('revpar', 'rgi') ?? null,
+      revpar_index:        find('revparindex', 'rgiindex', 'indexactual', 'current') ?? find('index') ?? null,
+      revpar_index_prior:  find('prioryear', 'prior', 'lastyear', 'indexprior') ?? null,
     };
   }
   if (docType === 'GSS Report') {
@@ -174,6 +176,8 @@ export function applyMapping(rows, mapping) {
       gop_margin_budget:   num(get(mapping.gop_margin_budget)),
       gop_margin_prior:    num(get(mapping.gop_margin_prior)),
       revpar_index_change: num(get(mapping.revpar_index_change)),
+      revpar_index:        num(get(mapping.revpar_index)),
+      revpar_index_prior:  num(get(mapping.revpar_index_prior)),
       gss_actual:          num(get(mapping.gss_actual)),
       gss_prior:           num(get(mapping.gss_prior)),
     };
