@@ -113,12 +113,12 @@ export default function Payouts() {
        const entry = qEntries[qEntries.length - 1];
        const scorecard = calculateScorecard(entry, selectedProperty);
        const estAnnualSalary = getEstimatedAnnualSalary(staff);
-       quarterlyBonuses[q] = calculateQuarterlyBonus({...staff, annual_salary: estAnnualSalary}, scorecard, jobClass);
+       quarterlyBonuses[q] = calculateQuarterlyBonus({...staff, annual_salary: estAnnualSalary}, scorecard, jobClass, entry);
      }
    });
 
    const estAnnualSalary = getEstimatedAnnualSalary(staff);
-   const annualBonus = calculateAnnualBonus({...staff, annual_salary: estAnnualSalary}, scorecards, jobClass);
+   const annualBonus = calculateAnnualBonus({...staff, annual_salary: estAnnualSalary}, scorecards, jobClass, staffEntries);
 
    return {
      ...staff,

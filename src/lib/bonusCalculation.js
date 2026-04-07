@@ -1,4 +1,4 @@
-export const calculateBonusForMetric = (staff, scorecard, jobClass) => {
+export const calculateBonusForMetric = (staff, scorecard, jobClass, entry) => {
   const bonuses = {
     gop: 0,
     gopMargin: 0,
@@ -8,14 +8,24 @@ export const calculateBonusForMetric = (staff, scorecard, jobClass) => {
     metricsHit: {}
   };
 
-  // GOP Bonus - 10% of budgeted GOP if pass
-  if (scorecard.gop?.pass) {
+  // GOP Gatekeeper: GOP actual must equal budgeted target AND GOP margin must exceed prior year margin
+  const gopGatekeeperMet = 
+    entry &&
+    entry.budgeted_gop_actual != null && 
+    entry.budgeted_gop_target != null &&
+    entry.gop_margin_actual != null &&
+    entry.gop_margin_prior != null &&
+    entry.budgeted_gop_actual >= entry.budgeted_gop_target &&
+    entry.gop_margin_actual > entry.gop_margin_prior;
+
+  // GOP Bonus - 10% if gatekeeper passed
+  if (gopGatekeeperMet) {
     bonuses.gop = (staff.annual_salary * jobClass.gop_bonus_percentage) / 100;
     bonuses.metricsHit.gop = true;
   }
 
-  // GOP Margin Bonus - 10% if pass
-  if (scorecard.gopMargin?.pass) {
+  // GOP Margin Bonus - 10% if gatekeeper passed
+  if (gopGatekeeperMet && scorecard.gopMargin?.pass) {
     bonuses.gopMargin = (staff.annual_salary * jobClass.gop_margin_bonus_percentage) / 100;
     bonuses.metricsHit.gopMargin = true;
   }
@@ -41,8 +51,8 @@ export const calculateBonusForMetric = (staff, scorecard, jobClass) => {
   return bonuses;
 };
 
-export const calculateQuarterlyBonus = (staff, scorecard, jobClass) => {
-  const bonus = calculateBonusForMetric(staff, scorecard, jobClass);
+export const calculateQuarterlyBonus = (staff, scorecard, jobClass, entry) => {
+  const bonus = calculateBonusForMetric(staff, scorecard, jobClass, entry);
   // Quarterly is 50% of annual
   return {
     ...bonus,
@@ -54,7 +64,7 @@ export const calculateQuarterlyBonus = (staff, scorecard, jobClass) => {
   };
 };
 
-export const calculateAnnualBonus = (staff, scorecards, jobClass) => {
+export const calculateAnnualBonus = (staff, scorecards, jobClass, entries = []) => {
   // Sum all quarterly bonuses
   let totalBonus = {
     gop: 0,
@@ -65,8 +75,9 @@ export const calculateAnnualBonus = (staff, scorecards, jobClass) => {
     metricsHit: {}
   };
 
-  scorecards.forEach(scorecard => {
-    const quarterly = calculateQuarterlyBonus(staff, scorecard, jobClass);
+  scorecards.forEach((scorecard, idx) => {
+    const entry = entries[idx];
+    const quarterly = calculateQuarterlyBonus(staff, scorecard, jobClass, entry);
     totalBonus.gop += quarterly.gop;
     totalBonus.gopMargin += quarterly.gopMargin;
     totalBonus.rgi += quarterly.rgi;
