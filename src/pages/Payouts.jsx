@@ -8,6 +8,7 @@ import { Plus, Save, ChevronRight, Check, X } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { calculateQuarterlyBonus, calculateAnnualBonus, getMetricStatus } from '@/lib/bonusCalculation';
 import { calculateScorecard, MONTHS, getQuarterFromMonth } from '@/lib/scoring';
+import StaffTable from '@/components/payouts/StaffTable';
 
 const CURRENT_YEAR = 2026;
 
@@ -59,7 +60,7 @@ export default function Payouts() {
     queryKey: ['staff', selectedPropertyId, selectedYear],
     queryFn: () =>
       selectedPropertyId
-        ? base44.entities.Staff.filter({ property_id: selectedPropertyId, year: selectedYear, is_active: true })
+        ? base44.entities.Staff.filter({ property_id: selectedPropertyId, year: selectedYear })
         : Promise.resolve([]),
     enabled: !!selectedPropertyId,
   });
@@ -243,6 +244,9 @@ export default function Payouts() {
             Add Staff Member
           </Button>
 
+          {/* Staff Table */}
+          <StaffTable staff={staffMembers} jobClassifications={jobClassifications} />
+
           {/* Add Staff Form Modal */}
           {showAddForm && (
             <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -265,14 +269,14 @@ export default function Payouts() {
                           <SelectValue placeholder="Select classification..." />
                         </SelectTrigger>
                         <SelectContent>
-                          {jobClassifications.sort((a, b) => {
-                            if (a.title === 'General Manager') return -1;
-                            if (b.title === 'General Manager') return 1;
-                            return a.title.localeCompare(b.title);
-                          }).map(jc => (
-                            <SelectItem key={jc.id} value={jc.id}>{jc.title}</SelectItem>
-                          ))}
-                        </SelectContent>
+                           {jobClassifications.filter(jc => !jc.title.toLowerCase().includes('supervisor')).sort((a, b) => {
+                             if (a.title === 'General Manager') return -1;
+                             if (b.title === 'General Manager') return 1;
+                             return a.title.localeCompare(b.title);
+                           }).map(jc => (
+                             <SelectItem key={jc.id} value={jc.id}>{jc.title}</SelectItem>
+                           ))}
+                         </SelectContent>
                       </Select>
                     </div>
                   </div>
