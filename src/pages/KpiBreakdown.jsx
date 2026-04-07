@@ -234,7 +234,7 @@ export default function KpiBreakdown() {
                   {activeKpi === 'rgi' ? 'RevPAR Index' : 'Actual'}
                 </th>
                 {activeKpi === 'rgi' && (
-                  <th className="py-3 px-4 text-center font-semibold">% Change YOY</th>
+                  <th className="py-3 px-4 text-center font-semibold">RGI % Change YOY</th>
                 )}
                 {activeKpi !== 'rgi' && (
                   <th className="py-3 px-4 text-center font-semibold">Target</th>
