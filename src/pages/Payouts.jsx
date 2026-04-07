@@ -47,33 +47,10 @@ export default function Payouts() {
     is_active: true
   });
 
-  // Determine closed quarters dynamically based on today's date
-  const getClosedQuarters = () => {
-    const today = new Date();
-    const closedQuarters = [];
-    if (today >= new Date('2026-04-01')) closedQuarters.push(1); // Q1 closed Mar 31
-    if (today >= new Date('2026-07-01')) closedQuarters.push(2); // Q2 closed Jun 30
-    if (today >= new Date('2026-10-01')) closedQuarters.push(3); // Q3 closed Sep 30
-    if (today >= new Date('2027-01-01')) closedQuarters.push(4); // Q4 closed Dec 31
-    return closedQuarters;
-  };
-
-  const calculateProjectedAnnualSalary = (salaries) => {
-    const q1 = parseFloat(salaries.salary_q1) || 0;
-    const q2 = parseFloat(salaries.salary_q2) || 0;
-    const q3 = parseFloat(salaries.salary_q3) || 0;
-    const q4 = parseFloat(salaries.salary_q4) || 0;
-    const closedQuarters = getClosedQuarters();
-
-    if (closedQuarters.includes(4)) {
-      return { total: q1 + q2 + q3 + q4, formula: 'Q1 + Q2 + Q3 + Q4' };
-    } else if (closedQuarters.includes(3)) {
-      return { total: q1 + q2 + q3 + q3, formula: 'Q1 + Q2 + Q3 × 2' };
-    } else if (closedQuarters.includes(2)) {
-      return { total: q1 + q2 + q2 * 2, formula: 'Q1 + Q2 × 3' };
-    } else {
-      return { total: q1 * 4, formula: 'Q1 × 4' };
-    }
+  // Calculate estimated annual salary based on Q1 only (Q1 × 4)
+  const getEstimatedAnnualSalary = (staff) => {
+    const q1 = parseFloat(staff.salary_q1) || 0;
+    return q1 * 4;
   };
 
   // Fetch data
@@ -157,11 +134,6 @@ export default function Payouts() {
   const selectedProperty = properties.find(p => p.id === selectedPropertyId);
   const selectedStaff = allStaff.find(s => s.id === selectedStaffId);
 
-  // Calculate projected annual salary for existing staff
-  const getProjectedAnnualSalary = (staff) => {
-    return calculateProjectedAnnualSalary(staff);
-  };
-
   // Calculate bonus for selected staff
   const selectedStaffBonus = selectedStaff && selectedProperty ? (() => {
     const jobClass = jobClassifications.find(jc => jc.id === selectedStaff.job_classification_id);
@@ -172,11 +144,10 @@ export default function Payouts() {
 
     const entry = staffEntries[staffEntries.length - 1];
     const scorecard = calculateScorecard(entry, selectedProperty);
-    const projectedSalaryData = getProjectedAnnualSalary(selectedStaff);
-    const projectedAnnualSalary = projectedSalaryData.total;
+    const estimatedAnnualSalary = getEstimatedAnnualSalary(selectedStaff);
 
     const quarterlyBonus = calculateQuarterlyBonus(
-      { ...selectedStaff, annual_salary: projectedAnnualSalary },
+      { ...selectedStaff, annual_salary: estimatedAnnualSalary },
       scorecard,
       jobClass,
       entry
@@ -188,8 +159,7 @@ export default function Payouts() {
       quarterlyBonus,
       scorecard,
       entry,
-      projectedAnnualSalary: projectedAnnualSalary,
-      salaryFormula: projectedSalaryData.formula,
+      estimatedAnnualSalary,
     };
   })() : null;
 
@@ -330,37 +300,25 @@ export default function Payouts() {
                   </div>
 
                   <div>
-                    <label className="text-xs text-muted-foreground font-semibold mb-2 block">Quarterly Salaries</label>
-                    <p className="text-xs text-muted-foreground mb-3">Only closed quarters are displayed. Q2 unlocks July 1, 2026.</p>
-                    <div className="grid grid-cols-4 gap-3">
-                      {[
-                        { q: 'Q1', field: 'salary_q1', quarterNum: 1 },
-                        { q: 'Q2', field: 'salary_q2', quarterNum: 2, unlockDate: 'July 1, 2026' },
-                        { q: 'Q3', field: 'salary_q3', quarterNum: 3, unlockDate: 'Oct 1, 2026' },
-                        { q: 'Q4', field: 'salary_q4', quarterNum: 4, unlockDate: 'Jan 1, 2027' }
-                      ]
-                        .filter(({ quarterNum }) => getClosedQuarters().includes(quarterNum))
-                        .map(({ q, field }) => (
-                        <div key={q}>
-                          <label className="text-xs text-muted-foreground mb-1 block">{q}</label>
-                          <Input
-                            placeholder="0"
-                            type="number"
-                            value={newStaff[field] || ''}
-                            onChange={e => setNewStaff({ ...newStaff, [field]: e.target.value })}
-                          />
-                        </div>
-                      ))}
-                    </div>
-                    <div className="mt-3 p-3 bg-muted/30 rounded">
-                      {(() => {
-                        const projData = calculateProjectedAnnualSalary(newStaff);
-                        return (
-                          <p className="text-xs text-muted-foreground">
-                            Projected Annual Salary: <span className="font-semibold text-foreground">${projData.total.toLocaleString('en-US', { maximumFractionDigits: 0 })}</span> <span className="text-muted-foreground">({projData.formula})</span>
+                    <div className="space-y-3">
+                      <div>
+                        <label className="text-xs text-muted-foreground font-semibold mb-2 block">Q1 Salary</label>
+                        <Input
+                          placeholder="0"
+                          type="number"
+                          value={newStaff.salary_q1 || ''}
+                          onChange={e => setNewStaff({ ...newStaff, salary_q1: e.target.value })}
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs text-muted-foreground font-semibold mb-2 block">Estimated Annual Salary</label>
+                        <div className="p-3 bg-muted/30 rounded">
+                          <p className="text-sm font-semibold text-foreground">
+                            ${((parseFloat(newStaff.salary_q1) || 0) * 4).toLocaleString('en-US', { maximumFractionDigits: 0 })}
                           </p>
-                        );
-                      })()}
+                          <p className="text-xs text-muted-foreground mt-1">(Q1 × 4)</p>
+                        </div>
+                      </div>
                     </div>
                   </div>
 
