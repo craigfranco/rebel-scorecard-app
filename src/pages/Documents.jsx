@@ -125,6 +125,13 @@ export default function Documents() {
     //   col K (col_10)          = Property name
     // Data starts at row index 3 (row 4 in Excel, skipping 3 header rows)
 
+    // The P&L file has this exact structure (4 header rows, then data):
+    // Col 0 (A): Actuals AMT  | Col 1 (B): Actuals %REV
+    // Col 2 (C): Budget AMT   | Col 3 (D): Budget %REV
+    // Col 4 (E): Variance AMT | Col 5 (F): Variance %REV
+    // Col 6 (G): Prior Yr AMT | Col 7 (H): Prior Yr %REV
+    // Col 8 (I): Var vs PY AMT| Col 9 (J): Var vs PY %REV
+    // Col 10 (K): Property name (then cols 11-20 repeat YTD data)
     const result = await base44.integrations.Core.ExtractDataFromUploadedFile({
       file_url,
       json_schema: {
@@ -132,20 +139,19 @@ export default function Documents() {
         properties: {
           rows: {
             type: 'array',
-            description: 'Extract every data row from the spreadsheet. Skip the first 3 header rows (rows 0, 1, 2). For each remaining row, read: hotel_name from the 11th column (index 10, header "col_10" or "Property"); budgeted_gop_actual from the 1st column (index 0, header "REBEL HOTEL CO."); gop_margin_actual from the 2nd column (index 1, header "col_1"); budgeted_gop_target from the 3rd column (index 2, header "col_2"); gop_margin_budget from the 4th column (index 3, header "col_3"); gop_margin_variance from the 6th column (index 5, header "col_5"); gop_margin_prior from the 8th column (index 7, header "col_7"). Skip rows where hotel_name is blank or equals "Property".',
+            description: 'The spreadsheet has 4 header rows then one row per hotel. Skip the first 4 header rows. For each data row extract: hotel_name from column 11 (the "Property" column, 11th column); budgeted_gop_actual from column 1 (the "AMT" under "Actuals", very first column); gop_margin_actual from column 2 (the "%REV" under "Actuals", 2nd column); budgeted_gop_target from column 3 (the "AMT" under "Budget", 3rd column); gop_margin_budget from column 4 (the "%REV" under "Budget", 4th column); gop_margin_prior from column 8 (the "AMT" under "Actuals Last Year", 8th column). Skip any row where hotel_name is blank.',
             items: {
               type: 'object',
               properties: {
-                hotel_name:          { type: 'string',  description: 'Column index 10 (col_10) — the property/hotel name.' },
-                budgeted_gop_actual: { type: 'number',  description: 'Column index 0 (REBEL HOTEL CO.) — Actuals AMT.' },
-                gop_margin_actual:   { type: 'number',  description: 'Column index 1 (col_1) — Actuals %REV.' },
-                budgeted_gop_target: { type: 'number',  description: 'Column index 2 (col_2) — Budget AMT.' },
-                gop_margin_budget:   { type: 'number',  description: 'Column index 3 (col_3) — Budget %REV.' },
-                gop_margin_variance: { type: 'number',  description: 'Column index 5 (col_5) — Variance %REV.' },
-                gop_margin_prior:    { type: 'number',  description: 'Column index 7 (col_7) — Prior Year %REV.' },
-                revpar_index_change: { type: 'number',  description: 'RevPAR Index % Change — STR/RGI files only.' },
-                gss_actual:          { type: 'number',  description: 'GSS score — GSS report files only.' },
-                gss_prior:           { type: 'number',  description: 'Prior year GSS score — GSS report files only.' },
+                hotel_name:          { type: 'string', description: '11th column — hotel/property name e.g. "Sheraton Orlando North Hotel"' },
+                budgeted_gop_actual: { type: 'number', description: '1st column — Actuals AMT (the dollar amount of actual GOP)' },
+                gop_margin_actual:   { type: 'number', description: '2nd column — Actuals %REV (GOP margin % actual)' },
+                budgeted_gop_target: { type: 'number', description: '3rd column — Budget AMT (the dollar amount of budgeted GOP)' },
+                gop_margin_budget:   { type: 'number', description: '4th column — Budget %REV (GOP margin % budget)' },
+                gop_margin_prior:    { type: 'number', description: '8th column — Actuals Last Year AMT (prior year GOP dollar amount)' },
+                revpar_index_change: { type: 'number', description: 'RevPAR Index % Change — only for STR/RGI files, leave null for P&L files' },
+                gss_actual:          { type: 'number', description: 'GSS score — only for GSS report files, leave null for P&L files' },
+                gss_prior:           { type: 'number', description: 'Prior year GSS score — only for GSS report files, leave null for P&L files' },
               },
               required: ['hotel_name'],
             },
