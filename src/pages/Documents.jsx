@@ -3,7 +3,7 @@ import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { Upload, FileText, Download, Trash2, Building2, Globe, Loader2, CheckCircle, AlertCircle, Sparkles, RefreshCw } from 'lucide-react';
+import { Upload, FileText, Download, Trash2, Building2, Globe, Loader2, CheckCircle, AlertCircle, Sparkles, RefreshCw, Eraser } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { MONTHS, getQuarterFromMonth } from '../lib/scoring';
 
@@ -86,6 +86,9 @@ export default function Documents() {
   const [filterScope, setFilterScope] = useState('all');
   const [filterProperty, setFilterProperty] = useState('');
   const [reextractingId, setReextractingId] = useState(null);
+  const [clearMonth, setClearMonth] = useState(CURRENT_MONTH);
+  const [clearYear] = useState(CURRENT_YEAR);
+  const [clearing, setClearing] = useState(false);
 
   const { data: properties = [] } = useQuery({
     queryKey: ['properties'],
@@ -244,6 +247,18 @@ export default function Documents() {
     }
   };
 
+  const handleClearKpiData = async () => {
+    if (!window.confirm(`Delete ALL scorecard data for ${MONTHS[clearMonth - 1]} ${clearYear}? This cannot be undone.`)) return;
+    setClearing(true);
+    const entries = await base44.entities.ScoreEntry.filter({ month: clearMonth, year: clearYear });
+    for (const e of entries) {
+      await base44.entities.ScoreEntry.delete(e.id);
+    }
+    queryClient.invalidateQueries({ queryKey: ['score-entries'] });
+    setClearing(false);
+    toast({ title: 'Cleared', description: `${entries.length} record${entries.length !== 1 ? 's' : ''} deleted for ${MONTHS[clearMonth - 1]} ${clearYear}.` });
+  };
+
   const filteredDocs = documents
     .filter(d => filterScope === 'all' || d.scope === filterScope)
     .filter(d => !filterProperty || d.property_id === filterProperty);
@@ -321,6 +336,30 @@ export default function Documents() {
             </span>
           </div>
         )}
+      </div>
+
+      <div className="bg-card rounded-2xl border border-border shadow-sm p-6">
+        <div className="flex flex-wrap items-center gap-4">
+          <div className="flex items-center gap-2 flex-1">
+            <Eraser className="w-4 h-4 text-destructive shrink-0" />
+            <div>
+              <h2 className="font-bold text-foreground text-sm">Clear KPI Data</h2>
+              <p className="text-xs text-muted-foreground">Delete all scorecard entries for a specific period</p>
+            </div>
+          </div>
+          <Select value={String(clearMonth)} onValueChange={v => setClearMonth(Number(v))}>
+            <SelectTrigger className="w-40 text-sm"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {MONTHS.map((m, i) => (
+                <SelectItem key={i + 1} value={String(i + 1)}>{m} {clearYear}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Button variant="destructive" size="sm" onClick={handleClearKpiData} disabled={clearing} className="gap-1.5">
+            {clearing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+            Clear Data
+          </Button>
+        </div>
       </div>
 
       <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
