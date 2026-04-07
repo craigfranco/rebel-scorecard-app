@@ -19,8 +19,8 @@ export function calcGOPScore(actual, target) {
   // For negative targets (loss budgets), a worse actual (more negative) should score lower.
   // Flip the ratio so that actual >= target always means pct >= 1.0.
   const pct = target < 0 ? target / actual : actual / target;
-  const score = Math.min(35, Math.max(0, pct * 35));
-  return { score: Math.round(score * 10) / 10, pct: Math.round(pct * 1000) / 10, pass: actual >= target, incomplete: false };
+  const pass = actual >= target;
+  return { score: pass ? 35 : 0, pct: Math.round(pct * 1000) / 10, pass, incomplete: false };
 }
 
 export function calcGOPMarginScore(actual, prior) {
