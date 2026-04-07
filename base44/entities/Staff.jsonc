@@ -1,0 +1,37 @@
+{
+  "name": "Staff",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Staff member name"
+    },
+    "property_id": {
+      "type": "string",
+      "description": "Reference to Property"
+    },
+    "job_classification_id": {
+      "type": "string",
+      "description": "Reference to JobClassification"
+    },
+    "annual_salary": {
+      "type": "number",
+      "description": "Annual salary in dollars"
+    },
+    "year": {
+      "type": "integer",
+      "description": "Year for this staff record"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true
+    }
+  },
+  "required": [
+    "name",
+    "property_id",
+    "job_classification_id",
+    "annual_salary",
+    "year"
+  ]
+}

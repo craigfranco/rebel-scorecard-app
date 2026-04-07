@@ -1,0 +1,55 @@
+{
+  "name": "BonusPayout",
+  "type": "object",
+  "properties": {
+    "staff_id": {
+      "type": "string",
+      "description": "Reference to Staff"
+    },
+    "period": {
+      "type": "string",
+      "enum": [
+        "quarterly",
+        "annual"
+      ],
+      "description": "Payout period"
+    },
+    "quarter": {
+      "type": "integer",
+      "description": "Quarter (1-4) if quarterly"
+    },
+    "year": {
+      "type": "integer",
+      "description": "Year"
+    },
+    "gop_bonus": {
+      "type": "number",
+      "description": "GOP bonus amount"
+    },
+    "gop_margin_bonus": {
+      "type": "number",
+      "description": "GOP Margin bonus amount"
+    },
+    "rgi_bonus": {
+      "type": "number",
+      "description": "RGI bonus amount"
+    },
+    "gss_bonus": {
+      "type": "number",
+      "description": "GSS bonus amount"
+    },
+    "total_bonus": {
+      "type": "number",
+      "description": "Total bonus for this period"
+    },
+    "kpi_metrics": {
+      "type": "object",
+      "description": "JSON object with KPI pass/fail status"
+    }
+  },
+  "required": [
+    "staff_id",
+    "period",
+    "year"
+  ]
+}

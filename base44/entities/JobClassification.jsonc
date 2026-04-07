@@ -1,0 +1,37 @@
+{
+  "name": "JobClassification",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Job classification name (e.g., General Manager, AGM/EC Members)"
+    },
+    "max_bonus_percentage": {
+      "type": "number",
+      "description": "Full year maximum bonus potential (% of earned salary)"
+    },
+    "gop_bonus_percentage": {
+      "type": "number",
+      "description": "GOP bonus percentage"
+    },
+    "gop_margin_bonus_percentage": {
+      "type": "number",
+      "description": "GOP Margin bonus percentage"
+    },
+    "rgi_bonus_percentage_low": {
+      "type": "number",
+      "description": "RGI bonus % for 0.1-2.0% improvement"
+    },
+    "rgi_bonus_percentage_high": {
+      "type": "number",
+      "description": "RGI bonus % for 2.1%+ improvement"
+    },
+    "gss_bonus_percentage": {
+      "type": "number",
+      "description": "GSS bonus percentage"
+    }
+  },
+  "required": [
+    "title"
+  ]
+}
