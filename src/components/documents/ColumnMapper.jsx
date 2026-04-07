@@ -5,10 +5,8 @@ const KPI_FIELDS = {
   'GOP Report': [
     { key: 'hotel_name',          label: 'Hotel / Property Name', required: true },
     { key: 'budgeted_gop_actual', label: 'Actual GOP ($)', required: true },
-    { key: 'gop_margin_actual',   label: 'Actual GOP Margin (%REV)' },
     { key: 'budgeted_gop_target', label: 'Budget GOP ($)' },
-    { key: 'gop_margin_budget',   label: 'Budget GOP Margin (%REV)' },
-    { key: 'gop_margin_prior',    label: 'Prior Year GOP Margin (%REV)' },
+    { key: 'gop_margin_prior',    label: 'Prior Year GOP ($)' },
   ],
   'RGI/STR Report': [
     { key: 'hotel_name',          label: 'Hotel / Property Name', required: true },
