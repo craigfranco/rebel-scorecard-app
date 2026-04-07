@@ -18,9 +18,10 @@ export function calcGOPScore(actual, prior) {
   if (prior === 0) return { score: 0, pct: 0, pass: false, incomplete: true };
   // Calculate growth percentage: (actual - prior) / prior * 100
   const growthPct = ((actual - prior) / Math.abs(prior)) * 100;
-  const pass = growthPct >= 0.1;
-  // Score based on growth percentage, capped at 35 (same as GOP margin: score = (diff / 5) * 35)
-  const score = Math.min(35, Math.max(0, (growthPct / 5) * 35));
+  const pass = growthPct >= 0.5;
+  // Score based on growth: 0.5% = 1 pt (minimum), 10%+ = 35 pts (capped)
+  // Linear scale: 1 pt at 0.5%, 35 pts at 10%
+  const score = growthPct < 0.5 ? 0 : Math.min(35, 1 + ((growthPct - 0.5) / 9.5) * 34);
   return { score: Math.round(score * 10) / 10, pct: Math.round(growthPct * 100) / 100, pass, incomplete: false };
 }
 
@@ -28,7 +29,9 @@ export function calcGOPMarginScore(actual, prior) {
   if (actual == null || prior == null) return { score: 0, diff: 0, pass: false, incomplete: true };
   const diff = actual - prior;
   const pass = diff >= 0.1;
-  const score = Math.min(35, Math.max(0, (diff / 5) * 35));
+  // Score based on margin improvement: 0.1% = 1 pt (minimum), 5%+ = 35 pts (capped)
+  // Linear scale: 1 pt at 0.1%, 35 pts at 5%
+  const score = diff < 0.1 ? 0 : Math.min(35, 1 + ((diff - 0.1) / 4.9) * 34);
   return { score: Math.round(score * 10) / 10, diff: Math.round(diff * 100) / 100, pass, incomplete: false };
 }
 
@@ -36,7 +39,9 @@ export function calcRGIScore(revparIndexChange) {
   if (revparIndexChange == null) return { score: 0, diff: 0, pass: false, incomplete: true };
   const pct = revparIndexChange;
   const pass = pct >= 0.1;
-  const score = Math.min(15, Math.max(0, (pct / 5) * 15));
+  // Score based on RGI change: 0.1% = 1 pt (minimum), 3%+ = 15 pts (capped)
+  // Linear scale: 1 pt at 0.1%, 15 pts at 3%
+  const score = pct < 0.1 ? 0 : Math.min(15, 1 + ((pct - 0.1) / 2.9) * 14);
   return { score: Math.round(score * 10) / 10, diff: Math.round(pct * 100) / 100, pass, incomplete: false };
 }
 
