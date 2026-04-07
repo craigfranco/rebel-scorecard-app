@@ -40,14 +40,23 @@ export default function BonusSummaryTable({ jobClassifications = [] }) {
                   <td className="py-3 px-4 text-center">{jc.gop_margin_bonus_percentage}%</td>
                   <td className="py-3 px-4 text-center">{jc.gss_bonus_percentage}%</td>
                   <td className="py-3 px-4 text-center">
-                    {jc.title === 'General Manager'
-                      ? `${jc.rgi_bonus_percentage_low}% / ${jc.rgi_bonus_percentage_high}%`
-                      : `${jc.rgi_bonus_percentage_low}%`}
+                    {jc.title === 'General Manager' ? (
+                      <>
+                        <span>{jc.rgi_bonus_percentage_low}% / {jc.rgi_bonus_percentage_high}%<span className="text-destructive">*</span></span>
+                      </>
+                    ) : (
+                      `${jc.rgi_bonus_percentage_low}%`
+                    )}
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
+        </div>
+
+        {/* Footnote for GM RGI */}
+        <div className="px-6 py-3 border-t border-border text-xs text-muted-foreground bg-muted/20">
+          <p><span className="text-destructive font-semibold">*</span> General Manager RGI: 7.5% for 0.1–2.0% improvement; 15% for 2.1%+ improvement</p>
         </div>
       </div>
 

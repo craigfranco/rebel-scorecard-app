@@ -33,7 +33,10 @@ export default function PayoutDetailCard({ staff, jobClass, bonus, salary, score
       label: 'RGI Improvement',
       percentage: scorecard?.rgiChange >= 2.1 ? jobClass.rgi_bonus_percentage_high : jobClass.rgi_bonus_percentage_low,
       amount: bonus.rgi,
-      status: bonus.metricsHit.rgi ? 'pass' : 'fail'
+      status: bonus.metricsHit.rgi ? 'pass' : 'fail',
+      tierNote: jobClass.title === 'General Manager' 
+        ? (scorecard?.rgiChange >= 2.1 ? `Tier 2 (${jobClass.rgi_bonus_percentage_high}%)` : (scorecard?.rgiChange > 0 && scorecard?.rgiChange < 2.1) ? `Tier 1 (${jobClass.rgi_bonus_percentage_low}%)` : null)
+        : null
     }
   ];
 
@@ -121,7 +124,7 @@ export default function PayoutDetailCard({ staff, jobClass, bonus, salary, score
                 <td className="py-3 px-4 text-xs text-muted-foreground">
                   {row.status === 'gatekeeper_fail' && 'Gatekeeper not met'}
                   {row.status === 'fail' && row.key !== 'gop' && row.key !== 'gopMargin' && 'Metric not achieved'}
-                  {row.status === 'pass' && 'Target met'}
+                  {row.status === 'pass' && (row.tierNote ? row.tierNote : 'Target met')}
                 </td>
               </tr>
             ))}
