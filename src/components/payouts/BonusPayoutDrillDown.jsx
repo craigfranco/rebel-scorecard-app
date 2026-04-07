@@ -49,15 +49,28 @@ export default function BonusPayoutDrillDown({ staff, property, jobClass, quarte
       )
     : null;
 
+  // Get quarterly salary based on quarter
+  const getQuarterlySalary = () => {
+    switch (quarter) {
+      case 1: return staff.salary_q1 || 0;
+      case 2: return staff.salary_q2 || 0;
+      case 3: return staff.salary_q3 || 0;
+      case 4: return staff.salary_q4 || 0;
+      default: return 0;
+    }
+  };
+  const quarterlySalary = getQuarterlySalary();
+
   const metrics = useMemo(() => {
     if (!bonusData || !scorecardData) return [];
+    const qSalary = getQuarterlySalary();
     return [
       {
         key: 'gop',
         label: 'Gross Operating Profit (GOP)',
         percentage: jobClass.gop_bonus_percentage,
         annual: (annualSalary * jobClass.gop_bonus_percentage) / 100,
-        quarterly: (annualSalary * jobClass.gop_bonus_percentage) / 100 * 0.5,
+        quarterly: (qSalary * jobClass.gop_bonus_percentage) / 100 * 0.5,
         status: bonusData.metricsHit.gop ? 'pass' : bonusData.gopGatekeeperPassed === false ? 'gatekeeper_fail' : 'fail',
         note: bonusData.gopGatekeeperPassed === false ? '⚠️ GOP Gatekeeper Not Met' : null,
         kpiResult: scorecardData.gopChange ? `${scorecardData.gopChange.toFixed(1)}% vs budget` : '—',
@@ -67,7 +80,7 @@ export default function BonusPayoutDrillDown({ staff, property, jobClass, quarte
         label: 'GOP Margin Improvement',
         percentage: jobClass.gop_margin_bonus_percentage,
         annual: (annualSalary * jobClass.gop_margin_bonus_percentage) / 100,
-        quarterly: (annualSalary * jobClass.gop_margin_bonus_percentage) / 100 * 0.5,
+        quarterly: (qSalary * jobClass.gop_margin_bonus_percentage) / 100 * 0.5,
         status: bonusData.metricsHit.gopMargin ? 'pass' : bonusData.gopGatekeeperPassed === false ? 'gatekeeper_fail' : 'fail',
         note: bonusData.gopGatekeeperPassed === false ? '⚠️ GOP Gatekeeper Not Met' : null,
         kpiResult: scorecardData.gopMarginChange ? `${scorecardData.gopMarginChange.toFixed(2)} pts improvement` : '—',
@@ -77,7 +90,7 @@ export default function BonusPayoutDrillDown({ staff, property, jobClass, quarte
         label: 'GSS Improvement',
         percentage: jobClass.gss_bonus_percentage,
         annual: (annualSalary * jobClass.gss_bonus_percentage) / 100,
-        quarterly: (annualSalary * jobClass.gss_bonus_percentage) / 100 * 0.5,
+        quarterly: (qSalary * jobClass.gss_bonus_percentage) / 100 * 0.5,
         status: bonusData.metricsHit.gss ? 'pass' : 'fail',
         kpiResult: scorecardData.gssChange ? `${scorecardData.gssChange.toFixed(2)} pts vs prior` : '—',
       },
@@ -89,8 +102,8 @@ export default function BonusPayoutDrillDown({ staff, property, jobClass, quarte
           ? (annualSalary * jobClass.rgi_bonus_percentage_high) / 100
           : (annualSalary * jobClass.rgi_bonus_percentage_low) / 100,
         quarterly: scorecardData?.rgiChange >= 2.1
-          ? (annualSalary * jobClass.rgi_bonus_percentage_high) / 100 * 0.5
-          : (annualSalary * jobClass.rgi_bonus_percentage_low) / 100 * 0.5,
+          ? (qSalary * jobClass.rgi_bonus_percentage_high) / 100 * 0.5
+          : (qSalary * jobClass.rgi_bonus_percentage_low) / 100 * 0.5,
         status: bonusData.metricsHit.rgi ? 'pass' : 'fail',
         tierNote: jobClass.title === 'General Manager'
           ? (scorecardData?.rgiChange >= 2.1 ? `Tier 2 (${jobClass.rgi_bonus_percentage_high}%)` : `Tier 1 (${jobClass.rgi_bonus_percentage_low}%)`)
@@ -98,7 +111,7 @@ export default function BonusPayoutDrillDown({ staff, property, jobClass, quarte
         kpiResult: scorecardData?.rgiChange ? `${scorecardData.rgiChange.toFixed(2)}% YoY change` : '—',
       },
     ];
-  }, [bonusData, scorecardData, jobClass, annualSalary]);
+  }, [bonusData, scorecardData, jobClass, annualSalary, quarter, staff]);
 
   const quarterlySubtotal = metrics.reduce((sum, m) => sum + (m.status === 'pass' ? m.quarterly : 0), 0);
   const annualSubtotal = metrics.reduce((sum, m) => sum + (m.status === 'pass' ? m.annual : 0), 0);
@@ -180,7 +193,12 @@ export default function BonusPayoutDrillDown({ staff, property, jobClass, quarte
       <div className="bg-card rounded-2xl border border-border p-6 shadow-sm space-y-4">
         <div>
           <h3 className="font-bold text-lg mb-2">{QUARTER_DATES[quarter].label} Quarterly Payout — 50% Component</h3>
-          <p className="text-xs text-muted-foreground">This amount is paid at end of {QUARTER_DATES[quarter].label.split(' ')[0]}</p>
+          <p className="text-xs text-muted-foreground">
+            {quarter === 1 ? 'Paid after the close of Q1 (March 31, 2026)' :
+             quarter === 2 ? 'Paid after the close of Q2 (June 30, 2026)' :
+             quarter === 3 ? 'Paid after the close of Q3 (September 30, 2026)' :
+             'Paid after the close of Q4 (December 31, 2026)'}
+          </p>
         </div>
 
         <div className="overflow-x-auto">
@@ -200,7 +218,7 @@ export default function BonusPayoutDrillDown({ staff, property, jobClass, quarte
                 <tr key={m.key} className="border-t border-border hover:bg-muted/30">
                   <td className="py-3 px-4 font-medium">{m.label}</td>
                   <td className="py-3 px-4 text-center">{m.percentage}%</td>
-                  <td className="py-3 px-4 text-center">${annualSalary.toLocaleString('en-US', { maximumFractionDigits: 0 })}</td>
+                  <td className="py-3 px-4 text-center">${quarterlySalary.toLocaleString('en-US', { maximumFractionDigits: 0 })}</td>
                   <td className="py-3 px-4 text-right font-semibold">${m.quarterly.toLocaleString('en-US', { maximumFractionDigits: 0 })}</td>
                   <td className="py-3 px-4 text-center text-xs text-muted-foreground">{m.kpiResult}</td>
                   <td className="py-3 px-4 text-center"><StatusBadge status={m.status} /></td>
@@ -219,7 +237,7 @@ export default function BonusPayoutDrillDown({ staff, property, jobClass, quarte
       <div className="bg-card rounded-2xl border border-border p-6 shadow-sm space-y-4">
         <div>
           <h3 className="font-bold text-lg mb-2">Full Year Annual Payout — 50% Component (Projected)</h3>
-          <p className="text-xs text-muted-foreground">This amount is paid at year-end based on full year performance</p>
+          <p className="text-xs text-muted-foreground">Annual component paid at year-end after the close of Q4 (December 31, 2026)</p>
         </div>
 
         <div className="overflow-x-auto">
