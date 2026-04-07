@@ -265,7 +265,11 @@ export default function Payouts() {
                           <SelectValue placeholder="Select classification..." />
                         </SelectTrigger>
                         <SelectContent>
-                          {jobClassifications.map(jc => (
+                          {jobClassifications.sort((a, b) => {
+                            if (a.title === 'General Manager') return -1;
+                            if (b.title === 'General Manager') return 1;
+                            return a.title.localeCompare(b.title);
+                          }).map(jc => (
                             <SelectItem key={jc.id} value={jc.id}>{jc.title}</SelectItem>
                           ))}
                         </SelectContent>
