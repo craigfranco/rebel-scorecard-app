@@ -115,18 +115,21 @@ export default function Documents() {
         properties: {
           rows: {
             type: 'array',
-            description: 'Extract EVERY data row from the CSV. Each row is one property. Do not skip any rows.',
+            description: `Extract EVERY property data row. 
+For P&L / GOP report files: the layout has numeric data columns FIRST, then the property name in the middle (often labeled "Property" in the header row). Look for the column header "Property" to find hotel names — it may not be the first column.
+For STR/RGI report files: the property name IS in the first column.
+Do not skip any rows. Ignore header rows, total rows, and blank rows.`,
             items: {
               type: 'object',
               properties: {
-                hotel_name: { type: 'string', description: 'REQUIRED. Property/hotel name (always in first column).' },
+                hotel_name: { type: 'string', description: 'REQUIRED. The hotel/property name. In P&L files this is often in the middle of the row under a column labeled "Property". In STR files it is the first column.' },
                 revpar_index_change: { type: 'string', description: 'RevPAR Index % Chg column value if present, otherwise empty string.' },
-                budgeted_gop_actual: { type: 'string', description: 'GOP value if present, otherwise empty string.' },
-                budgeted_gop_target: { type: 'string', description: 'GOP target if present, otherwise empty string.' },
-                gop_margin_actual: { type: 'string', description: 'GOP margin % actual if present, otherwise empty string.' },
-                gop_margin_budget: { type: 'string', description: 'GOP margin % budget/target if present, otherwise empty string.' },
-                gop_margin_prior: { type: 'string', description: 'Prior GOP margin % if present, otherwise empty string.' },
-                gop_margin_variance: { type: 'string', description: 'Variance between actual and budget GOP margin if calculable, otherwise empty string.' },
+                budgeted_gop_actual: { type: 'string', description: 'Period Actuals GOP AMT (dollar amount, first Actuals AMT column for the period). In P&L files this is the first numeric column.' },
+                budgeted_gop_target: { type: 'string', description: 'Period Budget GOP AMT (dollar amount, the Budget AMT column for the period). In P&L files this is the third numeric column.' },
+                gop_margin_actual: { type: 'string', description: 'Actual GOP margin % — the %REV value next to the Actuals AMT. In P&L files this is the second column (labeled %REV under Actuals).' },
+                gop_margin_budget: { type: 'string', description: 'Budget GOP margin % — the %REV value next to the Budget AMT. In P&L files this is the fourth column (labeled %REV under Budget).' },
+                gop_margin_prior: { type: 'string', description: 'Prior year GOP margin % — the %REV value next to Actuals Last Year AMT, otherwise empty string.' },
+                gop_margin_variance: { type: 'string', description: 'Variance between actual and budget GOP margin (actual %REV minus budget %REV), otherwise empty string.' },
                 gss_actual: { type: 'string', description: 'GSS score if present, otherwise empty string.' },
                 gss_prior: { type: 'string', description: 'Prior GSS score if present, otherwise empty string.' },
                 month: { type: 'string', description: 'Month number or name if in file, otherwise empty string.' },
