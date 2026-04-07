@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation, Outlet } from 'react-router-dom';
-import { LayoutDashboard, BookOpen, Building2, Settings, Menu, BarChart3, PieChart, FolderOpen, DollarSign } from 'lucide-react';
+import { LayoutDashboard, BookOpen, Building2, Settings, Menu, PieChart, FolderOpen, DollarSign } from 'lucide-react';
 
 const NAV_ITEMS = [
   { path: '/', icon: LayoutDashboard, label: 'Dashboard' },
@@ -26,15 +26,13 @@ export default function AppLayout() {
         style={{ backgroundColor: '#2d4b5e' }}
       >
         {/* Logo */}
-        <div className="flex items-center gap-3 px-6 py-5 border-b border-white/10">
-          <div className="w-9 h-9 rounded-xl bg-white/15 flex items-center justify-center">
-            <BarChart3 className="w-5 h-5 text-white" />
-          </div>
-          <div>
-            <div className="text-white font-bold text-sm leading-tight">Balanced</div>
-            <div className="text-white/70 text-xs">Scorecard</div>
-          </div>
-        </div>
+         <div className="flex items-center gap-3 px-6 py-5 border-b border-white/10">
+           <img src="https://media.base44.com/images/public/69d3e20c8254476c324dc91c/03b78211b_generated_image.png" alt="Balanced Scorecard" className="w-9 h-9" />
+           <div>
+             <div className="text-white font-bold text-sm leading-tight">Balanced</div>
+             <div className="text-white/70 text-xs">Scorecard</div>
+           </div>
+         </div>
 
         {/* Nav */}
         <nav className="flex-1 px-3 py-4 space-y-1">
