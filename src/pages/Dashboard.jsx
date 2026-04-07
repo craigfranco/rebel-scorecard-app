@@ -116,7 +116,7 @@ export default function Dashboard() {
         gss_prior:           activeEntry.gss_prior           != null ? String(activeEntry.gss_prior)           : '',
       });
     }
-  }, [selectedPropertyId, selectedMonth, selectedYear, timeFilter, entries.length]);
+  }, [selectedPropertyId, selectedMonth, selectedYear, entries.length]);
 
   const parseNum = (v) => v === '' || v == null ? null : parseFloat(v);
 
