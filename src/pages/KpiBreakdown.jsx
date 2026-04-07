@@ -266,10 +266,12 @@ export default function KpiBreakdown() {
                       {entry ? actual : '—'}
                     </td>
                     {activeKpi === 'rgi' && (
-                      <td className="py-3 px-4 text-center text-sm text-muted-foreground">
-                        {entry && entry.revpar_index_change != null
-                          ? `${entry.revpar_index_change >= 0 ? '+' : ''}${entry.revpar_index_change.toFixed(2)}%`
-                          : '—'}
+                      <td className="py-3 px-4 text-center text-sm font-bold">
+                        {entry && entry.revpar_index_change != null ? (
+                          <span style={{ color: entry.revpar_index_change >= 0 ? '#4CAF50' : '#ef4444' }}>
+                            {entry.revpar_index_change >= 0 ? '+' : ''}{entry.revpar_index_change.toFixed(2)}%
+                          </span>
+                        ) : '—'}
                       </td>
                     )}
                     {activeKpi !== 'rgi' && (
