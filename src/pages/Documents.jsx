@@ -1,11 +1,16 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { Upload, FileText, Download, Trash2, Building2, Globe, Loader2, CheckCircle, AlertCircle, Sparkles, RefreshCw, Eraser } from 'lucide-react';
+import { FileText, Download, Trash2, Building2, Globe, Loader2, Eraser, Trash } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { MONTHS, getQuarterFromMonth } from '../lib/scoring';
+import UploadZone from '@/components/documents/UploadZone';
+import ImportWizard from '@/components/documents/ImportWizard';
+
+const CURRENT_YEAR = 2026;
+const CURRENT_MONTH = 1;
 
 const KPI_TAG_STYLES = {
   'GOP Report':     { label: 'GOP',     bg: 'bg-emerald-50', text: 'text-emerald-700' },
@@ -23,69 +28,18 @@ function KpiTag({ docType }) {
   );
 }
 
-const CURRENT_YEAR = 2026;
-const CURRENT_MONTH = 1;
-const DOC_TYPES = ['GOP Report', 'RGI/STR Report', 'GSS Report', 'Other'];
-const KPI_DOC_TYPES = ['GOP Report', 'RGI/STR Report', 'GSS Report'];
-const FILE_TYPE_MAP = { pdf: 'PDF', xlsx: 'Excel', xls: 'Excel', csv: 'CSV' };
-
-function getFileType(filename) {
-  const ext = filename.split('.').pop().toLowerCase();
-  return FILE_TYPE_MAP[ext] || 'Other';
-}
-
-function bestMatch(name, properties) {
-  if (!name) return null;
-  const norm = s => s.toLowerCase().replace(/[^a-z0-9 ]/g, '').replace(/\s+/g, ' ').trim();
-  const needle = norm(name);
-  let best = null, bestScore = 0;
-  for (const p of properties) {
-    const hay = norm(p.name);
-    if (hay === needle) return p;
-    const needleWords = needle.split(' ');
-    const hayWords = hay.split(' ');
-    const matches = needleWords.filter(w => w.length > 2 && hayWords.includes(w)).length;
-    const score = matches / Math.max(needleWords.length, hayWords.length);
-    if (score > bestScore) { bestScore = score; best = p; }
-  }
-  return bestScore >= 0.25 ? best : null;
-}
-
-function parseMonth(raw) {
-  if (!raw) return null;
-  const r = raw.toString().trim();
-  for (let i = 0; i < MONTHS.length; i++) {
-    if (r.toLowerCase().startsWith(MONTHS[i].slice(0, 3).toLowerCase())) return i + 1;
-  }
-  const n = parseInt(r, 10);
-  if (!isNaN(n) && n >= 1 && n <= 12) return n;
-  const iso = r.match(/(\d{4})-(\d{2})/);
-  if (iso) return parseInt(iso[2], 10);
-  return null;
-}
-
-function parseYear(raw, monthRaw) {
-  if (raw) { const n = parseInt(raw.toString(), 10); if (!isNaN(n) && n > 2000) return n; }
-  const m = (monthRaw || '').toString().match(/\b(20\d{2})\b/);
-  return m ? parseInt(m[1], 10) : new Date().getFullYear();
-}
+const DOC_TYPE_FIELDS = {
+  'GOP Report': ['budgeted_gop_actual', 'budgeted_gop_target', 'gop_margin_actual', 'gop_margin_budget', 'gop_margin_variance', 'gop_margin_prior'],
+  'RGI/STR Report': ['revpar_index_change'],
+  'GSS Report': ['gss_actual', 'gss_prior'],
+};
 
 export default function Documents() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const fileInputRef = useRef();
-  const [dragOver, setDragOver] = useState(false);
-  const [scope] = useState('company-wide');
-  const [selectedPropertyId] = useState('');
-  const [docType, setDocType] = useState('GOP Report');
-  const [periodMonth, setPeriodMonth] = useState(CURRENT_MONTH);
-  const [periodYear] = useState(CURRENT_YEAR);
-  const [uploading, setUploading] = useState(false);
-  const [uploadStatus, setUploadStatus] = useState('');
-  const [importResult, setImportResult] = useState(null);
-  const [filterScope, setFilterScope] = useState('all');
-  const [filterProperty, setFilterProperty] = useState('');
-  const [reextractingId, setReextractingId] = useState(null);
+
+  const [pendingFile, setPendingFile] = useState(null);
+  const [parsing, setParsing] = useState(false);
   const [clearMonth, setClearMonth] = useState(CURRENT_MONTH);
   const [clearYear] = useState(CURRENT_YEAR);
   const [clearDocType, setClearDocType] = useState('all');
@@ -109,158 +63,13 @@ export default function Documents() {
     },
   });
 
-  const extractAndImportKpis = async (file_url, properties, month, year) => {
-    console.log('Starting extraction for:', file_url);
-    setUploadStatus('AI is extracting KPI data…');
-
-    // For GOP P&L files: col layout is
-    //   col A (REBEL HOTEL CO.) = Actuals AMT
-    //   col B (col_1)           = Actuals %REV
-    //   col C (col_2)           = Budget AMT
-    //   col D (col_3)           = Budget %REV
-    //   col E (P & L...)        = Variance AMT
-    //   col F (col_5)           = Variance %REV
-    //   col G (col_6)           = Prior Year AMT
-    //   col H (col_7)           = Prior Year %REV
-    //   col K (col_10)          = Property name
-    // Data starts at row index 3 (row 4 in Excel, skipping 3 header rows)
-
-    // The P&L file has this exact structure (4 header rows, then data):
-    // Col 0 (A): Actuals AMT  | Col 1 (B): Actuals %REV
-    // Col 2 (C): Budget AMT   | Col 3 (D): Budget %REV
-    // Col 4 (E): Variance AMT | Col 5 (F): Variance %REV
-    // Col 6 (G): Prior Yr AMT | Col 7 (H): Prior Yr %REV
-    // Col 8 (I): Var vs PY AMT| Col 9 (J): Var vs PY %REV
-    // Col 10 (K): Property name (then cols 11-20 repeat YTD data)
-    const result = await base44.integrations.Core.ExtractDataFromUploadedFile({
-      file_url,
-      json_schema: {
-        type: 'object',
-        properties: {
-          rows: {
-            type: 'array',
-            description: 'The spreadsheet has 4 header rows then one row per hotel. Skip the first 4 header rows. For each data row extract: hotel_name from column 11 (the "Property" column, 11th column); budgeted_gop_actual from column 1 (the "AMT" under "Actuals", very first column); gop_margin_actual from column 2 (the "%REV" under "Actuals", 2nd column); budgeted_gop_target from column 3 (the "AMT" under "Budget", 3rd column); gop_margin_budget from column 4 (the "%REV" under "Budget", 4th column); gop_margin_prior from column 8 (the "AMT" under "Actuals Last Year", 8th column). Skip any row where hotel_name is blank.',
-            items: {
-              type: 'object',
-              properties: {
-                hotel_name:          { type: 'string', description: '11th column — hotel/property name e.g. "Sheraton Orlando North Hotel"' },
-                budgeted_gop_actual: { type: 'number', description: '1st column — Actuals AMT (the dollar amount of actual GOP)' },
-                gop_margin_actual:   { type: 'number', description: '2nd column — Actuals %REV (GOP margin % actual)' },
-                budgeted_gop_target: { type: 'number', description: '3rd column — Budget AMT (the dollar amount of budgeted GOP)' },
-                gop_margin_budget:   { type: 'number', description: '4th column — Budget %REV (GOP margin % budget)' },
-                gop_margin_prior:    { type: 'number', description: '8th column — Actuals Last Year AMT (prior year GOP dollar amount)' },
-                revpar_index_change: { type: 'number', description: 'RevPAR Index % Change — only for STR/RGI files, leave null for P&L files' },
-                gss_actual:          { type: 'number', description: 'GSS score — only for GSS report files, leave null for P&L files' },
-                gss_prior:           { type: 'number', description: 'Prior year GSS score — only for GSS report files, leave null for P&L files' },
-              },
-              required: ['hotel_name'],
-            },
-          },
-        },
-      },
-    });
-
-    const rawRows = result?.output?.rows || result?.rows || [];
-    console.log('=== EXTRACTION: got', rawRows.length, 'rows');
-    if (rawRows.length > 0) {
-      console.log('First row:', JSON.stringify(rawRows[0], null, 2));
-    }
-    if (!rawRows.length) return { ok: 0, fail: 0, skipped: true };
-
-    let ok = 0, fail = 0;
-    for (const r of rawRows) {
-      const hotelName = r.hotel_name || '';
-      const matched = bestMatch(hotelName, properties);
-
-      const hasData = r.budgeted_gop_actual != null || r.gop_margin_actual != null || r.revpar_index_change != null || r.gss_actual != null;
-
-      if (!matched || !hasData) {
-        console.log(`Skipped "${hotelName}": matched=${!!matched}, hasData=${hasData}`);
-        fail++;
-        continue;
-      }
-      console.log(`Importing "${hotelName}" → "${matched.name}": gop=${r.budgeted_gop_actual}, margin=${r.gop_margin_actual}`);
-
-      const patch = {};
-      if (r.revpar_index_change != null) patch.revpar_index_change = r.revpar_index_change;
-      if (r.budgeted_gop_actual != null) patch.budgeted_gop_actual = r.budgeted_gop_actual;
-      if (r.budgeted_gop_target != null) patch.budgeted_gop_target = r.budgeted_gop_target;
-      if (r.gop_margin_actual != null) patch.gop_margin_actual = r.gop_margin_actual;
-      if (r.gop_margin_budget != null) patch.gop_margin_budget = r.gop_margin_budget;
-      if (r.gop_margin_variance != null) patch.gop_margin_variance = r.gop_margin_variance;
-      if (r.gop_margin_prior != null) patch.gop_margin_prior = r.gop_margin_prior;
-      if (r.gss_actual != null) patch.gss_actual = r.gss_actual;
-      if (r.gss_prior != null) patch.gss_prior = r.gss_prior;
-
-      const existing = await base44.entities.ScoreEntry.filter({ property_id: matched.id, month, year });
-      if (existing.length > 0) {
-        await base44.entities.ScoreEntry.update(existing[0].id, patch);
-      } else {
-        await base44.entities.ScoreEntry.create({ property_id: matched.id, month, year, quarter: getQuarterFromMonth(month), ...patch });
-      }
-      ok++;
-    }
-
-    queryClient.invalidateQueries({ queryKey: ['score-entries'] });
-    return { ok, fail, skipped: false };
-  };
-
-  const handleFileUpload = async (files) => {
-    if (!files || files.length === 0) return;
-    const file = files[0];
-    setUploading(true);
-    setImportResult(null);
-    setUploadStatus('Uploading file…');
-
-    const user = await base44.auth.me();
-    const { file_url } = await base44.integrations.Core.UploadFile({ file });
-
-    await base44.entities.Document.create({
-      filename: file.name,
-      file_url,
-      file_type: getFileType(file.name),
-      doc_type: docType,
-      scope,
-      property_id: scope === 'hotel-specific' ? selectedPropertyId : null,
-      period_month: periodMonth,
-      period_year: periodYear,
-      uploaded_by: user?.full_name || user?.email || 'Unknown',
-    });
-    queryClient.invalidateQueries({ queryKey: ['documents'] });
-
-    if (KPI_DOC_TYPES.includes(docType)) {
-      const result = await extractAndImportKpis(file_url, properties, periodMonth, periodYear);
-      if (!result.skipped) {
-        setImportResult(result);
-      }
-    }
-
-    setUploadStatus('');
-    setUploading(false);
-    toast({ title: 'Uploaded!', description: `${file.name} saved successfully.` });
-  };
-
-  const handleReextract = async (doc) => {
-    setReextractingId(doc.id);
-    const month = doc.period_month || CURRENT_MONTH;
-    const year = doc.period_year || CURRENT_YEAR;
-    const result = await extractAndImportKpis(doc.file_url, properties, month, year);
-    setReextractingId(null);
-    if (!result.skipped) {
-      setImportResult(result);
-      toast({
-        title: result.ok > 0 ? 'KPI data updated!' : 'No data extracted',
-        description: result.ok > 0
-          ? `${result.ok} hotel record${result.ok > 1 ? 's' : ''} updated.`
-          : 'No matching hotel data found in this file.',
-      });
-    }
-  };
-
-  const DOC_TYPE_FIELDS = {
-    'GOP Report': ['budgeted_gop_actual', 'budgeted_gop_target', 'gop_margin_actual', 'gop_margin_budget', 'gop_margin_variance', 'gop_margin_prior'],
-    'RGI/STR Report': ['revpar_index_change'],
-    'GSS Report': ['gss_actual', 'gss_prior'],
+  const handleFile = (file) => {
+    setParsing(true);
+    // Small delay to show loading state before opening wizard
+    setTimeout(() => {
+      setParsing(false);
+      setPendingFile(file);
+    }, 100);
   };
 
   const handleClearKpiData = async () => {
@@ -279,96 +88,43 @@ export default function Documents() {
       }
     }
     queryClient.invalidateQueries({ queryKey: ['score-entries'] });
+    queryClient.invalidateQueries({ queryKey: ['all-entries'] });
     setClearing(false);
     toast({ title: 'Cleared', description: `${label} data cleared for ${MONTHS[clearMonth - 1]} ${clearYear} (${entries.length} record${entries.length !== 1 ? 's' : ''}).` });
   };
-
-  const filteredDocs = documents
-    .filter(d => filterScope === 'all' || d.scope === filterScope)
-    .filter(d => !filterProperty || d.property_id === filterProperty);
 
   const propertyName = (id) => properties.find(p => p.id === id)?.name || '—';
 
   return (
     <div className="p-4 lg:p-8 space-y-6 max-w-6xl mx-auto">
+      {/* Header */}
       <div className="rounded-2xl text-white p-6 shadow-lg" style={{ background: 'linear-gradient(135deg, #2d4b5e 0%, #1e3547 100%)' }}>
         <h1 className="text-2xl font-bold">Documents</h1>
-        <p className="text-white/70 text-sm mt-1">Upload and manage source files — financial reports, STR data, GSS scores</p>
+        <p className="text-white/70 text-sm mt-1">Upload Excel or CSV files — data is parsed client-side and imported directly into scorecards</p>
       </div>
 
-      <div className="bg-card rounded-2xl border border-border shadow-sm p-6 space-y-5">
-        <div className="flex items-start justify-between gap-2">
-          <h2 className="font-bold text-foreground">Upload New File</h2>
-          {KPI_DOC_TYPES.includes(docType) && (
-            <span className="inline-flex items-center gap-1 text-xs bg-primary/10 text-primary px-2 py-1 rounded-full font-medium">
-              <Sparkles className="w-3 h-3" /> KPI data will be auto-extracted
-            </span>
-          )}
-        </div>
-
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <Select value={docType} onValueChange={setDocType}>
-            <SelectTrigger className="text-sm"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              {DOC_TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
-            </SelectContent>
-          </Select>
-
-          <Select value={String(periodMonth)} onValueChange={v => setPeriodMonth(Number(v))}>
-            <SelectTrigger className="text-sm"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              {MONTHS.map((m, i) => (
-                <SelectItem key={i + 1} value={String(i + 1)}>{m} {periodYear}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div
-          className={`border-2 border-dashed rounded-xl p-10 text-center cursor-pointer transition-all ${dragOver ? 'border-primary bg-primary/5' : 'border-border hover:border-muted-foreground/40'}`}
-          onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
-          onDragLeave={() => setDragOver(false)}
-          onDrop={(e) => { e.preventDefault(); setDragOver(false); handleFileUpload(e.dataTransfer.files); }}
-          onClick={() => !uploading && fileInputRef.current?.click()}
-        >
-          <input ref={fileInputRef} type="file" accept=".pdf,.xlsx,.xls,.csv" className="hidden"
-            onChange={e => handleFileUpload(e.target.files)} />
-          {uploading ? (
-            <div className="flex flex-col items-center gap-2">
-              <Loader2 className="w-8 h-8 animate-spin text-primary" />
-              <p className="text-sm font-medium text-muted-foreground">{uploadStatus}</p>
-            </div>
-          ) : (
-            <div className="flex flex-col items-center gap-2">
-              <Upload className="w-8 h-8 text-muted-foreground" />
-              <p className="font-medium text-sm">Drag & drop a file here, or click to browse</p>
-              <p className="text-xs text-muted-foreground">PDF, Excel, or CSV accepted</p>
-            </div>
-          )}
-        </div>
-
-        {importResult && !uploading && (
-          <div className={`flex items-start gap-2 rounded-xl p-4 text-sm ${importResult.ok > 0 ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-700'}`}>
-            {importResult.ok > 0
-              ? <CheckCircle className="w-4 h-4 shrink-0 mt-0.5" />
-              : <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />}
-            <span>
-              {importResult.ok > 0
-                ? `KPI data extracted — ${importResult.ok} hotel record${importResult.ok > 1 ? 's' : ''} updated in scorecard.`
-                : `File saved, but no matching hotel KPI data could be extracted.`}
-              {importResult.fail > 0 && ` (${importResult.fail} rows skipped — hotel not matched or missing data)`}
-            </span>
-          </div>
-        )}
+      {/* Upload Zone */}
+      <div className="bg-card rounded-2xl border border-border shadow-sm p-6 space-y-4">
+        <h2 className="font-bold text-foreground">Upload a Report</h2>
+        <p className="text-sm text-muted-foreground">
+          Upload a GOP, RGI/STR, or GSS report. The app will read the file, let you map columns, match hotels, and confirm before writing any data.
+        </p>
+        <UploadZone
+          onFile={handleFile}
+          loading={parsing}
+          label="Drop Excel or CSV file here, or click to browse"
+          subLabel="Supports .xlsx, .xls, .csv — PDFs can be stored for reference only"
+        />
       </div>
 
-      <div className="bg-card rounded-2xl border border-border shadow-sm p-6">
+      {/* Clear KPI Data */}
+      <div className="bg-card rounded-2xl border border-border shadow-sm p-5">
         <div className="flex flex-wrap items-center gap-4">
           <div className="flex items-center gap-2 flex-1">
             <Eraser className="w-4 h-4 text-destructive shrink-0" />
             <div>
               <h2 className="font-bold text-foreground text-sm">Clear KPI Data</h2>
-              <p className="text-xs text-muted-foreground">Delete all scorecard entries for a specific period</p>
+              <p className="text-xs text-muted-foreground">Delete scorecard entries for a specific period</p>
             </div>
           </div>
           <Select value={clearDocType} onValueChange={setClearDocType}>
@@ -389,34 +145,17 @@ export default function Documents() {
             </SelectContent>
           </Select>
           <Button variant="destructive" size="sm" onClick={handleClearKpiData} disabled={clearing} className="gap-1.5">
-            {clearing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+            {clearing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash className="w-3.5 h-3.5" />}
             Clear Data
           </Button>
         </div>
       </div>
 
+      {/* File List */}
       <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
-        <div className="px-6 py-4 border-b border-border flex flex-wrap items-center gap-3">
-          <h2 className="font-bold text-foreground flex-1">Uploaded Files ({filteredDocs.length})</h2>
-          <Select value={filterScope} onValueChange={(v) => { setFilterScope(v); setFilterProperty(''); }}>
-            <SelectTrigger className="w-44 text-sm"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Files</SelectItem>
-              <SelectItem value="company-wide">Company-Wide</SelectItem>
-              <SelectItem value="hotel-specific">Hotel-Specific</SelectItem>
-            </SelectContent>
-          </Select>
-          {filterScope !== 'company-wide' && (
-            <Select value={filterProperty} onValueChange={setFilterProperty}>
-              <SelectTrigger className="w-52 text-sm"><SelectValue placeholder="All hotels" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value={null}>All Hotels</SelectItem>
-                {properties.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          )}
+        <div className="px-6 py-4 border-b border-border">
+          <h2 className="font-bold text-foreground">Uploaded Files ({documents.length})</h2>
         </div>
-
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
@@ -431,23 +170,23 @@ export default function Documents() {
               </tr>
             </thead>
             <tbody>
-              {filteredDocs.length === 0 ? (
+              {documents.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="py-16 text-center text-muted-foreground text-sm">
                     No files uploaded yet. Use the upload area above.
                   </td>
                 </tr>
               ) : (
-                filteredDocs.map(doc => (
+                documents.map(doc => (
                   <tr key={doc.id} className="border-b border-border hover:bg-muted/20 transition-colors">
                     <td className="py-3 px-4">
-                     <div className="flex items-center gap-2">
-                       <FileText className="w-4 h-4 text-muted-foreground shrink-0" />
-                       <span className="font-medium text-sm">{doc.filename}</span>
-                     </div>
-                     <div className="flex items-center gap-1.5 ml-6 mt-0.5">
-                       <KpiTag docType={doc.doc_type} />
-                     </div>
+                      <div className="flex items-center gap-2">
+                        <FileText className="w-4 h-4 text-muted-foreground shrink-0" />
+                        <span className="font-medium text-sm">{doc.filename}</span>
+                      </div>
+                      <div className="ml-6 mt-0.5">
+                        <KpiTag docType={doc.doc_type} />
+                      </div>
                     </td>
                     <td className="py-3 px-4 text-center">
                       <span className="text-xs bg-muted px-2 py-1 rounded-full font-medium">{doc.file_type}</span>
@@ -472,16 +211,6 @@ export default function Documents() {
                     </td>
                     <td className="py-3 px-4 text-center">
                       <div className="flex items-center justify-center gap-2">
-                        {KPI_DOC_TYPES.includes(doc.doc_type) && (
-                          <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-primary hover:text-primary"
-                            title="Re-extract KPI data"
-                            disabled={reextractingId === doc.id}
-                            onClick={() => handleReextract(doc)}>
-                            {reextractingId === doc.id
-                              ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                              : <RefreshCw className="w-3.5 h-3.5" />}
-                          </Button>
-                        )}
                         <a href={doc.file_url} target="_blank" rel="noopener noreferrer">
                           <Button size="sm" variant="ghost" className="h-7 w-7 p-0">
                             <Download className="w-3.5 h-3.5" />
@@ -500,6 +229,20 @@ export default function Documents() {
           </table>
         </div>
       </div>
+
+      {/* Import Wizard Modal */}
+      {pendingFile && (
+        <ImportWizard
+          file={pendingFile}
+          properties={properties}
+          onClose={() => setPendingFile(null)}
+          onSuccess={(result) => {
+            if (result.ok > 0) {
+              toast({ title: '✅ Import complete!', description: `${result.ok} hotel records updated for ${MONTHS[CURRENT_MONTH - 1]} ${CURRENT_YEAR}.` });
+            }
+          }}
+        />
+      )}
     </div>
   );
 }
