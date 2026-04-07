@@ -224,30 +224,6 @@ export default function Payouts() {
         </div>
       ) : (
         <>
-          {/* Staff Selection */}
-          <div className="bg-card rounded-2xl border border-border p-6 shadow-sm">
-            <h3 className="font-bold mb-3 text-lg">Select Staff Member</h3>
-            <Select value={selectedStaffId} onValueChange={setSelectedStaffId}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder={staffMembers.length === 0 ? 'No staff added yet — use the Add Staff button below' : 'Select a staff member...'} />
-              </SelectTrigger>
-              <SelectContent>
-                {staffMembers.length === 0 ? (
-                  <div className="p-2 text-sm text-muted-foreground">No staff members for this property</div>
-                ) : (
-                  staffMembers.map(staff => {
-                    const jobClass = jobClassifications.find(jc => jc.id === staff.job_classification_id);
-                    return (
-                      <SelectItem key={staff.id} value={staff.id}>
-                        {staff.name} — {jobClass?.title || 'Unknown'}
-                      </SelectItem>
-                    );
-                  })
-                )}
-              </SelectContent>
-            </Select>
-          </div>
-
           {/* Add Staff Button */}
           <Button onClick={() => {
             setNewStaff({ 
