@@ -47,20 +47,29 @@ export default function Payouts() {
     is_active: true
   });
 
-  // Determine closed quarters as of April 7, 2026
-  const CLOSED_QUARTERS = ['q1']; // Only Q1 has closed (March 31 passed)
+  // Determine closed quarters dynamically based on today's date
+  const getClosedQuarters = () => {
+    const today = new Date();
+    const closedQuarters = [];
+    if (today >= new Date('2026-04-01')) closedQuarters.push(1); // Q1 closed Mar 31
+    if (today >= new Date('2026-07-01')) closedQuarters.push(2); // Q2 closed Jun 30
+    if (today >= new Date('2026-10-01')) closedQuarters.push(3); // Q3 closed Sep 30
+    if (today >= new Date('2027-01-01')) closedQuarters.push(4); // Q4 closed Dec 31
+    return closedQuarters;
+  };
 
   const calculateProjectedAnnualSalary = (salaries) => {
     const q1 = parseFloat(salaries.salary_q1) || 0;
     const q2 = parseFloat(salaries.salary_q2) || 0;
     const q3 = parseFloat(salaries.salary_q3) || 0;
     const q4 = parseFloat(salaries.salary_q4) || 0;
+    const closedQuarters = getClosedQuarters();
 
-    if (CLOSED_QUARTERS.includes('q4')) {
+    if (closedQuarters.includes(4)) {
       return { total: q1 + q2 + q3 + q4, formula: 'Q1 + Q2 + Q3 + Q4' };
-    } else if (CLOSED_QUARTERS.includes('q3')) {
+    } else if (closedQuarters.includes(3)) {
       return { total: q1 + q2 + q3 + q3, formula: 'Q1 + Q2 + Q3 × 2' };
-    } else if (CLOSED_QUARTERS.includes('q2')) {
+    } else if (closedQuarters.includes(2)) {
       return { total: q1 + q2 + q2 * 2, formula: 'Q1 + Q2 × 3' };
     } else {
       return { total: q1 * 4, formula: 'Q1 × 4' };
@@ -325,12 +334,12 @@ export default function Payouts() {
                     <p className="text-xs text-muted-foreground mb-3">Only closed quarters are displayed. Q2 unlocks July 1, 2026.</p>
                     <div className="grid grid-cols-4 gap-3">
                       {[
-                        { q: 'Q1', field: 'salary_q1', isClosed: true },
-                        { q: 'Q2', field: 'salary_q2', isClosed: false, unlockDate: 'July 1, 2026' },
-                        { q: 'Q3', field: 'salary_q3', isClosed: false, unlockDate: 'Oct 1, 2026' },
-                        { q: 'Q4', field: 'salary_q4', isClosed: false, unlockDate: 'Jan 1, 2027' }
+                        { q: 'Q1', field: 'salary_q1', quarterNum: 1 },
+                        { q: 'Q2', field: 'salary_q2', quarterNum: 2, unlockDate: 'July 1, 2026' },
+                        { q: 'Q3', field: 'salary_q3', quarterNum: 3, unlockDate: 'Oct 1, 2026' },
+                        { q: 'Q4', field: 'salary_q4', quarterNum: 4, unlockDate: 'Jan 1, 2027' }
                       ]
-                        .filter(({ isClosed }) => isClosed)
+                        .filter(({ quarterNum }) => getClosedQuarters().includes(quarterNum))
                         .map(({ q, field }) => (
                         <div key={q}>
                           <label className="text-xs text-muted-foreground mb-1 block">{q}</label>

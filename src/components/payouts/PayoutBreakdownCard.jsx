@@ -2,23 +2,35 @@ import React, { useState } from 'react';
 import { Check, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
+const getClosedQuarters = () => {
+  const today = new Date();
+  const closedQuarters = [];
+  if (today >= new Date('2026-04-01')) closedQuarters.push(1); // Q1 closed Mar 31
+  if (today >= new Date('2026-07-01')) closedQuarters.push(2); // Q2 closed Jun 30
+  if (today >= new Date('2026-10-01')) closedQuarters.push(3); // Q3 closed Sep 30
+  if (today >= new Date('2027-01-01')) closedQuarters.push(4); // Q4 closed Dec 31
+  return closedQuarters;
+};
+
 const CURRENT_DATE = new Date('2026-04-07');
 
 const QUARTER_INFO = [
-  { value: 'q1', label: 'Q1', closeDate: new Date('2026-03-31'), unlockDate: 'March 31, 2026' },
-  { value: 'q2', label: 'Q2', closeDate: new Date('2026-06-30'), unlockDate: 'July 1, 2026' },
-  { value: 'q3', label: 'Q3', closeDate: new Date('2026-09-30'), unlockDate: 'Oct 1, 2026' },
-  { value: 'q4', label: 'Q4', closeDate: new Date('2026-12-31'), unlockDate: 'Jan 1, 2027' }
+  { value: 'q1', label: 'Q1', closeDate: new Date('2026-03-31'), unlockDate: 'March 31, 2026', quarterNum: 1 },
+  { value: 'q2', label: 'Q2', closeDate: new Date('2026-06-30'), unlockDate: 'July 1, 2026', quarterNum: 2 },
+  { value: 'q3', label: 'Q3', closeDate: new Date('2026-09-30'), unlockDate: 'Oct 1, 2026', quarterNum: 3 },
+  { value: 'q4', label: 'Q4', closeDate: new Date('2026-12-31'), unlockDate: 'Jan 1, 2027', quarterNum: 4 }
 ];
 
 const getAvailablePeriods = () => {
   // Only show quarters where the close date has passed
-  return QUARTER_INFO.filter(q => CURRENT_DATE > q.closeDate);
+  const closedQuarters = getClosedQuarters();
+  return QUARTER_INFO.filter(q => closedQuarters.includes(q.quarterNum));
 };
 
 const getLockedPeriods = () => {
   // Show locked quarters where the close date has NOT passed
-  return QUARTER_INFO.filter(q => CURRENT_DATE <= q.closeDate);
+  const closedQuarters = getClosedQuarters();
+  return QUARTER_INFO.filter(q => !closedQuarters.includes(q.quarterNum));
 };
 
 export default function PayoutBreakdownCard({ staff, jobClass, bonus, salary, scorecard, entry }) {
@@ -29,23 +41,26 @@ export default function PayoutBreakdownCard({ staff, jobClass, bonus, salary, sc
   if (!staff || !jobClass || !bonus) return null;
 
   const annualSalary = salary;
-  const q1Salary = staff.salary_q1 || 0;
-  const q2Salary = staff.salary_q2 || 0;
-  const q3Salary = staff.salary_q3 || 0;
-  const q4Salary = staff.salary_q4 || 0;
-
-  const getQuarterlySalary = (period) => {
-    switch (period) {
-      case 'q1': return q1Salary;
-      case 'q2': return q2Salary;
-      case 'q3': return q3Salary;
-      case 'q4': return q4Salary;
-      default: return annualSalary;
-    }
+  const closedQuarters = getClosedQuarters();
+  const mostRecentClosedQuarter = closedQuarters[closedQuarters.length - 1];
+  
+  const getQuarterlySalary = (quarterNum) => {
+    const salaries = [0, staff.salary_q1, staff.salary_q2, staff.salary_q3, staff.salary_q4];
+    return salaries[quarterNum] || 0;
   };
 
-  const getCurrentSalary = getQuarterlySalary(selectedPeriod);
-  const isAnnual = selectedPeriod === 'annual';
+  const getMostRecentClosedQuarterSalary = () => {
+    return getQuarterlySalary(mostRecentClosedQuarter) || 0;
+  };
+
+  const getCurrentSalary = (() => {
+    const quarterNumMatch = selectedPeriod.match(/q(\d)/);
+    if (quarterNumMatch) {
+      const quarterNum = parseInt(quarterNumMatch[1]);
+      return getQuarterlySalary(quarterNum);
+    }
+    return annualSalary;
+  })();
 
   // Build metric rows
   const metricRows = [
@@ -93,7 +108,9 @@ export default function PayoutBreakdownCard({ staff, jobClass, bonus, salary, sc
 
   // Render metric table
   const renderMetricTable = () => {
-    const pct = isAnnual ? 100 : 50;
+    const isQuarterly = selectedPeriod.match(/q\d/);
+    const salaryBase = isQuarterly ? getMostRecentClosedQuarterSalary() : annualSalary;
+    const pct = isQuarterly ? 50 : 100;
     const singlePeriodLabel = `(${pct}%)`;
 
     return (
@@ -112,14 +129,14 @@ export default function PayoutBreakdownCard({ staff, jobClass, bonus, salary, sc
           <tbody>
             {metricRows.map((row) => {
               const annualCalc = (annualSalary * row.percentage) / 100;
-              const displayAmount = isAnnual ? annualCalc : annualCalc * 0.5;
+              const displayAmount = isQuarterly ? annualCalc * 0.5 : annualCalc;
 
               return (
                 <tr key={row.key} className="border-t border-border hover:bg-muted/30">
                   <td className="py-3 px-4 font-medium">{row.label}</td>
                   <td className="py-3 px-4 text-center">{row.percentage}%</td>
                   <td className="py-3 px-4 text-right">
-                    ${getCurrentSalary.toLocaleString('en-US', { maximumFractionDigits: 0 })}
+                    ${salaryBase.toLocaleString('en-US', { maximumFractionDigits: 0 })}
                   </td>
                   <td className="py-3 px-4 text-right font-semibold">
                     ${displayAmount.toLocaleString('en-US', { maximumFractionDigits: 0 })}
@@ -151,10 +168,10 @@ export default function PayoutBreakdownCard({ staff, jobClass, bonus, salary, sc
             {/* Total Row */}
             <tr className="border-t border-border font-bold text-white" style={{ backgroundColor: '#2d4b5e' }}>
               <td colSpan="4" className="py-3 px-4 text-right">
-                {isAnnual ? 'ANNUAL TOTAL' : 'QUARTERLY TOTAL'}
+                {selectedPeriod.match(/q\d/) ? 'QUARTERLY TOTAL' : 'ANNUAL TOTAL'}
               </td>
               <td className="py-3 px-4 text-right">
-                ${isAnnual ? annualPayoutTotal.toLocaleString('en-US', { maximumFractionDigits: 0 }) : (quarterlyPayoutTotal / 4).toLocaleString('en-US', { maximumFractionDigits: 0 })}
+                ${selectedPeriod.match(/q\d/) ? quarterlyPayoutTotal.toLocaleString('en-US', { maximumFractionDigits: 0 }) : annualPayoutTotal.toLocaleString('en-US', { maximumFractionDigits: 0 })}
               </td>
               <td></td>
               <td></td>
