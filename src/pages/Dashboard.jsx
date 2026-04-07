@@ -28,6 +28,7 @@ export default function Dashboard() {
   const [notes, setNotes] = useState({ key_wins: '', previous_results: '', next_priorities: '' });
   const [preparedBy, setPreparedBy] = useState('');
   const [reviewedBy, setReviewedBy] = useState('');
+  const [kpiInputs, setKpiInputs] = useState({ budgeted_gop_actual: '', budgeted_gop_target: '', gop_margin_actual: '', gop_margin_prior: '', revpar_index_change: '', revpar_index: '', gss_actual: '', gss_prior: '' });
 
   const { data: properties = [] } = useQuery({
     queryKey: ['properties'],
@@ -92,7 +93,7 @@ export default function Dashboard() {
     ? calculateScorecard(activeEntry, selectedProperty)
     : null;
 
-  // Sync notes from entry
+  // Sync notes + kpi inputs from entry
   useEffect(() => {
     if (activeEntry) {
       setNotes({
@@ -102,10 +103,22 @@ export default function Dashboard() {
       });
       setPreparedBy(activeEntry.prepared_by || '');
       setReviewedBy(activeEntry.reviewed_by || '');
+      setKpiInputs({
+        budgeted_gop_actual: activeEntry.budgeted_gop_actual != null ? String(activeEntry.budgeted_gop_actual) : '',
+        budgeted_gop_target: activeEntry.budgeted_gop_target != null ? String(activeEntry.budgeted_gop_target) : '',
+        gop_margin_actual:   activeEntry.gop_margin_actual  != null ? String(activeEntry.gop_margin_actual)  : '',
+        gop_margin_prior:    activeEntry.gop_margin_prior   != null ? String(activeEntry.gop_margin_prior)   : '',
+        revpar_index_change: activeEntry.revpar_index_change != null ? String(activeEntry.revpar_index_change) : '',
+        revpar_index:        activeEntry.revpar_index        != null ? String(activeEntry.revpar_index)        : '',
+        gss_actual:          activeEntry.gss_actual          != null ? String(activeEntry.gss_actual)          : '',
+        gss_prior:           activeEntry.gss_prior           != null ? String(activeEntry.gss_prior)           : '',
+      });
     }
   }, [selectedPropertyId, selectedMonth, selectedYear, timeFilter, entries.length]);
 
-  const handleSaveNotes = () => {
+  const parseNum = (v) => v === '' || v == null ? null : parseFloat(v);
+
+  const handleSave = () => {
     if (!selectedPropertyId) return;
     const existing = entries.find(e => e.month === selectedMonth && e.year === selectedYear);
     const data = {
@@ -116,7 +129,15 @@ export default function Dashboard() {
       ...notes,
       prepared_by: preparedBy,
       reviewed_by: reviewedBy,
-      ...(existing || {}),
+      budgeted_gop_actual:  parseNum(kpiInputs.budgeted_gop_actual),
+      budgeted_gop_target:  parseNum(kpiInputs.budgeted_gop_target),
+      gop_margin_actual:    parseNum(kpiInputs.gop_margin_actual),
+      gop_margin_prior:     parseNum(kpiInputs.gop_margin_prior),
+      revpar_index_change:  parseNum(kpiInputs.revpar_index_change),
+      revpar_index:         parseNum(kpiInputs.revpar_index),
+      gss_actual:           parseNum(kpiInputs.gss_actual),
+      gss_prior:            parseNum(kpiInputs.gss_prior),
+      ...(existing ? { id: existing.id } : {}),
     };
     saveMutation.mutate(data);
   };
@@ -357,6 +378,47 @@ export default function Dashboard() {
             </div>
           </div>
 
+          {/* Manual KPI Data Entry */}
+          {timeFilter === 'month' && (
+            <div className="bg-card rounded-2xl border border-border shadow-sm p-6 space-y-4">
+              <h2 className="font-bold text-foreground text-sm">Manual KPI Data Entry</h2>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Actual GOP ($)</label>
+                  <Input type="number" value={kpiInputs.budgeted_gop_actual} onChange={e => setKpiInputs(k => ({ ...k, budgeted_gop_actual: e.target.value }))} placeholder="e.g. 250000" className="text-sm" />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Budget GOP ($)</label>
+                  <Input type="number" value={kpiInputs.budgeted_gop_target} onChange={e => setKpiInputs(k => ({ ...k, budgeted_gop_target: e.target.value }))} placeholder="e.g. 240000" className="text-sm" />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">GOP Margin Actual (%)</label>
+                  <Input type="number" value={kpiInputs.gop_margin_actual} onChange={e => setKpiInputs(k => ({ ...k, gop_margin_actual: e.target.value }))} placeholder="e.g. 32.5" className="text-sm" />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">GOP Margin Prior Year (%)</label>
+                  <Input type="number" value={kpiInputs.gop_margin_prior} onChange={e => setKpiInputs(k => ({ ...k, gop_margin_prior: e.target.value }))} placeholder="e.g. 31.0" className="text-sm" />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">RGI % Change YOY</label>
+                  <Input type="number" value={kpiInputs.revpar_index_change} onChange={e => setKpiInputs(k => ({ ...k, revpar_index_change: e.target.value }))} placeholder="e.g. 1.5" className="text-sm" />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">RevPAR Index</label>
+                  <Input type="number" value={kpiInputs.revpar_index} onChange={e => setKpiInputs(k => ({ ...k, revpar_index: e.target.value }))} placeholder="e.g. 105.3" className="text-sm" />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">GSS Actual</label>
+                  <Input type="number" value={kpiInputs.gss_actual} onChange={e => setKpiInputs(k => ({ ...k, gss_actual: e.target.value }))} placeholder="e.g. 82.1" className="text-sm" />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">GSS Prior Year</label>
+                  <Input type="number" value={kpiInputs.gss_prior} onChange={e => setKpiInputs(k => ({ ...k, gss_prior: e.target.value }))} placeholder="e.g. 80.5" className="text-sm" />
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Notes panels */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <NotesPanel title="Key Wins & Risks" icon="🏆" value={notes.key_wins} onChange={v => setNotes(n => ({ ...n, key_wins: v }))} placeholder="Document key wins and risks for this period..." />
@@ -378,7 +440,7 @@ export default function Dashboard() {
                 </div>
               </div>
               <Button
-                onClick={handleSaveNotes}
+                onClick={handleSave}
                 disabled={saveMutation.isPending}
                 className="gap-2 px-6"
                 style={{ backgroundColor: '#2d4b5e' }}
