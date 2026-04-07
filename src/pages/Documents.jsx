@@ -108,53 +108,36 @@ export default function Documents() {
   const extractAndImportKpis = async (file_url, properties, month, year) => {
     console.log('Starting extraction for:', file_url);
     setUploadStatus('AI is extracting KPI data…');
-    const result = await base44.integrations.Core.InvokeLLM({
-      prompt: `You are extracting hotel performance data from a P&L or STR report file.
-
-The file is attached. Extract EVERY property/hotel row. Do not skip any.
-
-For P&L / GOP report files (like "P & L - All Sites - GOP"):
-- The layout has columns: Actuals AMT, Actuals %REV, Budget AMT, Budget %REV, Variance AMT, Variance %REV, Prior Year AMT, Prior Year %REV, Variance2 AMT, Variance2 %REV, then Property name, then the same columns repeated for YTD.
-- hotel_name = the "Property" column (middle of the row)
-- budgeted_gop_actual = first AMT column (Period Actuals AMT)
-- gop_margin_actual = second column (Period Actuals %REV)
-- budgeted_gop_target = third column (Period Budget AMT)
-- gop_margin_budget = fourth column (Period Budget %REV)
-- gop_margin_prior = eighth column (Prior Year %REV)
-- gop_margin_variance = gop_margin_actual minus gop_margin_budget
-
-For STR/RGI report files:
-- hotel_name = first column
-- revpar_index_change = RevPAR Index % Chg column
-
-Return a JSON object with a "rows" array. Each element has: hotel_name, budgeted_gop_actual, budgeted_gop_target, gop_margin_actual, gop_margin_budget, gop_margin_prior, gop_margin_variance, revpar_index_change, gss_actual, gss_prior. Use empty string for missing values.`,
-      file_urls: [file_url],
-      response_json_schema: {
+    const result = await base44.integrations.Core.ExtractDataFromUploadedFile({
+      file_url,
+      json_schema: {
         type: 'object',
         properties: {
           rows: {
             type: 'array',
+            description: 'Extract every hotel/property data row. For P&L files: each row has numeric columns first, then the Property name in the middle. For STR files: the property name is the first column. Skip header rows, total rows, and blank rows.',
             items: {
               type: 'object',
               properties: {
-                hotel_name: { type: 'string' },
-                revpar_index_change: { type: 'string' },
-                budgeted_gop_actual: { type: 'string' },
-                budgeted_gop_target: { type: 'string' },
-                gop_margin_actual: { type: 'string' },
-                gop_margin_budget: { type: 'string' },
-                gop_margin_prior: { type: 'string' },
-                gop_margin_variance: { type: 'string' },
-                gss_actual: { type: 'string' },
-                gss_prior: { type: 'string' },
+                hotel_name: { type: 'string', description: 'Hotel or property name. In P&L files look for the column labeled "Property" which appears in the middle of the row.' },
+                budgeted_gop_actual: { type: 'string', description: 'Period Actuals AMT — the first dollar amount column (GOP actual for the period).' },
+                gop_margin_actual: { type: 'string', description: 'Period Actuals %REV — the percentage column next to Actuals AMT.' },
+                budgeted_gop_target: { type: 'string', description: 'Period Budget AMT — the Budget dollar amount column.' },
+                gop_margin_budget: { type: 'string', description: 'Period Budget %REV — the percentage column next to Budget AMT.' },
+                gop_margin_prior: { type: 'string', description: 'Prior Year %REV — the percentage column for last year.' },
+                gop_margin_variance: { type: 'string', description: 'Variance %REV — difference between actual and budget %REV.' },
+                revpar_index_change: { type: 'string', description: 'RevPAR Index % Change — only present in STR/RGI files.' },
+                gss_actual: { type: 'string', description: 'GSS score — only present in GSS report files.' },
+                gss_prior: { type: 'string', description: 'Prior year GSS score — only present in GSS report files.' },
               },
+              required: ['hotel_name'],
             },
           },
         },
       },
     });
 
-    const rawRows = result?.rows || result?.output?.rows || [];
+    const rawRows = result?.output?.rows || result?.rows || [];
     console.log('=== EXTRACTION: got', rawRows.length, 'rows');
     if (rawRows.length > 0) {
       console.log('First row:', JSON.stringify(rawRows[0], null, 2));
