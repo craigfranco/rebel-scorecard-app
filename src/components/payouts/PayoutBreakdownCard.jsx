@@ -4,35 +4,21 @@ import { Button } from '@/components/ui/button';
 
 const CURRENT_DATE = new Date('2026-04-07');
 
+const QUARTER_INFO = [
+  { value: 'q1', label: 'Q1', closeDate: new Date('2026-03-31'), unlockDate: 'March 31, 2026' },
+  { value: 'q2', label: 'Q2', closeDate: new Date('2026-06-30'), unlockDate: 'July 1, 2026' },
+  { value: 'q3', label: 'Q3', closeDate: new Date('2026-09-30'), unlockDate: 'Oct 1, 2026' },
+  { value: 'q4', label: 'Q4', closeDate: new Date('2026-12-31'), unlockDate: 'Jan 1, 2027' }
+];
+
 const getAvailablePeriods = () => {
-  const periods = [];
-  
-  // Q1 ends March 31: show if current date >= April 1
-  if (CURRENT_DATE >= new Date('2026-04-01')) {
-    periods.push({ value: 'q1', label: 'Q1' });
-  }
-  
-  // Q2 ends June 30: show if current date >= July 1
-  if (CURRENT_DATE >= new Date('2026-07-01')) {
-    periods.push({ value: 'q2', label: 'Q2' });
-  }
-  
-  // Q3 ends September 30: show if current date >= October 1
-  if (CURRENT_DATE >= new Date('2026-10-01')) {
-    periods.push({ value: 'q3', label: 'Q3' });
-  }
-  
-  // Q4 ends December 31: show if current date >= January 1
-  if (CURRENT_DATE >= new Date('2027-01-01')) {
-    periods.push({ value: 'q4', label: 'Q4' });
-  }
-  
-  // Full Year only after Q4 ends
-  if (CURRENT_DATE >= new Date('2027-01-01')) {
-    periods.push({ value: 'annual', label: 'Full Year' });
-  }
-  
-  return periods;
+  // Only show quarters where the close date has passed
+  return QUARTER_INFO.filter(q => CURRENT_DATE > q.closeDate);
+};
+
+const getLockedPeriods = () => {
+  // Show locked quarters where the close date has NOT passed
+  return QUARTER_INFO.filter(q => CURRENT_DATE <= q.closeDate);
 };
 
 export default function PayoutBreakdownCard({ staff, jobClass, bonus, salary, scorecard, entry }) {
@@ -217,8 +203,20 @@ export default function PayoutBreakdownCard({ staff, jobClass, bonus, salary, sc
             {period.label}
           </Button>
         ))}
+        {getLockedPeriods().map((period) => (
+          <Button
+            key={`locked-${period.value}`}
+            disabled
+            variant="outline"
+            size="sm"
+            title={`${period.label} unlocks ${period.unlockDate}`}
+            className="opacity-40 cursor-not-allowed"
+          >
+            {period.label} 🔒
+          </Button>
+        ))}
       </div>
-      <p className="text-xs text-muted-foreground">Quarters are unlocked as they close. Q2 closes June 30, 2026.</p>
+      <p className="text-xs text-muted-foreground">Only closed quarters are displayed. Q2 unlocks July 1, 2026.</p>
 
       {/* Metric Table */}
       {renderMetricTable()}

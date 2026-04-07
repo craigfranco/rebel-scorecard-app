@@ -112,17 +112,29 @@ export default function StaffEditModal({ staffId, onClose, jobClassifications })
 
           <div>
             <label className="text-xs text-muted-foreground font-semibold mb-2 block">Quarterly Salaries</label>
-            <p className="text-xs text-muted-foreground mb-3">Quarters are unlocked as they close. Q2 closes June 30, 2026.</p>
-            <div className="grid grid-cols-2 gap-3">
-              {['Q1', 'Q2'].map((q) => (
-                <div key={q}>
-                  <label className="text-xs text-muted-foreground mb-1 block">{q}</label>
+            <p className="text-xs text-muted-foreground mb-3">Only closed quarters are displayed. Q2 unlocks July 1, 2026.</p>
+            <div className="grid grid-cols-4 gap-3">
+              {[
+                { q: 'Q1', field: 'salary_q1', isLocked: false, unlockDate: null },
+                { q: 'Q2', field: 'salary_q2', isLocked: true, unlockDate: 'July 1, 2026' },
+                { q: 'Q3', field: 'salary_q3', isLocked: true, unlockDate: 'Oct 1, 2026' },
+                { q: 'Q4', field: 'salary_q4', isLocked: true, unlockDate: 'Jan 1, 2027' }
+              ].map(({ q, field, isLocked, unlockDate }) => (
+                <div key={q} className={isLocked ? 'opacity-40' : ''}>
+                  <label className="text-xs text-muted-foreground mb-1 block flex items-center gap-1">
+                    {q}
+                    {isLocked && <span title={`Available after ${unlockDate}`} className="text-muted-foreground">🔒</span>}
+                  </label>
                   <Input
                     type="number"
                     placeholder="0"
-                    value={formData[`salary_${q.toLowerCase()}`] || ''}
-                    onChange={(e) => setFormData({ ...formData, [`salary_${q.toLowerCase()}`]: e.target.value })}
+                    disabled={isLocked}
+                    value={formData[field] || ''}
+                    onChange={(e) => setFormData({ ...formData, [field]: e.target.value })}
                   />
+                  {isLocked && (
+                    <p className="text-xs text-muted-foreground mt-1">Available after {unlockDate}</p>
+                  )}
                 </div>
               ))}
             </div>
