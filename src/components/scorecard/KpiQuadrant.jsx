@@ -18,7 +18,7 @@ export default function KpiQuadrant({ scorecard }) {
   }));
 
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="grid grid-cols-2 gap-4">
       {kpis.map(kpi => {
         const isIncomplete = kpi.incomplete || kpi.pass === null || kpi.pass === undefined;
         const bgColor = isIncomplete ? '#f8fafc' : kpi.pass ? '#f0fdf4' : '#fef2f2';
