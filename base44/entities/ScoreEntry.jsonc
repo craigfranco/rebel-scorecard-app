@@ -19,15 +19,23 @@
     },
     "budgeted_gop_actual": {
       "type": "number",
-      "description": "Actual GOP achieved"
+      "description": "Actual GOP achieved ($)"
     },
     "budgeted_gop_target": {
       "type": "number",
-      "description": "Budgeted GOP target"
+      "description": "Budgeted GOP target ($)"
+    },
+    "budgeted_gop_prior": {
+      "type": "number",
+      "description": "Prior year GOP ($)"
     },
     "gop_margin_actual": {
       "type": "number",
       "description": "GOP margin % actual this period"
+    },
+    "gop_margin_prior": {
+      "type": "number",
+      "description": "GOP margin % prior year"
     },
     "gop_margin_budget": {
       "type": "number",
@@ -36,10 +44,6 @@
     "gop_margin_variance": {
       "type": "number",
       "description": "Variance between actual and budget GOP margin (actual - budget)"
-    },
-    "gop_margin_prior": {
-      "type": "number",
-      "description": "GOP margin % prior year"
     },
     "revpar_index_change": {
       "type": "number",

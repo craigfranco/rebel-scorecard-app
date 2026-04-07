@@ -28,7 +28,7 @@ export default function Dashboard() {
   const [notes, setNotes] = useState({ key_wins: '', previous_results: '', next_priorities: '' });
   const [preparedBy, setPreparedBy] = useState('');
   const [reviewedBy, setReviewedBy] = useState('');
-  const [kpiInputs, setKpiInputs] = useState({ budgeted_gop_actual: '', budgeted_gop_target: '', gop_margin_actual: '', gop_margin_prior: '', revpar_index_change: '', revpar_index: '', gss_actual: '', gss_prior: '' });
+  const [kpiInputs, setKpiInputs] = useState({ budgeted_gop_actual: '', budgeted_gop_target: '', budgeted_gop_prior: '', gop_margin_actual: '', gop_margin_prior: '', revpar_index_change: '', revpar_index: '', gss_actual: '', gss_prior: '' });
 
   const { data: properties = [] } = useQuery({
     queryKey: ['properties'],
@@ -106,6 +106,7 @@ export default function Dashboard() {
       setKpiInputs({
         budgeted_gop_actual: activeEntry.budgeted_gop_actual != null ? String(activeEntry.budgeted_gop_actual) : '',
         budgeted_gop_target: activeEntry.budgeted_gop_target != null ? String(activeEntry.budgeted_gop_target) : '',
+        budgeted_gop_prior:  activeEntry.budgeted_gop_prior  != null ? String(activeEntry.budgeted_gop_prior)  : '',
         gop_margin_actual:   activeEntry.gop_margin_actual  != null ? String(activeEntry.gop_margin_actual)  : '',
         gop_margin_prior:    activeEntry.gop_margin_prior   != null ? String(activeEntry.gop_margin_prior)   : '',
         revpar_index_change: activeEntry.revpar_index_change != null ? String(activeEntry.revpar_index_change) : '',
@@ -131,6 +132,7 @@ export default function Dashboard() {
       reviewed_by: reviewedBy,
       budgeted_gop_actual:  parseNum(kpiInputs.budgeted_gop_actual),
       budgeted_gop_target:  parseNum(kpiInputs.budgeted_gop_target),
+      budgeted_gop_prior:   parseNum(kpiInputs.budgeted_gop_prior),
       gop_margin_actual:    parseNum(kpiInputs.gop_margin_actual),
       gop_margin_prior:     parseNum(kpiInputs.gop_margin_prior),
       revpar_index_change:  parseNum(kpiInputs.revpar_index_change),
@@ -382,7 +384,7 @@ export default function Dashboard() {
           {timeFilter === 'month' && (
             <div className="bg-card rounded-2xl border border-border shadow-sm p-6 space-y-4">
               <h2 className="font-bold text-foreground text-sm">Manual KPI Data Entry</h2>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                 <div className="space-y-1">
                   <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Actual GOP ($)</label>
                   <Input type="number" value={kpiInputs.budgeted_gop_actual} onChange={e => setKpiInputs(k => ({ ...k, budgeted_gop_actual: e.target.value }))} placeholder="e.g. 250000" className="text-sm" />
@@ -393,7 +395,15 @@ export default function Dashboard() {
                 </div>
                 <div className="space-y-1">
                   <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Prior Year GOP ($)</label>
-                  <Input type="number" value={kpiInputs.gop_margin_prior} onChange={e => setKpiInputs(k => ({ ...k, gop_margin_prior: e.target.value }))} placeholder="e.g. 230000" className="text-sm" />
+                  <Input type="number" value={kpiInputs.budgeted_gop_prior} onChange={e => setKpiInputs(k => ({ ...k, budgeted_gop_prior: e.target.value }))} placeholder="e.g. 230000" className="text-sm" />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Actual Margin (%)</label>
+                  <Input type="number" value={kpiInputs.gop_margin_actual} onChange={e => setKpiInputs(k => ({ ...k, gop_margin_actual: e.target.value }))} placeholder="e.g. 32.5" className="text-sm" />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Last Year Margin (%)</label>
+                  <Input type="number" value={kpiInputs.gop_margin_prior} onChange={e => setKpiInputs(k => ({ ...k, gop_margin_prior: e.target.value }))} placeholder="e.g. 31.0" className="text-sm" />
                 </div>
               </div>
             </div>

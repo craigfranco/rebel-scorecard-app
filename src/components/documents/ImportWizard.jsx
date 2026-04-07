@@ -21,7 +21,7 @@ const REBEL_PL_MAPPING = {
   gop_margin_actual:   1,
   budgeted_gop_target: 2,
   gop_margin_budget:   3,
-  gop_margin_prior:    6,
+  budgeted_gop_prior:  6,
 };
 
 export default function ImportWizard({ file, properties, onClose, onSuccess }) {
@@ -108,10 +108,11 @@ export default function ImportWizard({ file, properties, onClose, onSuccess }) {
 
       const patch = {};
       if (row.budgeted_gop_actual != null) patch.budgeted_gop_actual = row.budgeted_gop_actual;
-      if (row.gop_margin_actual != null)   patch.gop_margin_actual   = row.gop_margin_actual;
       if (row.budgeted_gop_target != null) patch.budgeted_gop_target = row.budgeted_gop_target;
-      if (row.gop_margin_budget != null)   patch.gop_margin_budget   = row.gop_margin_budget;
+      if (row.budgeted_gop_prior != null)  patch.budgeted_gop_prior  = row.budgeted_gop_prior;
+      if (row.gop_margin_actual != null)   patch.gop_margin_actual   = row.gop_margin_actual;
       if (row.gop_margin_prior != null)    patch.gop_margin_prior    = row.gop_margin_prior;
+      if (row.gop_margin_budget != null)   patch.gop_margin_budget   = row.gop_margin_budget;
       if (row.revpar_index_change != null) patch.revpar_index_change = row.revpar_index_change;
       if (row.revpar_index != null)        patch.revpar_index        = row.revpar_index;
       if (row.revpar_index_prior != null)  patch.revpar_index_prior  = row.revpar_index_prior;

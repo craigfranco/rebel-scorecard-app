@@ -102,6 +102,8 @@ export default function KpiBreakdown() {
         target = entry.gop_margin_actual != null && entry.gop_margin_prior != null
           ? entry.gop_margin_actual - entry.gop_margin_prior
           : null;
+        // store LY% for display in extra column
+        entry._ly_margin = entry.gop_margin_prior;
       } else if (activeKpi === 'rgi') {
         kpiData = sc.rgi;
         score = sc.rgi.score;
@@ -239,11 +241,15 @@ export default function KpiBreakdown() {
                   <th className="py-3 px-4 text-center font-semibold">RGI % Change YOY</th>
                 )}
                 {activeKpi === 'gopMargin' && (
-                  <th className="py-3 px-4 text-center font-semibold">PY Growth</th>
+                  <th className="py-3 px-4 text-center font-semibold">Last Year %</th>
+                )}
+                {activeKpi === 'gopMargin' && (
+                  <th className="py-3 px-4 text-center font-semibold">LY Growth</th>
                 )}
                 {activeKpi !== 'rgi' && activeKpi !== 'gopMargin' && (
                   <th className="py-3 px-4 text-center font-semibold">Target</th>
                 )}
+
                 <th className="py-3 px-4 text-center font-semibold cursor-pointer" onClick={() => handleSort('score')}>
                   <div className="flex items-center justify-center gap-1">Score <SortIcon col="score" /></div>
                 </th>
@@ -280,6 +286,11 @@ export default function KpiBreakdown() {
                       </td>
                     )}
                     {activeKpi === 'gopMargin' && (
+                      <td className="py-3 px-4 text-center text-sm font-medium">
+                        {entry && entry._ly_margin != null ? `${entry._ly_margin.toFixed(1)}%` : '—'}
+                      </td>
+                    )}
+                    {activeKpi === 'gopMargin' && (
                       <td className="py-3 px-4 text-center text-sm font-bold">
                         {entry && target !== null ? (
                           <span style={{ color: target >= 0 ? '#4CAF50' : '#ef4444' }}>
@@ -289,7 +300,7 @@ export default function KpiBreakdown() {
                       </td>
                     )}
                     {activeKpi !== 'rgi' && activeKpi !== 'gopMargin' && (
-                      <td className="py-3 px-4 text-center text-xs text-muted-foreground">
+                      <td className="py-3 px-4 text-center text-xs text-muted-foreground" colSpan={1}>
                         {entry ? target : '—'}
                       </td>
                     )}
