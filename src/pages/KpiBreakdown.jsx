@@ -105,7 +105,7 @@ export default function KpiBreakdown() {
         score = sc.rgi.score;
         pass = sc.rgi.pass;
         actual = entry.revpar_index != null ? entry.revpar_index.toFixed(1) : '—';
-        target = entry.revpar_index_prior != null ? entry.revpar_index_prior.toFixed(1) : '—';
+        target = '≥ +0.1% YOY';
       } else if (activeKpi === 'gss') {
         kpiData = sc.gss;
         score = sc.gss.score;
@@ -231,13 +231,13 @@ export default function KpiBreakdown() {
                   <div className="flex items-center justify-center gap-1">GM <SortIcon col="gm" /></div>
                 </th>
                 <th className="py-3 px-4 text-center font-semibold">
-                  {activeKpi === 'rgi' ? 'RGI Index' : 'Actual'}
+                  {activeKpi === 'rgi' ? 'RevPAR Index' : 'Actual'}
                 </th>
                 <th className="py-3 px-4 text-center font-semibold">
-                  {activeKpi === 'rgi' ? 'Prior Year Index' : 'Target'}
+                  {activeKpi === 'rgi' ? 'Target' : 'Target'}
                 </th>
                 <th className="py-3 px-4 text-center font-semibold cursor-pointer" onClick={() => handleSort('score')}>
-                  <div className="flex items-center justify-center gap-1">Score <SortIcon col="score" /></div>
+                  <div className="flex items-center justify-center gap-1">{activeKpi === 'rgi' ? 'Score (RGI)' : 'Score'} <SortIcon col="score" /></div>
                 </th>
                 <th className="py-3 px-4 text-center font-semibold cursor-pointer" onClick={() => handleSort('pass')}>
                   <div className="flex items-center justify-center gap-1">Status <SortIcon col="pass" /></div>
@@ -269,11 +269,7 @@ export default function KpiBreakdown() {
                     </td>
                     <td className="py-3 px-4 text-center text-xs text-muted-foreground">
                      {entry ? target : '—'}
-                     {entry && activeKpi === 'rgi' && entry.revpar_index != null && entry.revpar_index_prior != null && (
-                       <div className="mt-0.5">
-                         Δ {(entry.revpar_index - entry.revpar_index_prior) >= 0 ? '+' : ''}{(entry.revpar_index - entry.revpar_index_prior).toFixed(1)} pts
-                       </div>
-                     )}
+
                     </td>
                     <td className="py-3 px-4 text-center">
                       {entry && score !== null ? (
