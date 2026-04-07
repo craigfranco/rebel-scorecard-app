@@ -191,11 +191,11 @@ export default function Payouts() {
           {showAddForm ? (
             <div className="bg-card rounded-2xl border border-border p-6 shadow-sm">
               <h3 className="font-bold mb-4">Add Staff Member</h3>
-              <div className="mb-4 relative z-50">
-                <label className="text-xs text-muted-foreground font-semibold mb-1 block">Job Title</label>
+              <div className="mb-4 w-full md:w-72">
+                <label className="text-xs text-muted-foreground font-semibold mb-1 block">Job Classification</label>
                 <Select value={newStaff.job_classification_id} onValueChange={id => setNewStaff({ ...newStaff, job_classification_id: id })}>
-                  <SelectTrigger className="w-full md:w-72">
-                    <SelectValue placeholder="Select job title..." />
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select job classification..." />
                   </SelectTrigger>
                   <SelectContent>
                     {jobClassifications.map(jc => (
@@ -204,7 +204,7 @@ export default function Payouts() {
                   </SelectContent>
                 </Select>
               </div>
-               <div className="grid grid-cols-1 md:grid-cols-6 gap-4 mb-4">
+              <div className="grid grid-cols-1 md:grid-cols-6 gap-4 mb-4">
                  <div className="md:col-span-1">
                    <Input
                      placeholder="Name"
