@@ -27,13 +27,8 @@ export default function AppLayout() {
       >
         {/* Logo */}
          <div className="px-6 py-5 border-b border-white/10 text-center">
-           <img src="https://media.base44.com/images/public/69d3e20c8254476c324dc91c/2c3078463_2f08ffa4b_RBIfw1.png" alt="REBEL" className="w-16 h-auto mx-auto mb-2 brightness-0 invert" />
-           <p className="text-white text-xs font-semibold">Balanced Scorecard</p>
-           <div>
-             <div className="text-white font-bold text-sm leading-tight">Balanced</div>
-             <div className="text-white/70 text-xs">Scorecard</div>
-           </div>
-         </div>
+            <img src="https://media.base44.com/images/public/69d3e20c8254476c324dc91c/2c3078463_2f08ffa4b_RBIfw1.png" alt="REBEL" className="w-16 h-auto mx-auto brightness-0 invert" />
+          </div>
 
         {/* Nav */}
         <nav className="flex-1 px-3 py-4 space-y-1">
