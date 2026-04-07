@@ -191,65 +191,68 @@ export default function Payouts() {
           {showAddForm ? (
             <div className="bg-card rounded-2xl border border-border p-6 shadow-sm">
               <h3 className="font-bold mb-4">Add Staff Member</h3>
-              <div className="mb-4 w-full md:w-72">
-                <label className="text-xs text-muted-foreground font-semibold mb-1 block">Job Classification</label>
-                <Select value={newStaff.job_classification_id} onValueChange={id => setNewStaff({ ...newStaff, job_classification_id: id })}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select job classification..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {jobClassifications.map(jc => (
-                      <SelectItem key={jc.id} value={jc.id}>{jc.title}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-6 gap-4 mb-4">
-                 <div className="md:col-span-1">
-                   <Input
-                     placeholder="Name"
-                     value={newStaff.name}
-                     onChange={e => setNewStaff({ ...newStaff, name: e.target.value })}
-                   />
-                 </div>
-                 <div className="md:col-span-1">
-                  <label className="text-xs text-muted-foreground font-semibold mb-1 block">Q1 Salary</label>
+              <div className="flex flex-wrap gap-3 items-end mb-4">
+                <div className="flex-1 min-w-48">
+                  <label className="text-xs text-muted-foreground font-semibold mb-1 block">Job Classification</label>
+                  <Select value={newStaff.job_classification_id} onValueChange={id => setNewStaff({ ...newStaff, job_classification_id: id })}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select job classification..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {jobClassifications.map(jc => (
+                        <SelectItem key={jc.id} value={jc.id}>{jc.title}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex-1 min-w-32">
+                  <label className="text-xs text-muted-foreground font-semibold mb-1 block">Name</label>
+                  <Input
+                    placeholder="Name"
+                    value={newStaff.name}
+                    onChange={e => setNewStaff({ ...newStaff, name: e.target.value })}
+                  />
+                </div>
+                <div className="w-20">
+                  <label className="text-xs text-muted-foreground font-semibold mb-1 block">Q1</label>
                   <Input
                     placeholder="0"
                     type="number"
                     value={newStaff.salary_q1}
                     onChange={e => setNewStaff({ ...newStaff, salary_q1: e.target.value })}
+                    className="text-xs"
                   />
                 </div>
-                <div className="md:col-span-1">
-                  <label className="text-xs text-muted-foreground font-semibold mb-1 block">Q2 Salary</label>
+                <div className="w-20">
+                  <label className="text-xs text-muted-foreground font-semibold mb-1 block">Q2</label>
                   <Input
                     placeholder="0"
                     type="number"
                     value={newStaff.salary_q2}
                     onChange={e => setNewStaff({ ...newStaff, salary_q2: e.target.value })}
+                    className="text-xs"
                   />
                 </div>
-                <div className="md:col-span-1">
-                  <label className="text-xs text-muted-foreground font-semibold mb-1 block">Q3 Salary</label>
+                <div className="w-20">
+                  <label className="text-xs text-muted-foreground font-semibold mb-1 block">Q3</label>
                   <Input
                     placeholder="0"
                     type="number"
                     value={newStaff.salary_q3}
                     onChange={e => setNewStaff({ ...newStaff, salary_q3: e.target.value })}
+                    className="text-xs"
                   />
                 </div>
-                <div className="md:col-span-1">
-                  <label className="text-xs text-muted-foreground font-semibold mb-1 block">Q4 Salary</label>
+                <div className="w-20">
+                  <label className="text-xs text-muted-foreground font-semibold mb-1 block">Q4</label>
                   <Input
                     placeholder="0"
                     type="number"
                     value={newStaff.salary_q4}
                     onChange={e => setNewStaff({ ...newStaff, salary_q4: e.target.value })}
+                    className="text-xs"
                   />
                 </div>
-              </div>
-              <div className="flex gap-2">
                 <Button onClick={handleAddStaff} disabled={addStaffMutation.isPending} className="gap-2">
                   <Save className="w-4 h-4" />
                   Add
