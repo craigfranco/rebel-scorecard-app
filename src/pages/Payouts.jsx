@@ -191,28 +191,28 @@ export default function Payouts() {
           {showAddForm ? (
             <div className="bg-card rounded-2xl border border-border p-6 shadow-sm">
               <h3 className="font-bold mb-4">Add Staff Member</h3>
-              <div className="grid grid-cols-1 md:grid-cols-6 gap-4 mb-4 md:col-span-6">
-                <div className="md:col-span-1">
-                  <Input
-                    placeholder="Name"
-                    value={newStaff.name}
-                    onChange={e => setNewStaff({ ...newStaff, name: e.target.value })}
-                  />
-                </div>
-                <div className="md:col-span-1 relative">
-                   <label className="text-xs text-muted-foreground font-semibold mb-1 block">Job Title</label>
-                   <Select value={newStaff.job_classification_id} onValueChange={id => setNewStaff({ ...newStaff, job_classification_id: id })}>
-                     <SelectTrigger className="w-full">
-                       <SelectValue placeholder="Select job title..." />
-                     </SelectTrigger>
-                     <SelectContent>
-                       {jobClassifications.map(jc => (
-                         <SelectItem key={jc.id} value={jc.id}>{jc.title}</SelectItem>
-                       ))}
-                     </SelectContent>
-                   </Select>
+              <div className="mb-4 relative z-50">
+                <label className="text-xs text-muted-foreground font-semibold mb-1 block">Job Title</label>
+                <Select value={newStaff.job_classification_id} onValueChange={id => setNewStaff({ ...newStaff, job_classification_id: id })}>
+                  <SelectTrigger className="w-full md:w-72">
+                    <SelectValue placeholder="Select job title..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {jobClassifications.map(jc => (
+                      <SelectItem key={jc.id} value={jc.id}>{jc.title}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+               <div className="grid grid-cols-1 md:grid-cols-6 gap-4 mb-4">
+                 <div className="md:col-span-1">
+                   <Input
+                     placeholder="Name"
+                     value={newStaff.name}
+                     onChange={e => setNewStaff({ ...newStaff, name: e.target.value })}
+                   />
                  </div>
-                <div className="md:col-span-1">
+                 <div className="md:col-span-1">
                   <label className="text-xs text-muted-foreground font-semibold mb-1 block">Q1 Salary</label>
                   <Input
                     placeholder="0"
