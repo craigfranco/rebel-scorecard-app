@@ -14,9 +14,21 @@
       "type": "string",
       "description": "Reference to JobClassification"
     },
-    "annual_salary": {
+    "salary_q1": {
       "type": "number",
-      "description": "Annual salary in dollars"
+      "description": "Q1 salary"
+    },
+    "salary_q2": {
+      "type": "number",
+      "description": "Q2 salary"
+    },
+    "salary_q3": {
+      "type": "number",
+      "description": "Q3 salary"
+    },
+    "salary_q4": {
+      "type": "number",
+      "description": "Q4 salary"
     },
     "year": {
       "type": "integer",
@@ -31,7 +43,6 @@
     "name",
     "property_id",
     "job_classification_id",
-    "annual_salary",
     "year"
   ]
 }

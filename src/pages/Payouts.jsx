@@ -17,7 +17,7 @@ export default function Payouts() {
 
   const [selectedPropertyId, setSelectedPropertyId] = useState('');
   const [selectedYear, setSelectedYear] = useState(CURRENT_YEAR);
-  const [newStaff, setNewStaff] = useState({ name: '', job_classification_id: '', annual_salary: '' });
+  const [newStaff, setNewStaff] = useState({ name: '', job_classification_id: '', salary_q1: '', salary_q2: '', salary_q3: '', salary_q4: '' });
   const [showAddForm, setShowAddForm] = useState(false);
 
   // Fetch data
@@ -66,11 +66,14 @@ export default function Payouts() {
         property_id: selectedPropertyId,
         year: selectedYear,
         is_active: true,
-        annual_salary: parseFloat(data.annual_salary),
+        salary_q1: parseFloat(data.salary_q1) || null,
+        salary_q2: parseFloat(data.salary_q2) || null,
+        salary_q3: parseFloat(data.salary_q3) || null,
+        salary_q4: parseFloat(data.salary_q4) || null,
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['staff'] });
-      setNewStaff({ name: '', job_classification_id: '', annual_salary: '' });
+      setNewStaff({ name: '', job_classification_id: '', salary_q1: '', salary_q2: '', salary_q3: '', salary_q4: '' });
       setShowAddForm(false);
       toast({ title: 'Staff added', description: 'New staff member added successfully.' });
     },
@@ -86,42 +89,52 @@ export default function Payouts() {
 
   const selectedProperty = properties.find(p => p.id === selectedPropertyId);
 
+  // Calculate estimated annual salary
+  const getEstimatedAnnualSalary = (staff) => {
+   const salaries = [staff.salary_q1, staff.salary_q2, staff.salary_q3, staff.salary_q4].filter(s => s);
+   if (salaries.length === 0) return 0;
+   return (salaries.reduce((sum, s) => sum + s, 0) / salaries.length) * 4;
+  };
+
   // Calculate bonuses for all staff
   const staffWithBonuses = staffMembers.map(staff => {
-    const jobClass = jobClassifications.find(jc => jc.id === staff.job_classification_id);
-    if (!jobClass) return null;
+   const jobClass = jobClassifications.find(jc => jc.id === staff.job_classification_id);
+   if (!jobClass) return null;
 
-    const staffEntries = entries.filter(e => e.property_id === selectedPropertyId);
-    const scorecards = staffEntries.map(entry => calculateScorecard(entry, selectedProperty)).filter(Boolean);
+   const staffEntries = entries.filter(e => e.property_id === selectedPropertyId);
+   const scorecards = staffEntries.map(entry => calculateScorecard(entry, selectedProperty)).filter(Boolean);
 
-    // Get quarterly bonuses (all quarters available in data)
-    const quarterlyBonuses = {};
-    const quarters = [1, 2, 3, 4];
-    quarters.forEach(q => {
-      const qEntries = staffEntries.filter(e => getQuarterFromMonth(e.month) === q);
-      if (qEntries.length > 0) {
-        const entry = qEntries[qEntries.length - 1];
-        const scorecard = calculateScorecard(entry, selectedProperty);
-        quarterlyBonuses[q] = calculateQuarterlyBonus(staff, scorecard, jobClass);
-      }
-    });
+   // Get quarterly bonuses (all quarters available in data)
+   const quarterlyBonuses = {};
+   const quarters = [1, 2, 3, 4];
+   quarters.forEach(q => {
+     const qEntries = staffEntries.filter(e => getQuarterFromMonth(e.month) === q);
+     if (qEntries.length > 0) {
+       const entry = qEntries[qEntries.length - 1];
+       const scorecard = calculateScorecard(entry, selectedProperty);
+       const estAnnualSalary = getEstimatedAnnualSalary(staff);
+       quarterlyBonuses[q] = calculateQuarterlyBonus({...staff, annual_salary: estAnnualSalary}, scorecard, jobClass);
+     }
+   });
 
-    const annualBonus = calculateAnnualBonus(staff, scorecards, jobClass);
+   const estAnnualSalary = getEstimatedAnnualSalary(staff);
+   const annualBonus = calculateAnnualBonus({...staff, annual_salary: estAnnualSalary}, scorecards, jobClass);
 
-    return {
-      ...staff,
-      jobClass,
-      quarterlyBonuses,
-      annualBonus,
-    };
+   return {
+     ...staff,
+     jobClass,
+     quarterlyBonuses,
+     annualBonus,
+     estimatedAnnualSalary: estAnnualSalary,
+   };
   }).filter(Boolean);
 
   const handleAddStaff = () => {
-    if (!newStaff.name || !newStaff.job_classification_id || !newStaff.annual_salary) {
-      toast({ title: 'Error', description: 'Please fill all fields.' });
-      return;
-    }
-    addStaffMutation.mutate(newStaff);
+   if (!newStaff.name || !newStaff.job_classification_id || (!newStaff.salary_q1 && !newStaff.salary_q2 && !newStaff.salary_q3 && !newStaff.salary_q4)) {
+     toast({ title: 'Error', description: 'Please fill all fields.' });
+     return;
+   }
+   addStaffMutation.mutate(newStaff);
   };
 
   // Auto-select first property
@@ -178,7 +191,7 @@ export default function Payouts() {
           {showAddForm ? (
             <div className="bg-card rounded-2xl border border-border p-6 shadow-sm">
               <h3 className="font-bold mb-4">Add Staff Member</h3>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+              <div className="grid grid-cols-1 md:grid-cols-6 gap-4 mb-4">
                 <Input
                   placeholder="Name"
                   value={newStaff.name}
@@ -194,21 +207,51 @@ export default function Payouts() {
                     ))}
                   </SelectContent>
                 </Select>
-                <Input
-                  placeholder="Annual Salary"
-                  type="number"
-                  value={newStaff.annual_salary}
-                  onChange={e => setNewStaff({ ...newStaff, annual_salary: e.target.value })}
-                />
-                <div className="flex gap-2">
-                  <Button onClick={handleAddStaff} disabled={addStaffMutation.isPending} className="gap-2">
-                    <Save className="w-4 h-4" />
-                    Add
-                  </Button>
-                  <Button onClick={() => setShowAddForm(false)} variant="outline">
-                    Cancel
-                  </Button>
+                <div>
+                  <label className="text-xs text-muted-foreground font-semibold mb-1 block">Q1 Salary</label>
+                  <Input
+                    placeholder="0"
+                    type="number"
+                    value={newStaff.salary_q1}
+                    onChange={e => setNewStaff({ ...newStaff, salary_q1: e.target.value })}
+                  />
                 </div>
+                <div>
+                  <label className="text-xs text-muted-foreground font-semibold mb-1 block">Q2 Salary</label>
+                  <Input
+                    placeholder="0"
+                    type="number"
+                    value={newStaff.salary_q2}
+                    onChange={e => setNewStaff({ ...newStaff, salary_q2: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground font-semibold mb-1 block">Q3 Salary</label>
+                  <Input
+                    placeholder="0"
+                    type="number"
+                    value={newStaff.salary_q3}
+                    onChange={e => setNewStaff({ ...newStaff, salary_q3: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground font-semibold mb-1 block">Q4 Salary</label>
+                  <Input
+                    placeholder="0"
+                    type="number"
+                    value={newStaff.salary_q4}
+                    onChange={e => setNewStaff({ ...newStaff, salary_q4: e.target.value })}
+                  />
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <Button onClick={handleAddStaff} disabled={addStaffMutation.isPending} className="gap-2">
+                  <Save className="w-4 h-4" />
+                  Add
+                </Button>
+                <Button onClick={() => setShowAddForm(false)} variant="outline">
+                  Cancel
+                </Button>
               </div>
             </div>
           ) : (
@@ -229,7 +272,7 @@ export default function Payouts() {
                   <tr className="bg-muted/50 text-muted-foreground text-xs uppercase tracking-wide">
                     <th className="py-3 px-4 text-left font-semibold">Name</th>
                     <th className="py-3 px-4 text-left font-semibold">Job Title</th>
-                    <th className="py-3 px-4 text-right font-semibold">Annual Salary</th>
+                    <th className="py-3 px-4 text-right font-semibold">Est. Annual Salary</th>
                     <th className="py-3 px-4 text-right font-semibold">Q1 Bonus</th>
                     <th className="py-3 px-4 text-right font-semibold">Q2 Bonus</th>
                     <th className="py-3 px-4 text-right font-semibold">Q3 Bonus</th>
@@ -248,29 +291,29 @@ export default function Payouts() {
                     </tr>
                   ) : (
                     staffWithBonuses.map(staff => {
-                      const maxAllowed = (staff.annual_salary * staff.jobClass.max_bonus_percentage) / 100;
-                      return (
-                        <tr key={staff.id} className="border-t border-border hover:bg-muted/30">
-                          <td className="py-3 px-4 font-medium">{staff.name}</td>
-                          <td className="py-3 px-4 text-muted-foreground">{staff.jobClass.title}</td>
-                          <td className="py-3 px-4 text-right">${(staff.annual_salary / 1000).toFixed(0)}K</td>
-                          <td className="py-3 px-4 text-right">${(staff.quarterlyBonuses[1]?.total || 0).toFixed(0)}</td>
-                          <td className="py-3 px-4 text-right">${(staff.quarterlyBonuses[2]?.total || 0).toFixed(0)}</td>
-                          <td className="py-3 px-4 text-right">${(staff.quarterlyBonuses[3]?.total || 0).toFixed(0)}</td>
-                          <td className="py-3 px-4 text-right">${(staff.quarterlyBonuses[4]?.total || 0).toFixed(0)}</td>
-                          <td className="py-3 px-4 text-right font-bold">${(staff.annualBonus.total).toFixed(0)}</td>
-                          <td className="py-3 px-4 text-center text-muted-foreground">${(maxAllowed).toFixed(0)}</td>
-                          <td className="py-3 px-4 text-center">
-                            <button
-                              onClick={() => deleteStaffMutation.mutate(staff.id)}
-                              className="text-destructive hover:text-destructive/80"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </td>
-                        </tr>
-                      );
-                    })
+                       const maxAllowed = (staff.estimatedAnnualSalary * staff.jobClass.max_bonus_percentage) / 100;
+                       return (
+                         <tr key={staff.id} className="border-t border-border hover:bg-muted/30">
+                           <td className="py-3 px-4 font-medium">{staff.name}</td>
+                           <td className="py-3 px-4 text-muted-foreground">{staff.jobClass.title}</td>
+                           <td className="py-3 px-4 text-right">${(staff.estimatedAnnualSalary / 1000).toFixed(0)}K</td>
+                           <td className="py-3 px-4 text-right">${(staff.quarterlyBonuses[1]?.total || 0).toFixed(0)}</td>
+                           <td className="py-3 px-4 text-right">${(staff.quarterlyBonuses[2]?.total || 0).toFixed(0)}</td>
+                           <td className="py-3 px-4 text-right">${(staff.quarterlyBonuses[3]?.total || 0).toFixed(0)}</td>
+                           <td className="py-3 px-4 text-right">${(staff.quarterlyBonuses[4]?.total || 0).toFixed(0)}</td>
+                           <td className="py-3 px-4 text-right font-bold">${(staff.annualBonus.total).toFixed(0)}</td>
+                           <td className="py-3 px-4 text-center text-muted-foreground">${(maxAllowed).toFixed(0)}</td>
+                           <td className="py-3 px-4 text-center">
+                             <button
+                               onClick={() => deleteStaffMutation.mutate(staff.id)}
+                               className="text-destructive hover:text-destructive/80"
+                             >
+                               <Trash2 className="w-4 h-4" />
+                             </button>
+                           </td>
+                         </tr>
+                       );
+                     })
                   )}
                 </tbody>
               </table>
