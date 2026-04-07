@@ -197,13 +197,13 @@ export default function Payouts() {
                   value={newStaff.name}
                   onChange={e => setNewStaff({ ...newStaff, name: e.target.value })}
                 />
-                <div>
+                <div className="relative z-50">
                    <label className="text-xs text-muted-foreground font-semibold mb-1 block">Job Title</label>
                    <Select value={newStaff.job_classification_id} onValueChange={id => setNewStaff({ ...newStaff, job_classification_id: id })}>
                      <SelectTrigger className="w-full">
                        <SelectValue placeholder="Select job title..." />
                      </SelectTrigger>
-                     <SelectContent>
+                     <SelectContent className="z-50">
                        {jobClassifications.map(jc => (
                          <SelectItem key={jc.id} value={jc.id}>{jc.title}</SelectItem>
                        ))}
