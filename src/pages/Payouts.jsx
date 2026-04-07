@@ -191,26 +191,28 @@ export default function Payouts() {
           {showAddForm ? (
             <div className="bg-card rounded-2xl border border-border p-6 shadow-sm">
               <h3 className="font-bold mb-4">Add Staff Member</h3>
-              <div className="grid grid-cols-1 md:grid-cols-6 gap-4 mb-4">
-                <Input
-                  placeholder="Name"
-                  value={newStaff.name}
-                  onChange={e => setNewStaff({ ...newStaff, name: e.target.value })}
-                />
-                <div className="relative z-50">
+              <div className="grid grid-cols-1 md:grid-cols-6 gap-4 mb-4 md:col-span-6">
+                <div className="md:col-span-1">
+                  <Input
+                    placeholder="Name"
+                    value={newStaff.name}
+                    onChange={e => setNewStaff({ ...newStaff, name: e.target.value })}
+                  />
+                </div>
+                <div className="md:col-span-1 relative">
                    <label className="text-xs text-muted-foreground font-semibold mb-1 block">Job Title</label>
                    <Select value={newStaff.job_classification_id} onValueChange={id => setNewStaff({ ...newStaff, job_classification_id: id })}>
                      <SelectTrigger className="w-full">
                        <SelectValue placeholder="Select job title..." />
                      </SelectTrigger>
-                     <SelectContent className="z-50">
+                     <SelectContent>
                        {jobClassifications.map(jc => (
                          <SelectItem key={jc.id} value={jc.id}>{jc.title}</SelectItem>
                        ))}
                      </SelectContent>
                    </Select>
                  </div>
-                <div>
+                <div className="md:col-span-1">
                   <label className="text-xs text-muted-foreground font-semibold mb-1 block">Q1 Salary</label>
                   <Input
                     placeholder="0"
@@ -219,7 +221,7 @@ export default function Payouts() {
                     onChange={e => setNewStaff({ ...newStaff, salary_q1: e.target.value })}
                   />
                 </div>
-                <div>
+                <div className="md:col-span-1">
                   <label className="text-xs text-muted-foreground font-semibold mb-1 block">Q2 Salary</label>
                   <Input
                     placeholder="0"
@@ -228,7 +230,7 @@ export default function Payouts() {
                     onChange={e => setNewStaff({ ...newStaff, salary_q2: e.target.value })}
                   />
                 </div>
-                <div>
+                <div className="md:col-span-1">
                   <label className="text-xs text-muted-foreground font-semibold mb-1 block">Q3 Salary</label>
                   <Input
                     placeholder="0"
@@ -237,7 +239,7 @@ export default function Payouts() {
                     onChange={e => setNewStaff({ ...newStaff, salary_q3: e.target.value })}
                   />
                 </div>
-                <div>
+                <div className="md:col-span-1">
                   <label className="text-xs text-muted-foreground font-semibold mb-1 block">Q4 Salary</label>
                   <Input
                     placeholder="0"
