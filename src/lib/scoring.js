@@ -13,14 +13,15 @@ export function getGssStandard(parentBrand) {
   return GSS_STANDARDS[parentBrand] || GSS_STANDARDS['Independent'];
 }
 
-export function calcGOPScore(actual, target) {
-  if (actual == null || target == null) return { score: 0, pct: 0, pass: false, incomplete: true };
-  if (!target || target === 0) return { score: 0, pct: 0, pass: false, incomplete: true };
-  // For negative targets (loss budgets), a worse actual (more negative) should score lower.
-  // Flip the ratio so that actual >= target always means pct >= 1.0.
-  const pct = target < 0 ? target / actual : actual / target;
-  const pass = actual >= target;
-  return { score: pass ? 35 : 0, pct: Math.round(pct * 1000) / 10, pass, incomplete: false };
+export function calcGOPScore(actual, prior) {
+  if (actual == null || prior == null) return { score: 0, pct: 0, pass: false, incomplete: true };
+  if (prior === 0) return { score: 0, pct: 0, pass: false, incomplete: true };
+  // Calculate growth percentage: (actual - prior) / prior * 100
+  const growthPct = ((actual - prior) / Math.abs(prior)) * 100;
+  const pass = growthPct >= 0.1;
+  // Score based on growth percentage, capped at 35 (same as GOP margin: score = (diff / 5) * 35)
+  const score = Math.min(35, Math.max(0, (growthPct / 5) * 35));
+  return { score: Math.round(score * 10) / 10, pct: Math.round(growthPct * 100) / 100, pass, incomplete: false };
 }
 
 export function calcGOPMarginScore(actual, prior) {

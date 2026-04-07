@@ -156,15 +156,15 @@ export default function Dashboard() {
     {
       measure: 'Budgeted GOP',
       weight: '35%',
-      target: activeEntry.budgeted_gop_target != null ? `Budget: $${(activeEntry.budgeted_gop_target / 1000).toFixed(0)}K` : '100% of Budget',
+      target: activeEntry.budgeted_gop_prior != null ? `PY: $${(activeEntry.budgeted_gop_prior / 1000).toFixed(0)}K` : 'PY GOP',
       actual: activeEntry.budgeted_gop_actual != null ? `$${(activeEntry.budgeted_gop_actual / 1000).toFixed(0)}K` : '—',
       ytdActual: (() => {
         const a = activeEntry.budgeted_gop_actual;
-        const t = activeEntry.budgeted_gop_target;
-        if (a != null && t != null && t !== 0) {
-          const variance = a - t;
-          const sign = variance >= 0 ? '+' : '';
-          return `${sign}$${(variance / 1000).toFixed(0)}K vs Budget`;
+        const p = activeEntry.budgeted_gop_prior;
+        if (a != null && p != null && p !== 0) {
+          const growthPct = ((a - p) / Math.abs(p)) * 100;
+          const sign = growthPct >= 0 ? '+' : '';
+          return `${sign}${growthPct.toFixed(1)}% YOY`;
         }
         return '—';
       })(),
