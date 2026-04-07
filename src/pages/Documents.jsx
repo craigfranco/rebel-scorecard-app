@@ -88,6 +88,7 @@ export default function Documents() {
   const [reextractingId, setReextractingId] = useState(null);
   const [clearMonth, setClearMonth] = useState(CURRENT_MONTH);
   const [clearYear] = useState(CURRENT_YEAR);
+  const [clearPropertyId, setClearPropertyId] = useState('all');
   const [clearing, setClearing] = useState(false);
 
   const { data: properties = [] } = useQuery({
@@ -248,9 +249,12 @@ export default function Documents() {
   };
 
   const handleClearKpiData = async () => {
-    if (!window.confirm(`Delete ALL scorecard data for ${MONTHS[clearMonth - 1]} ${clearYear}? This cannot be undone.`)) return;
+    const propertyLabel = clearPropertyId === 'all' ? 'all properties' : properties.find(p => p.id === clearPropertyId)?.name || 'selected property';
+    if (!window.confirm(`Delete scorecard data for ${MONTHS[clearMonth - 1]} ${clearYear} — ${propertyLabel}? This cannot be undone.`)) return;
     setClearing(true);
-    const entries = await base44.entities.ScoreEntry.filter({ month: clearMonth, year: clearYear });
+    const filter = { month: clearMonth, year: clearYear };
+    if (clearPropertyId !== 'all') filter.property_id = clearPropertyId;
+    const entries = await base44.entities.ScoreEntry.filter(filter);
     for (const e of entries) {
       await base44.entities.ScoreEntry.delete(e.id);
     }
@@ -347,6 +351,13 @@ export default function Documents() {
               <p className="text-xs text-muted-foreground">Delete all scorecard entries for a specific period</p>
             </div>
           </div>
+          <Select value={clearPropertyId} onValueChange={setClearPropertyId}>
+            <SelectTrigger className="w-52 text-sm"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Properties</SelectItem>
+              {properties.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
+            </SelectContent>
+          </Select>
           <Select value={String(clearMonth)} onValueChange={v => setClearMonth(Number(v))}>
             <SelectTrigger className="w-40 text-sm"><SelectValue /></SelectTrigger>
             <SelectContent>
