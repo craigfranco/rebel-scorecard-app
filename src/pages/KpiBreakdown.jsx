@@ -235,7 +235,7 @@ export default function KpiBreakdown() {
                   <div className="flex items-center justify-center gap-1">GM <SortIcon col="gm" /></div>
                 </th>
                 <th className="py-3 px-4 text-center font-semibold">
-                  {activeKpi === 'rgi' ? 'RevPAR Index' : 'Actual'}
+                  {activeKpi === 'rgi' ? 'RevPAR Index' : activeKpi === 'gopMargin' ? 'Actual %' : 'Actual'}
                 </th>
                 {activeKpi === 'rgi' && (
                   <th className="py-3 px-4 text-center font-semibold">RGI % Change YOY</th>
