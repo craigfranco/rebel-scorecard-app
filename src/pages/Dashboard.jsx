@@ -326,7 +326,7 @@ export default function Dashboard() {
                       <th className="py-3 px-4 text-center font-semibold">Weight</th>
                       <th className="py-3 px-4 text-center font-semibold">Target</th>
                       <th className="py-3 px-4 text-center font-semibold">Actual</th>
-                      <th className="py-3 px-4 text-center font-semibold">YOY Variance</th>
+                      <th className="py-3 px-4 text-center font-semibold">Variance</th>
                       <th className="py-3 px-4 text-center font-semibold">Score</th>
                       <th className="py-3 px-4 text-center font-semibold">Status</th>
                     </tr>
