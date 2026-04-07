@@ -233,9 +233,9 @@ export default function KpiBreakdown() {
                 <th className="py-3 px-4 text-center font-semibold">
                   {activeKpi === 'rgi' ? 'RevPAR Index' : 'Actual'}
                 </th>
-                <th className="py-3 px-4 text-center font-semibold">
-                  {activeKpi === 'rgi' ? 'Target' : 'Target'}
-                </th>
+                {activeKpi !== 'rgi' && (
+                  <th className="py-3 px-4 text-center font-semibold">Target</th>
+                )}
                 <th className="py-3 px-4 text-center font-semibold cursor-pointer" onClick={() => handleSort('score')}>
                   <div className="flex items-center justify-center gap-1">{activeKpi === 'rgi' ? 'Score (RGI)' : 'Score'} <SortIcon col="score" /></div>
                 </th>
@@ -267,10 +267,11 @@ export default function KpiBreakdown() {
                        </div>
                      )}
                     </td>
-                    <td className="py-3 px-4 text-center text-xs text-muted-foreground">
-                     {entry ? target : '—'}
-
-                    </td>
+                    {activeKpi !== 'rgi' && (
+                      <td className="py-3 px-4 text-center text-xs text-muted-foreground">
+                        {entry ? target : '—'}
+                      </td>
+                    )}
                     <td className="py-3 px-4 text-center">
                       {entry && score !== null ? (
                         <span className="font-bold text-sm">
