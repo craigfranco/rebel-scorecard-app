@@ -233,11 +233,14 @@ export default function KpiBreakdown() {
                 <th className="py-3 px-4 text-center font-semibold">
                   {activeKpi === 'rgi' ? 'RevPAR Index' : 'Actual'}
                 </th>
+                {activeKpi === 'rgi' && (
+                  <th className="py-3 px-4 text-center font-semibold">% Change YOY</th>
+                )}
                 {activeKpi !== 'rgi' && (
                   <th className="py-3 px-4 text-center font-semibold">Target</th>
                 )}
                 <th className="py-3 px-4 text-center font-semibold cursor-pointer" onClick={() => handleSort('score')}>
-                  <div className="flex items-center justify-center gap-1">{activeKpi === 'rgi' ? 'Score (RGI)' : 'Score'} <SortIcon col="score" /></div>
+                  <div className="flex items-center justify-center gap-1">Score <SortIcon col="score" /></div>
                 </th>
                 <th className="py-3 px-4 text-center font-semibold cursor-pointer" onClick={() => handleSort('pass')}>
                   <div className="flex items-center justify-center gap-1">Status <SortIcon col="pass" /></div>
@@ -260,13 +263,15 @@ export default function KpiBreakdown() {
                     </td>
                     <td className="py-3 px-4 text-center text-xs text-muted-foreground">{property.gm_name || '—'}</td>
                     <td className="py-3 px-4 text-center font-medium text-sm">
-                     {entry ? actual : '—'}
-                     {entry && activeKpi === 'rgi' && entry.revpar_index_change != null && (
-                       <div className="text-xs text-muted-foreground mt-0.5">
-                         {entry.revpar_index_change >= 0 ? '+' : ''}{entry.revpar_index_change.toFixed(2)}% YOY
-                       </div>
-                     )}
+                      {entry ? actual : '—'}
                     </td>
+                    {activeKpi === 'rgi' && (
+                      <td className="py-3 px-4 text-center text-sm text-muted-foreground">
+                        {entry && entry.revpar_index_change != null
+                          ? `${entry.revpar_index_change >= 0 ? '+' : ''}${entry.revpar_index_change.toFixed(2)}%`
+                          : '—'}
+                      </td>
+                    )}
                     {activeKpi !== 'rgi' && (
                       <td className="py-3 px-4 text-center text-xs text-muted-foreground">
                         {entry ? target : '—'}
