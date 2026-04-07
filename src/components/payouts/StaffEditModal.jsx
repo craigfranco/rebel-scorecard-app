@@ -113,16 +113,42 @@ export default function StaffEditModal({ staffId, onClose, jobClassifications })
           <div>
             <label className="text-xs text-muted-foreground font-semibold mb-2 block">Quarterly Salaries</label>
             <div className="grid grid-cols-4 gap-3">
-              {['Q1', 'Q2', 'Q3', 'Q4'].map((q) => (
+              {['Q1', 'Q2', 'Q3', 'Q4'].map((q, idx) => (
                 <div key={q}>
                   <label className="text-xs text-muted-foreground mb-1 block">{q}</label>
                   <Input
                     type="number"
                     value={formData[`salary_${q.toLowerCase()}`]}
-                    onChange={(e) => setFormData({ ...formData, [`salary_${q.toLowerCase()}`]: e.target.value })}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (idx === 0) {
+                        // Q1 changed: auto-fill Q2, Q3, Q4 if they're empty
+                        setFormData({
+                          ...formData,
+                          salary_q1: val,
+                          salary_q2: formData.salary_q2 || val,
+                          salary_q3: formData.salary_q3 || val,
+                          salary_q4: formData.salary_q4 || val,
+                        });
+                      } else {
+                        // Q2-Q4: just update that quarter
+                        setFormData({ ...formData, [`salary_${q.toLowerCase()}`]: val });
+                      }
+                    }}
                   />
+                  {idx === 0 && (
+                    <p className="text-xs text-muted-foreground mt-1">Entering Q1 will auto-fill remaining quarters. Override any quarter individually.</p>
+                  )}
                 </div>
               ))}
+            </div>
+            <div className="mt-3 p-3 bg-muted/30 rounded">
+              <p className="text-xs text-muted-foreground">Annual Salary: <span className="font-semibold text-foreground">${(
+                (parseFloat(formData.salary_q1) || 0) +
+                (parseFloat(formData.salary_q2) || 0) +
+                (parseFloat(formData.salary_q3) || 0) +
+                (parseFloat(formData.salary_q4) || 0)
+              ).toLocaleString('en-US', { maximumFractionDigits: 0 })}</span></p>
             </div>
           </div>
 

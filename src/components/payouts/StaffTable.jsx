@@ -59,6 +59,16 @@ export default function StaffTable({ staff = [], jobClassifications = [] }) {
     return salaries.reduce((sum, sal) => sum + sal, 0);
   };
 
+  const formatAnnualSalary = (s) => {
+    const total = calculateAnnualTotal(s);
+    if (!total) return '—';
+    const allEqual = s.salary_q1 === s.salary_q2 && s.salary_q2 === s.salary_q3 && s.salary_q3 === s.salary_q4;
+    if (allEqual && s.salary_q1) {
+      return `$${total.toLocaleString()}/yr`;
+    }
+    return `$${total.toLocaleString()} (variable)`;
+  };
+
   if (staff.length === 0) {
     return (
       <div className="bg-card rounded-2xl border border-border p-8 text-center shadow-sm">
@@ -120,8 +130,8 @@ export default function StaffTable({ staff = [], jobClassifications = [] }) {
                           {s.salary_q4 ? `$${s.salary_q4.toLocaleString()}` : '—'}
                         </td>
                         <td className="py-3 px-4 text-center font-semibold">
-                          {annualTotal ? `$${annualTotal.toLocaleString()}` : '—'}
-                        </td>
+                           {formatAnnualSalary(s)}
+                         </td>
                         <td className="py-3 px-4 text-center">
                           <span
                             className={`inline-block px-2 py-1 rounded text-xs font-semibold ${

@@ -10,7 +10,7 @@ import { calculateQuarterlyBonus, calculateAnnualBonus, getMetricStatus } from '
 import { calculateScorecard, MONTHS, getQuarterFromMonth } from '@/lib/scoring';
 import StaffTable from '@/components/payouts/StaffTable';
 import BonusSummaryTable from '@/components/payouts/BonusSummaryTable';
-import PayoutDetailCard from '@/components/payouts/PayoutDetailCard';
+import PayoutBreakdownCard from '@/components/payouts/PayoutBreakdownCard';
 
 const CURRENT_YEAR = 2026;
 
@@ -310,10 +310,36 @@ export default function Payouts() {
                             placeholder="0"
                             type="number"
                             value={newStaff[`salary_${q.toLowerCase()}`]}
-                            onChange={e => setNewStaff({ ...newStaff, [`salary_${q.toLowerCase()}`]: e.target.value })}
+                            onChange={e => {
+                              const val = e.target.value;
+                              if (i === 0) {
+                                // Q1 changed: auto-fill Q2, Q3, Q4 if they're empty
+                                setNewStaff({
+                                  ...newStaff,
+                                  salary_q1: val,
+                                  salary_q2: newStaff.salary_q2 || val,
+                                  salary_q3: newStaff.salary_q3 || val,
+                                  salary_q4: newStaff.salary_q4 || val,
+                                });
+                              } else {
+                                // Q2-Q4: just update that quarter
+                                setNewStaff({ ...newStaff, [`salary_${q.toLowerCase()}`]: val });
+                              }
+                            }}
                           />
+                          {i === 0 && (
+                            <p className="text-xs text-muted-foreground mt-1">Entering Q1 will auto-fill remaining quarters. Override any quarter individually.</p>
+                          )}
                         </div>
                       ))}
+                    </div>
+                    <div className="mt-3 p-3 bg-muted/30 rounded">
+                      <p className="text-xs text-muted-foreground">Annual Salary: <span className="font-semibold text-foreground">${(
+                        (parseFloat(newStaff.salary_q1) || 0) +
+                        (parseFloat(newStaff.salary_q2) || 0) +
+                        (parseFloat(newStaff.salary_q3) || 0) +
+                        (parseFloat(newStaff.salary_q4) || 0)
+                      ).toLocaleString('en-US', { maximumFractionDigits: 0 })}</span></p>
                     </div>
                   </div>
 
@@ -349,9 +375,9 @@ export default function Payouts() {
             </div>
           )}
 
-          {/* Payout Detail Card */}
+          {/* Payout Breakdown Card */}
           {selectedStaffBonus && (
-            <PayoutDetailCard
+            <PayoutBreakdownCard
               staff={selectedStaffBonus}
               jobClass={selectedStaffBonus.jobClass}
               bonus={selectedStaffBonus.quarterlyBonus}
