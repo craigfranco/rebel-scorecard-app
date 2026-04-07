@@ -75,8 +75,8 @@ export default function Documents() {
   const queryClient = useQueryClient();
   const fileInputRef = useRef();
   const [dragOver, setDragOver] = useState(false);
-  const [scope, setScope] = useState('company-wide');
-  const [selectedPropertyId, setSelectedPropertyId] = useState('');
+  const [scope] = useState('company-wide');
+  const [selectedPropertyId] = useState('');
   const [docType, setDocType] = useState('GOP Report');
   const [periodMonth, setPeriodMonth] = useState(CURRENT_MONTH);
   const [periodYear] = useState(CURRENT_YEAR);
@@ -270,25 +270,6 @@ export default function Documents() {
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <Select value={scope} onValueChange={setScope}>
-            <SelectTrigger className="text-sm"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="company-wide">Company-Wide</SelectItem>
-              <SelectItem value="hotel-specific">Hotel-Specific</SelectItem>
-            </SelectContent>
-          </Select>
-
-          {scope === 'hotel-specific' && (
-            <Select value={selectedPropertyId} onValueChange={setSelectedPropertyId}>
-              <SelectTrigger className="text-sm"><SelectValue placeholder="Select hotel..." /></SelectTrigger>
-              <SelectContent>
-                {properties.map(p => (
-                  <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          )}
-
           <Select value={docType} onValueChange={setDocType}>
             <SelectTrigger className="text-sm"><SelectValue /></SelectTrigger>
             <SelectContent>
