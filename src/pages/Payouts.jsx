@@ -382,9 +382,9 @@ export default function Payouts() {
                       <td colSpan="5" className="py-3 px-4 text-right">${(selectedStaffBonus.estimatedAnnualSalary).toFixed(0)}</td>
                     </tr>
                     {selectedStaffBonus.quarterlyBonus && Object.entries(selectedStaffBonus.quarterlyBonus).map(([key, val]) => (
-                      val && typeof val === 'object' && key !== 'total' && (
+                      typeof val === 'number' && key !== 'total' && (
                         <tr key={key} className="border-t border-border hover:bg-muted/30">
-                          <td className="py-3 px-4 font-medium capitalize">{key} Bonus</td>
+                          <td className="py-3 px-4 font-medium capitalize">{key.replace('_', ' ')}</td>
                           <td className="py-3 px-4 text-center text-muted-foreground">—</td>
                           <td className="py-3 px-4 text-center text-muted-foreground">—</td>
                           <td className="py-3 px-4 text-center">
@@ -392,7 +392,7 @@ export default function Payouts() {
                               {val > 0 ? <Check className="w-3 h-3" /> : <X className="w-3 h-3" />}
                             </span>
                           </td>
-                          <td className="py-3 px-4 text-right">{(selectedStaffBonus.jobClass[`${key}_bonus_percentage`] || 0).toFixed(1)}%</td>
+                          <td className="py-3 px-4 text-right">{(selectedStaffBonus.jobClass[`${key}_percentage`] || 0).toFixed(1)}%</td>
                           <td className="py-3 px-4 text-right font-semibold">${(val || 0).toFixed(0)}</td>
                         </tr>
                       )
