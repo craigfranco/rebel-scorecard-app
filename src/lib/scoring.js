@@ -35,11 +35,9 @@ export function calcGOPMarginScore(actual, prior) {
 export function calcRGIScore(revparIndexChange) {
   if (revparIndexChange == null) return { score: 0, diff: 0, pass: false, incomplete: true };
   const pct = revparIndexChange;
-  let score = 0;
-  if (pct >= 2.1) score = 15;
-  else if (pct >= 0.1) score = 7.5;
   const pass = pct >= 0.1;
-  return { score, diff: Math.round(pct * 100) / 100, pass, incomplete: false };
+  const score = Math.min(15, Math.max(0, (pct / 5) * 15));
+  return { score: Math.round(score * 10) / 10, diff: Math.round(pct * 100) / 100, pass, incomplete: false };
 }
 
 export function calcGSSScore(actual, prior, gssTarget) {
