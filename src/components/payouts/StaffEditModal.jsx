@@ -112,33 +112,17 @@ export default function StaffEditModal({ staffId, onClose, jobClassifications })
 
           <div>
             <label className="text-xs text-muted-foreground font-semibold mb-2 block">Quarterly Salaries</label>
-            <div className="grid grid-cols-4 gap-3">
-              {['Q1', 'Q2', 'Q3', 'Q4'].map((q, idx) => (
+            <p className="text-xs text-muted-foreground mb-3">Quarters are unlocked as they close. Q2 closes June 30, 2026.</p>
+            <div className="grid grid-cols-2 gap-3">
+              {['Q1', 'Q2'].map((q) => (
                 <div key={q}>
                   <label className="text-xs text-muted-foreground mb-1 block">{q}</label>
                   <Input
                     type="number"
-                    value={formData[`salary_${q.toLowerCase()}`]}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      if (idx === 0) {
-                        // Q1 changed: auto-fill Q2, Q3, Q4 if they're empty
-                        setFormData({
-                          ...formData,
-                          salary_q1: val,
-                          salary_q2: formData.salary_q2 || val,
-                          salary_q3: formData.salary_q3 || val,
-                          salary_q4: formData.salary_q4 || val,
-                        });
-                      } else {
-                        // Q2-Q4: just update that quarter
-                        setFormData({ ...formData, [`salary_${q.toLowerCase()}`]: val });
-                      }
-                    }}
+                    placeholder="0"
+                    value={formData[`salary_${q.toLowerCase()}`] || ''}
+                    onChange={(e) => setFormData({ ...formData, [`salary_${q.toLowerCase()}`]: e.target.value })}
                   />
-                  {idx === 0 && (
-                    <p className="text-xs text-muted-foreground mt-1">Entering Q1 will auto-fill remaining quarters. Override any quarter individually.</p>
-                  )}
                 </div>
               ))}
             </div>

@@ -2,16 +2,43 @@ import React, { useState } from 'react';
 import { Check, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
-const PERIODS = [
-  { value: 'q1', label: 'Q1' },
-  { value: 'q2', label: 'Q2' },
-  { value: 'q3', label: 'Q3' },
-  { value: 'q4', label: 'Q4' },
-  { value: 'annual', label: 'Full Year' }
-];
+const CURRENT_DATE = new Date('2026-04-07');
+
+const getAvailablePeriods = () => {
+  const periods = [];
+  
+  // Q1 ends March 31: show if current date >= April 1
+  if (CURRENT_DATE >= new Date('2026-04-01')) {
+    periods.push({ value: 'q1', label: 'Q1' });
+  }
+  
+  // Q2 ends June 30: show if current date >= July 1
+  if (CURRENT_DATE >= new Date('2026-07-01')) {
+    periods.push({ value: 'q2', label: 'Q2' });
+  }
+  
+  // Q3 ends September 30: show if current date >= October 1
+  if (CURRENT_DATE >= new Date('2026-10-01')) {
+    periods.push({ value: 'q3', label: 'Q3' });
+  }
+  
+  // Q4 ends December 31: show if current date >= January 1
+  if (CURRENT_DATE >= new Date('2027-01-01')) {
+    periods.push({ value: 'q4', label: 'Q4' });
+  }
+  
+  // Full Year only after Q4 ends
+  if (CURRENT_DATE >= new Date('2027-01-01')) {
+    periods.push({ value: 'annual', label: 'Full Year' });
+  }
+  
+  return periods;
+};
 
 export default function PayoutBreakdownCard({ staff, jobClass, bonus, salary, scorecard, entry }) {
-  const [selectedPeriod, setSelectedPeriod] = useState('annual');
+  const availablePeriods = getAvailablePeriods();
+  const defaultPeriod = availablePeriods.length > 0 ? availablePeriods[0].value : 'q1';
+  const [selectedPeriod, setSelectedPeriod] = useState(defaultPeriod);
 
   if (!staff || !jobClass || !bonus) return null;
 
@@ -179,7 +206,7 @@ export default function PayoutBreakdownCard({ staff, jobClass, bonus, salary, sc
 
       {/* Period Selector */}
       <div className="flex flex-wrap gap-2">
-        {PERIODS.map((period) => (
+        {availablePeriods.map((period) => (
           <Button
             key={period.value}
             onClick={() => setSelectedPeriod(period.value)}
@@ -191,6 +218,7 @@ export default function PayoutBreakdownCard({ staff, jobClass, bonus, salary, sc
           </Button>
         ))}
       </div>
+      <p className="text-xs text-muted-foreground">Quarters are unlocked as they close. Q2 closes June 30, 2026.</p>
 
       {/* Metric Table */}
       {renderMetricTable()}

@@ -302,34 +302,17 @@ export default function Payouts() {
 
                   <div>
                     <label className="text-xs text-muted-foreground font-semibold mb-2 block">Quarterly Salaries</label>
-                    <div className="grid grid-cols-4 gap-3">
-                      {['Q1', 'Q2', 'Q3', 'Q4'].map((q, i) => (
+                    <p className="text-xs text-muted-foreground mb-3">Quarters are unlocked as they close. Q2 closes June 30, 2026.</p>
+                    <div className="grid grid-cols-2 gap-3">
+                      {['Q1', 'Q2'].map((q) => (
                         <div key={q}>
                           <label className="text-xs text-muted-foreground mb-1 block">{q}</label>
                           <Input
                             placeholder="0"
                             type="number"
-                            value={newStaff[`salary_${q.toLowerCase()}`]}
-                            onChange={e => {
-                              const val = e.target.value;
-                              if (i === 0) {
-                                // Q1 changed: auto-fill Q2, Q3, Q4 if they're empty
-                                setNewStaff({
-                                  ...newStaff,
-                                  salary_q1: val,
-                                  salary_q2: newStaff.salary_q2 || val,
-                                  salary_q3: newStaff.salary_q3 || val,
-                                  salary_q4: newStaff.salary_q4 || val,
-                                });
-                              } else {
-                                // Q2-Q4: just update that quarter
-                                setNewStaff({ ...newStaff, [`salary_${q.toLowerCase()}`]: val });
-                              }
-                            }}
+                            value={newStaff[`salary_${q.toLowerCase()}`] || ''}
+                            onChange={e => setNewStaff({ ...newStaff, [`salary_${q.toLowerCase()}`]: e.target.value })}
                           />
-                          {i === 0 && (
-                            <p className="text-xs text-muted-foreground mt-1">Entering Q1 will auto-fill remaining quarters. Override any quarter individually.</p>
-                          )}
                         </div>
                       ))}
                     </div>
