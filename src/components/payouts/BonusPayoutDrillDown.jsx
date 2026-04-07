@@ -74,6 +74,9 @@ export default function BonusPayoutDrillDown({ staff, property, jobClass, quarte
         status: bonusData.metricsHit.gop ? 'pass' : bonusData.gopGatekeeperPassed === false ? 'gatekeeper_fail' : 'fail',
         note: bonusData.gopGatekeeperPassed === false ? '⚠️ GOP Gatekeeper Not Met' : null,
         kpiResult: scorecardData.gopChange ? `${scorecardData.gopChange.toFixed(1)}% vs budget` : '—',
+        kpiTarget: latestEntry ? `$${latestEntry.budgeted_gop_target?.toLocaleString() || '—'}` : '—',
+        kpiActual: latestEntry ? `$${latestEntry.budgeted_gop_actual?.toLocaleString() || '—'}` : '—',
+        kpiVariance: latestEntry ? `${scorecardData.gopChange?.toFixed(1)}%` : '—',
       },
       {
         key: 'gopMargin',
@@ -84,6 +87,9 @@ export default function BonusPayoutDrillDown({ staff, property, jobClass, quarte
         status: bonusData.metricsHit.gopMargin ? 'pass' : bonusData.gopGatekeeperPassed === false ? 'gatekeeper_fail' : 'fail',
         note: bonusData.gopGatekeeperPassed === false ? '⚠️ GOP Gatekeeper Not Met' : null,
         kpiResult: scorecardData.gopMarginChange ? `${scorecardData.gopMarginChange.toFixed(2)} pts improvement` : '—',
+        kpiTarget: latestEntry ? `${latestEntry.gop_margin_prior?.toFixed(2)}% (prior)` : '—',
+        kpiActual: latestEntry ? `${latestEntry.gop_margin_actual?.toFixed(2)}%` : '—',
+        kpiVariance: latestEntry ? `${scorecardData.gopMarginChange?.toFixed(2)} pts` : '—',
       },
       {
         key: 'gss',
@@ -93,6 +99,9 @@ export default function BonusPayoutDrillDown({ staff, property, jobClass, quarte
         quarterly: (qSalary * jobClass.gss_bonus_percentage) / 100 * 0.5,
         status: bonusData.metricsHit.gss ? 'pass' : 'fail',
         kpiResult: scorecardData.gssChange ? `${scorecardData.gssChange.toFixed(2)} pts vs prior` : '—',
+        kpiTarget: latestEntry ? `${latestEntry.gss_prior?.toFixed(2)} (prior)` : '—',
+        kpiActual: latestEntry ? `${latestEntry.gss_actual?.toFixed(2)}` : '—',
+        kpiVariance: latestEntry ? `${scorecardData.gssChange?.toFixed(2)} pts` : '—',
       },
       {
         key: 'rgi',
@@ -109,9 +118,12 @@ export default function BonusPayoutDrillDown({ staff, property, jobClass, quarte
           ? (scorecardData?.rgiChange >= 2.1 ? `Tier 2 (${jobClass.rgi_bonus_percentage_high}%)` : `Tier 1 (${jobClass.rgi_bonus_percentage_low}%)`)
           : null,
         kpiResult: scorecardData?.rgiChange ? `${scorecardData.rgiChange.toFixed(2)}% YoY change` : '—',
+        kpiTarget: latestEntry ? `${latestEntry.revpar_index_prior?.toFixed(1)} (prior index)` : '—',
+        kpiActual: latestEntry ? `${latestEntry.revpar_index?.toFixed(1)}` : '—',
+        kpiVariance: latestEntry ? `${scorecardData.rgiChange?.toFixed(2)}%` : '—',
       },
     ];
-  }, [bonusData, scorecardData, jobClass, annualSalary, quarter, staff]);
+  }, [bonusData, scorecardData, jobClass, annualSalary, quarter, staff, latestEntry]);
 
   const quarterlySubtotal = metrics.reduce((sum, m) => sum + (m.status === 'pass' ? m.quarterly : 0), 0);
   const annualSubtotal = metrics.reduce((sum, m) => sum + (m.status === 'pass' ? m.annual : 0), 0);
@@ -202,30 +214,34 @@ export default function BonusPayoutDrillDown({ staff, property, jobClass, quarte
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="bg-muted/50 text-muted-foreground text-xs uppercase tracking-wide border-b border-border">
-                <th className="py-3 px-4 text-left font-semibold">Metric</th>
-                <th className="py-3 px-4 text-center font-semibold">Bonus %</th>
-                <th className="py-3 px-4 text-center font-semibold">Salary Base</th>
-                <th className="py-3 px-4 text-right font-semibold">Potential Bonus $</th>
-                <th className="py-3 px-4 text-center font-semibold">KPI Result</th>
-                <th className="py-3 px-4 text-center font-semibold">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {metrics.map((m) => (
-                <tr key={m.key} className="border-t border-border hover:bg-muted/30">
-                  <td className="py-3 px-4 font-medium">{m.label}</td>
-                  <td className="py-3 px-4 text-center">{m.percentage}%</td>
-                  <td className="py-3 px-4 text-center">${quarterlySalary.toLocaleString('en-US', { maximumFractionDigits: 0 })}</td>
-                  <td className="py-3 px-4 text-right font-semibold">${m.quarterly.toLocaleString('en-US', { maximumFractionDigits: 0 })}</td>
-                  <td className="py-3 px-4 text-center text-xs text-muted-foreground">{m.kpiResult}</td>
-                  <td className="py-3 px-4 text-center"><StatusBadge status={m.status} /></td>
-                </tr>
-              ))}
+           <table className="w-full text-sm">
+             <thead>
+               <tr className="bg-muted/50 text-muted-foreground text-xs uppercase tracking-wide border-b border-border">
+                 <th className="py-3 px-4 text-left font-semibold">Metric</th>
+                 <th className="py-3 px-4 text-center font-semibold">KPI Target</th>
+                 <th className="py-3 px-4 text-center font-semibold">KPI Actual</th>
+                 <th className="py-3 px-4 text-center font-semibold">vs Target</th>
+                 <th className="py-3 px-4 text-center font-semibold">Bonus %</th>
+                 <th className="py-3 px-4 text-center font-semibold">Salary Base</th>
+                 <th className="py-3 px-4 text-right font-semibold">Bonus $</th>
+                 <th className="py-3 px-4 text-center font-semibold">Status</th>
+               </tr>
+             </thead>
+             <tbody>
+               {metrics.map((m) => (
+                 <tr key={m.key} className="border-t border-border hover:bg-muted/30">
+                   <td className="py-3 px-4 font-medium text-xs">{m.label}</td>
+                   <td className="py-3 px-4 text-center text-xs text-muted-foreground">{m.kpiTarget}</td>
+                   <td className="py-3 px-4 text-center text-xs text-muted-foreground font-semibold">{m.kpiActual}</td>
+                   <td className="py-3 px-4 text-center text-xs text-muted-foreground">{m.kpiVariance}</td>
+                   <td className="py-3 px-4 text-center text-xs">{m.percentage}%</td>
+                   <td className="py-3 px-4 text-center text-xs">${quarterlySalary.toLocaleString('en-US', { maximumFractionDigits: 0 })}</td>
+                   <td className="py-3 px-4 text-right text-xs font-semibold">${m.quarterly.toLocaleString('en-US', { maximumFractionDigits: 0 })}</td>
+                   <td className="py-3 px-4 text-center"><StatusBadge status={m.status} /></td>
+                 </tr>
+               ))}
               <tr className="border-t border-border font-bold text-white" style={{ backgroundColor: '#2d4b5e' }}>
-                <td colSpan="5" className="py-3 px-4 text-right">QUARTERLY SUBTOTAL (50%)</td>
+                <td colSpan="7" className="py-3 px-4 text-right">QUARTERLY SUBTOTAL (50%)</td>
                 <td className="py-3 px-4 text-right">${quarterlySubtotal.toLocaleString('en-US', { maximumFractionDigits: 0 })}</td>
               </tr>
             </tbody>
@@ -241,30 +257,34 @@ export default function BonusPayoutDrillDown({ staff, property, jobClass, quarte
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="bg-muted/50 text-muted-foreground text-xs uppercase tracking-wide border-b border-border">
-                <th className="py-3 px-4 text-left font-semibold">Metric</th>
-                <th className="py-3 px-4 text-center font-semibold">Bonus %</th>
-                <th className="py-3 px-4 text-center font-semibold">Salary Base</th>
-                <th className="py-3 px-4 text-right font-semibold">Potential Bonus $</th>
-                <th className="py-3 px-4 text-center font-semibold">KPI Result</th>
-                <th className="py-3 px-4 text-center font-semibold">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {metrics.map((m) => (
-                <tr key={m.key} className="border-t border-border hover:bg-muted/30">
-                  <td className="py-3 px-4 font-medium">{m.label}</td>
-                  <td className="py-3 px-4 text-center">{m.percentage}%</td>
-                  <td className="py-3 px-4 text-center">${annualSalary.toLocaleString('en-US', { maximumFractionDigits: 0 })}</td>
-                  <td className="py-3 px-4 text-right font-semibold">${m.annual.toLocaleString('en-US', { maximumFractionDigits: 0 })}</td>
-                  <td className="py-3 px-4 text-center text-xs text-muted-foreground">{m.kpiResult}</td>
-                  <td className="py-3 px-4 text-center"><StatusBadge status={m.status} /></td>
-                </tr>
-              ))}
+           <table className="w-full text-sm">
+             <thead>
+               <tr className="bg-muted/50 text-muted-foreground text-xs uppercase tracking-wide border-b border-border">
+                 <th className="py-3 px-4 text-left font-semibold">Metric</th>
+                 <th className="py-3 px-4 text-center font-semibold">KPI Target</th>
+                 <th className="py-3 px-4 text-center font-semibold">KPI Actual</th>
+                 <th className="py-3 px-4 text-center font-semibold">vs Target</th>
+                 <th className="py-3 px-4 text-center font-semibold">Bonus %</th>
+                 <th className="py-3 px-4 text-center font-semibold">Salary Base</th>
+                 <th className="py-3 px-4 text-right font-semibold">Bonus $</th>
+                 <th className="py-3 px-4 text-center font-semibold">Status</th>
+               </tr>
+             </thead>
+             <tbody>
+               {metrics.map((m) => (
+                 <tr key={m.key} className="border-t border-border hover:bg-muted/30">
+                   <td className="py-3 px-4 font-medium text-xs">{m.label}</td>
+                   <td className="py-3 px-4 text-center text-xs text-muted-foreground">{m.kpiTarget}</td>
+                   <td className="py-3 px-4 text-center text-xs text-muted-foreground font-semibold">{m.kpiActual}</td>
+                   <td className="py-3 px-4 text-center text-xs text-muted-foreground">{m.kpiVariance}</td>
+                   <td className="py-3 px-4 text-center text-xs">{m.percentage}%</td>
+                   <td className="py-3 px-4 text-center text-xs">${annualSalary.toLocaleString('en-US', { maximumFractionDigits: 0 })}</td>
+                   <td className="py-3 px-4 text-right text-xs font-semibold">${m.annual.toLocaleString('en-US', { maximumFractionDigits: 0 })}</td>
+                   <td className="py-3 px-4 text-center"><StatusBadge status={m.status} /></td>
+                 </tr>
+               ))}
               <tr className="border-t border-border font-bold text-white" style={{ backgroundColor: '#2d4b5e' }}>
-                <td colSpan="5" className="py-3 px-4 text-right">ANNUAL SUBTOTAL (50%)</td>
+                <td colSpan="7" className="py-3 px-4 text-right">ANNUAL SUBTOTAL (50%)</td>
                 <td className="py-3 px-4 text-right">${annualSubtotal.toLocaleString('en-US', { maximumFractionDigits: 0 })}</td>
               </tr>
             </tbody>
