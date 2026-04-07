@@ -11,6 +11,7 @@ import ScoreGauge from '@/components/scorecard/ScoreGauge';
 import KpiRow from '@/components/scorecard/KpiRow';
 import KickerBadge from '@/components/scorecard/KickerBadge';
 import NotesPanel from '@/components/scorecard/NotesPanel';
+import KpiQuadrant from '@/components/scorecard/KpiQuadrant';
 import { calculateScorecard, MONTHS, getQuarterFromMonth } from '../lib/scoring';
 import SeedOnMount from '../components/SeedOnMount';
 
@@ -379,6 +380,9 @@ export default function Dashboard() {
               </div>
             </div>
           </div>
+
+          {/* KPI Quadrant */}
+          <KpiQuadrant scorecard={scorecard} />
 
           {/* Manual KPI Data Entry */}
           {timeFilter === 'month' && (
