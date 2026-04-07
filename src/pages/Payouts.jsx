@@ -189,9 +189,9 @@ export default function Payouts() {
         <>
           {/* Add Staff Form */}
           {showAddForm ? (
-            <div className="bg-card rounded-2xl border border-border p-6 shadow-sm">
+            <div className="bg-card rounded-2xl border border-border p-6 shadow-sm overflow-visible relative z-10">
               <h3 className="font-bold mb-4">Add Staff Member</h3>
-              <div className="flex flex-wrap gap-3 items-end mb-4">
+              <div className="flex flex-wrap gap-3 items-end mb-4 overflow-visible">
                 <div className="flex-1 min-w-48">
                   <label className="text-xs text-muted-foreground font-semibold mb-1 block">Job Classification</label>
                   <Select value={newStaff.job_classification_id} onValueChange={id => setNewStaff({ ...newStaff, job_classification_id: id })}>
