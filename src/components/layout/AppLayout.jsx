@@ -26,8 +26,9 @@ export default function AppLayout() {
         style={{ backgroundColor: '#2d4b5e' }}
       >
         {/* Logo */}
-         <div className="flex items-center gap-3 px-6 py-5 border-b border-white/10">
-           <img src="https://media.base44.com/images/public/69d3e20c8254476c324dc91c/03b78211b_generated_image.png" alt="Balanced Scorecard" className="w-14 h-14 opacity-80" />
+         <div className="px-6 py-5 border-b border-white/10 text-center">
+           <img src="https://media.base44.com/images/public/69d3e20c8254476c324dc91c/2c3078463_2f08ffa4b_RBIfw1.png" alt="REBEL" className="w-16 h-auto mx-auto mb-2 brightness-0 invert" />
+           <p className="text-white text-xs font-semibold">Balanced Scorecard</p>
            <div>
              <div className="text-white font-bold text-sm leading-tight">Balanced</div>
              <div className="text-white/70 text-xs">Scorecard</div>
