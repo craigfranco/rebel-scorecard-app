@@ -125,38 +125,27 @@ export default function Documents() {
     //   col K (col_10)          = Property name
     // Data starts at row index 3 (row 4 in Excel, skipping 3 header rows)
 
-    const result = await base44.integrations.Core.InvokeLLM({
-      prompt: `You are given a GOP P&L Excel file. The file has these columns (using their raw header names):
-- "REBEL HOTEL CO." = Actuals AMT (column A)
-- "col_1" = Actuals %REV (column B)
-- "col_2" = Budget AMT (column C)
-- "col_3" = Budget %REV (column D)
-- "P & L - All Sites - GOP" = Variance AMT (column E)
-- "col_5" = Variance %REV (column F)
-- "col_6" = Prior Year AMT (column G)
-- "col_7" = Prior Year %REV (column H)
-- "col_10" = Property name (column K)
-
-Data rows start at row index 3 (skipping 3 header rows). Extract every row where "col_10" contains a hotel/property name (non-blank, not "Property"). Return JSON array of objects with these exact keys: hotel_name, budgeted_gop_actual, gop_margin_actual, budgeted_gop_target, gop_margin_budget, gop_margin_variance, gop_margin_prior. All numeric values as numbers (not strings). Return ONLY the JSON array.`,
-      file_urls: [file_url],
-      response_json_schema: {
+    const result = await base44.integrations.Core.ExtractDataFromUploadedFile({
+      file_url,
+      json_schema: {
         type: 'object',
         properties: {
           rows: {
             type: 'array',
+            description: 'Extract every data row from the spreadsheet. Skip the first 3 header rows (rows 0, 1, 2). For each remaining row, read: hotel_name from the 11th column (index 10, header "col_10" or "Property"); budgeted_gop_actual from the 1st column (index 0, header "REBEL HOTEL CO."); gop_margin_actual from the 2nd column (index 1, header "col_1"); budgeted_gop_target from the 3rd column (index 2, header "col_2"); gop_margin_budget from the 4th column (index 3, header "col_3"); gop_margin_variance from the 6th column (index 5, header "col_5"); gop_margin_prior from the 8th column (index 7, header "col_7"). Skip rows where hotel_name is blank or equals "Property".',
             items: {
               type: 'object',
               properties: {
-                hotel_name:          { type: 'string' },
-                budgeted_gop_actual: { type: 'number' },
-                gop_margin_actual:   { type: 'number' },
-                budgeted_gop_target: { type: 'number' },
-                gop_margin_budget:   { type: 'number' },
-                gop_margin_variance: { type: 'number' },
-                gop_margin_prior:    { type: 'number' },
-                revpar_index_change: { type: 'number' },
-                gss_actual:          { type: 'number' },
-                gss_prior:           { type: 'number' },
+                hotel_name:          { type: 'string',  description: 'Column index 10 (col_10) — the property/hotel name.' },
+                budgeted_gop_actual: { type: 'number',  description: 'Column index 0 (REBEL HOTEL CO.) — Actuals AMT.' },
+                gop_margin_actual:   { type: 'number',  description: 'Column index 1 (col_1) — Actuals %REV.' },
+                budgeted_gop_target: { type: 'number',  description: 'Column index 2 (col_2) — Budget AMT.' },
+                gop_margin_budget:   { type: 'number',  description: 'Column index 3 (col_3) — Budget %REV.' },
+                gop_margin_variance: { type: 'number',  description: 'Column index 5 (col_5) — Variance %REV.' },
+                gop_margin_prior:    { type: 'number',  description: 'Column index 7 (col_7) — Prior Year %REV.' },
+                revpar_index_change: { type: 'number',  description: 'RevPAR Index % Change — STR/RGI files only.' },
+                gss_actual:          { type: 'number',  description: 'GSS score — GSS report files only.' },
+                gss_prior:           { type: 'number',  description: 'Prior year GSS score — GSS report files only.' },
               },
               required: ['hotel_name'],
             },
@@ -165,7 +154,7 @@ Data rows start at row index 3 (skipping 3 header rows). Extract every row where
       },
     });
 
-    const rawRows = result?.rows || [];
+    const rawRows = result?.output?.rows || result?.rows || [];
     console.log('=== EXTRACTION: got', rawRows.length, 'rows');
     if (rawRows.length > 0) {
       console.log('First row:', JSON.stringify(rawRows[0], null, 2));
