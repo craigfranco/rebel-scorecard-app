@@ -45,9 +45,6 @@ export default function StaffEditModal({ staffId, onClose, jobClassifications })
         name: data.name,
         job_classification_id: data.job_classification_id,
         salary_q1: parseFloat(data.salary_q1) || 0,
-        salary_q2: parseFloat(data.salary_q2) || 0,
-        salary_q3: parseFloat(data.salary_q3) || 0,
-        salary_q4: parseFloat(data.salary_q4) || 0,
         is_active: data.is_active,
       }),
     onSuccess: () => {
@@ -114,7 +111,7 @@ export default function StaffEditModal({ staffId, onClose, jobClassifications })
 
           <div className="space-y-3">
             <div>
-              <label className="text-xs text-muted-foreground font-semibold mb-2 block">Q1 Salary</label>
+              <label className="text-xs text-muted-foreground font-semibold mb-2 block">Q1 Salary (Jan–Mar 2026)</label>
               <Input
                 type="number"
                 placeholder="0"

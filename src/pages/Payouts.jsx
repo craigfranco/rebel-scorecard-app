@@ -39,10 +39,7 @@ export default function Payouts() {
     name: '', 
     property_id: '', 
     job_classification_id: '', 
-    salary_q1: '', 
-    salary_q2: '', 
-    salary_q3: '', 
-    salary_q4: '',
+    salary_q1: '',
     year: CURRENT_YEAR,
     is_active: true
   });
@@ -99,17 +96,13 @@ export default function Payouts() {
   // Mutations
   const addStaffMutation = useMutation({
     mutationFn: (data) => {
-      const avgSalary = (parseFloat(data.salary_q1 || 0) + parseFloat(data.salary_q2 || 0) + parseFloat(data.salary_q3 || 0) + parseFloat(data.salary_q4 || 0)) / 4;
       return base44.entities.Staff.create({
         name: data.name,
         property_id: data.property_id,
         job_classification_id: data.job_classification_id,
         year: data.year,
         is_active: data.is_active,
-        salary_q1: parseFloat(data.salary_q1) || avgSalary,
-        salary_q2: parseFloat(data.salary_q2) || avgSalary,
-        salary_q3: parseFloat(data.salary_q3) || avgSalary,
-        salary_q4: parseFloat(data.salary_q4) || avgSalary,
+        salary_q1: parseFloat(data.salary_q1) || 0,
       });
     },
     onSuccess: () => {
@@ -119,10 +112,7 @@ export default function Payouts() {
         name: '', 
         property_id: selectedPropertyId, 
         job_classification_id: '', 
-        salary_q1: '', 
-        salary_q2: '', 
-        salary_q3: '', 
-        salary_q4: '',
+        salary_q1: '',
         year: CURRENT_YEAR,
         is_active: true
       });
@@ -232,10 +222,7 @@ export default function Payouts() {
               name: '', 
               property_id: selectedPropertyId, 
               job_classification_id: '', 
-              salary_q1: '', 
-              salary_q2: '', 
-              salary_q3: '', 
-              salary_q4: '',
+              salary_q1: '',
               year: CURRENT_YEAR,
               is_active: true
             });
@@ -302,7 +289,7 @@ export default function Payouts() {
                   <div>
                     <div className="space-y-3">
                       <div>
-                        <label className="text-xs text-muted-foreground font-semibold mb-2 block">Q1 Salary</label>
+                        <label className="text-xs text-muted-foreground font-semibold mb-2 block">Q1 Salary (Jan–Mar 2026)</label>
                         <Input
                           placeholder="0"
                           type="number"

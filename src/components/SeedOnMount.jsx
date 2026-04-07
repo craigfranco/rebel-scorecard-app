@@ -15,6 +15,17 @@ export default function SeedOnMount() {
     seeded.current = true;
 
     const run = async () => {
+      // Clean corrupted staff record (old auto-fill bug)
+      try {
+        await base44.entities.Staff.update('69d5741d46151f76a40c8e42', {
+          salary_q2: null,
+          salary_q3: null,
+          salary_q4: null,
+        });
+      } catch (e) {
+        // Record may not exist, silently continue
+      }
+
       const existing = await base44.entities.Property.list('name', 5);
       if (existing.length > 0) return; // already seeded
 
