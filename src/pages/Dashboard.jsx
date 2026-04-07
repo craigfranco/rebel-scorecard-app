@@ -132,9 +132,18 @@ export default function Dashboard() {
     {
       measure: 'Budgeted GOP',
       weight: '35%',
-      target: '100% of Budget',
+      target: activeEntry.budgeted_gop_target != null ? `Budget: $${(activeEntry.budgeted_gop_target / 1000).toFixed(0)}K` : '100% of Budget',
       actual: activeEntry.budgeted_gop_actual != null ? `$${(activeEntry.budgeted_gop_actual / 1000).toFixed(0)}K` : '—',
-      ytdActual: '—',
+      ytdActual: (() => {
+        const a = activeEntry.budgeted_gop_actual;
+        const t = activeEntry.budgeted_gop_target;
+        if (a != null && t != null && t !== 0) {
+          const variance = a - t;
+          const sign = variance >= 0 ? '+' : '';
+          return `${sign}$${(variance / 1000).toFixed(0)}K vs Budget`;
+        }
+        return '—';
+      })(),
       score: scorecard.gop.score,
       maxScore: 35,
       pass: scorecard.gop.pass,
@@ -143,9 +152,18 @@ export default function Dashboard() {
     {
       measure: 'GOP Margin Improvement',
       weight: '35%',
-      target: '+0.1% vs PY',
+      target: activeEntry.gop_margin_budget != null ? `Budget: ${activeEntry.gop_margin_budget}%` : '+0.1% vs Budget',
       actual: activeEntry.gop_margin_actual != null ? `${activeEntry.gop_margin_actual}%` : '—',
-      ytdActual: activeEntry.gop_margin_prior != null ? `PY: ${activeEntry.gop_margin_prior}%` : '—',
+      ytdActual: (() => {
+        const a = activeEntry.gop_margin_actual;
+        const b = activeEntry.gop_margin_budget;
+        if (a != null && b != null) {
+          const v = (a - b).toFixed(1);
+          return `${v >= 0 ? '+' : ''}${v}% vs Budget`;
+        }
+        if (activeEntry.gop_margin_prior != null) return `PY: ${activeEntry.gop_margin_prior}%`;
+        return '—';
+      })(),
       score: scorecard.gopMargin.score,
       maxScore: 35,
       pass: scorecard.gopMargin.pass,
