@@ -125,27 +125,38 @@ export default function Documents() {
     //   col K (col_10)          = Property name
     // Data starts at row index 3 (row 4 in Excel, skipping 3 header rows)
 
-    const result = await base44.integrations.Core.ExtractDataFromUploadedFile({
-      file_url,
-      json_schema: {
+    const result = await base44.integrations.Core.InvokeLLM({
+      prompt: `You are given a GOP P&L Excel file. The file has these columns (using their raw header names):
+- "REBEL HOTEL CO." = Actuals AMT (column A)
+- "col_1" = Actuals %REV (column B)
+- "col_2" = Budget AMT (column C)
+- "col_3" = Budget %REV (column D)
+- "P & L - All Sites - GOP" = Variance AMT (column E)
+- "col_5" = Variance %REV (column F)
+- "col_6" = Prior Year AMT (column G)
+- "col_7" = Prior Year %REV (column H)
+- "col_10" = Property name (column K)
+
+Data rows start at row index 3 (skipping 3 header rows). Extract every row where "col_10" contains a hotel/property name (non-blank, not "Property"). Return JSON array of objects with these exact keys: hotel_name, budgeted_gop_actual, gop_margin_actual, budgeted_gop_target, gop_margin_budget, gop_margin_variance, gop_margin_prior. All numeric values as numbers (not strings). Return ONLY the JSON array.`,
+      file_urls: [file_url],
+      response_json_schema: {
         type: 'object',
         properties: {
           rows: {
             type: 'array',
-            description: 'Extract every hotel/property data row starting from the 4th row (index 3). The property name is in column K (col_10). Skip any row where col_10 is blank or says "Property". Also extract STR RevPAR index change and GSS scores if present.',
             items: {
               type: 'object',
               properties: {
-                hotel_name:          { type: 'string', description: 'Property name from column K (col_10).' },
-                budgeted_gop_actual: { type: 'string', description: 'Actuals AMT from column A (first column, labeled REBEL HOTEL CO. in header).' },
-                gop_margin_actual:   { type: 'string', description: 'Actuals %REV from column B (col_1).' },
-                budgeted_gop_target: { type: 'string', description: 'Budget AMT from column C (col_2).' },
-                gop_margin_budget:   { type: 'string', description: 'Budget %REV from column D (col_3).' },
-                gop_margin_variance: { type: 'string', description: 'Variance %REV from column F (col_5).' },
-                gop_margin_prior:    { type: 'string', description: 'Prior Year %REV from column H (col_7).' },
-                revpar_index_change: { type: 'string', description: 'RevPAR Index % Change — only present in STR/RGI files.' },
-                gss_actual:          { type: 'string', description: 'GSS score — only present in GSS report files.' },
-                gss_prior:           { type: 'string', description: 'Prior year GSS score — only present in GSS report files.' },
+                hotel_name:          { type: 'string' },
+                budgeted_gop_actual: { type: 'number' },
+                gop_margin_actual:   { type: 'number' },
+                budgeted_gop_target: { type: 'number' },
+                gop_margin_budget:   { type: 'number' },
+                gop_margin_variance: { type: 'number' },
+                gop_margin_prior:    { type: 'number' },
+                revpar_index_change: { type: 'number' },
+                gss_actual:          { type: 'number' },
+                gss_prior:           { type: 'number' },
               },
               required: ['hotel_name'],
             },
@@ -154,7 +165,7 @@ export default function Documents() {
       },
     });
 
-    const rawRows = result?.output?.rows || result?.rows || [];
+    const rawRows = result?.rows || [];
     console.log('=== EXTRACTION: got', rawRows.length, 'rows');
     if (rawRows.length > 0) {
       console.log('First row:', JSON.stringify(rawRows[0], null, 2));
@@ -166,35 +177,25 @@ export default function Documents() {
       const hotelName = r.hotel_name || '';
       const matched = bestMatch(hotelName, properties);
 
-      const change = parseFloat((r.revpar_index_change || '').replace('%', ''));
-      const gopActual = parseFloat((r.budgeted_gop_actual || '').replace(/[$,]/g, ''));
-      const gopTarget = parseFloat((r.budgeted_gop_target || '').replace(/[$,]/g, ''));
-      const gopMarginActual = parseFloat((r.gop_margin_actual || '').replace('%', ''));
-      const gopMarginBudget = parseFloat((r.gop_margin_budget || '').replace('%', ''));
-      const gopMarginPrior = parseFloat((r.gop_margin_prior || '').replace('%', ''));
-      const gopMarginVariance = parseFloat((r.gop_margin_variance || '').replace('%', ''));
-      const gssActual = parseFloat(r.gss_actual || '');
-      const gssPrior = parseFloat(r.gss_prior || '');
+      const hasData = r.budgeted_gop_actual != null || r.gop_margin_actual != null || r.revpar_index_change != null || r.gss_actual != null;
 
-      const hasData = !isNaN(change) || !isNaN(gopActual) || !isNaN(gopMarginActual) || !isNaN(gssActual);
-      
       if (!matched || !hasData) {
-        console.log(`Skipped "${hotelName}": matched=${!!matched}, hasData=${hasData}, change=${change}, gop=${gopActual}, margin=${gopMarginActual}, gss=${gssActual}`);
+        console.log(`Skipped "${hotelName}": matched=${!!matched}, hasData=${hasData}`);
         fail++;
         continue;
       }
-      console.log(`Importing "${hotelName}" (${matched.name}): change=${change}, gop=${gopActual}, margin=${gopMarginActual}, gss=${gssActual}`);
+      console.log(`Importing "${hotelName}" → "${matched.name}": gop=${r.budgeted_gop_actual}, margin=${r.gop_margin_actual}`);
 
       const patch = {};
-      if (!isNaN(change)) patch.revpar_index_change = change;
-      if (!isNaN(gopActual)) patch.budgeted_gop_actual = gopActual;
-      if (!isNaN(gopTarget)) patch.budgeted_gop_target = gopTarget;
-      if (!isNaN(gopMarginActual)) patch.gop_margin_actual = gopMarginActual;
-      if (!isNaN(gopMarginBudget)) patch.gop_margin_budget = gopMarginBudget;
-      if (!isNaN(gopMarginVariance)) patch.gop_margin_variance = gopMarginVariance;
-      if (!isNaN(gopMarginPrior)) patch.gop_margin_prior = gopMarginPrior;
-      if (!isNaN(gssActual)) patch.gss_actual = gssActual;
-      if (!isNaN(gssPrior)) patch.gss_prior = gssPrior;
+      if (r.revpar_index_change != null) patch.revpar_index_change = r.revpar_index_change;
+      if (r.budgeted_gop_actual != null) patch.budgeted_gop_actual = r.budgeted_gop_actual;
+      if (r.budgeted_gop_target != null) patch.budgeted_gop_target = r.budgeted_gop_target;
+      if (r.gop_margin_actual != null) patch.gop_margin_actual = r.gop_margin_actual;
+      if (r.gop_margin_budget != null) patch.gop_margin_budget = r.gop_margin_budget;
+      if (r.gop_margin_variance != null) patch.gop_margin_variance = r.gop_margin_variance;
+      if (r.gop_margin_prior != null) patch.gop_margin_prior = r.gop_margin_prior;
+      if (r.gss_actual != null) patch.gss_actual = r.gss_actual;
+      if (r.gss_prior != null) patch.gss_prior = r.gss_prior;
 
       const existing = await base44.entities.ScoreEntry.filter({ property_id: matched.id, month, year });
       if (existing.length > 0) {
