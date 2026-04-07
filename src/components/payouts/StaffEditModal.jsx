@@ -25,6 +25,26 @@ export default function StaffEditModal({ staffId, onClose, jobClassifications })
   const queryClient = useQueryClient();
   const [formData, setFormData] = useState(null);
 
+  // Determine closed quarters as of April 7, 2026
+  const CLOSED_QUARTERS = ['q1'];
+
+  const calculateProjectedAnnualSalary = (salaries) => {
+    const q1 = parseFloat(salaries.salary_q1) || 0;
+    const q2 = parseFloat(salaries.salary_q2) || 0;
+    const q3 = parseFloat(salaries.salary_q3) || 0;
+    const q4 = parseFloat(salaries.salary_q4) || 0;
+
+    if (CLOSED_QUARTERS.includes('q4')) {
+      return { total: q1 + q2 + q3 + q4, formula: 'Q1 + Q2 + Q3 + Q4' };
+    } else if (CLOSED_QUARTERS.includes('q3')) {
+      return { total: q1 + q2 + q3 + q3, formula: 'Q1 + Q2 + Q3 × 2' };
+    } else if (CLOSED_QUARTERS.includes('q2')) {
+      return { total: q1 + q2 + q2 * 2, formula: 'Q1 + Q2 × 3' };
+    } else {
+      return { total: q1 * 4, formula: 'Q1 × 4' };
+    }
+  };
+
   const { data: staff } = useQuery({
     queryKey: ['staff-detail', staffId],
     queryFn: () => base44.entities.Staff.filter({ id: staffId }).then(results => results[0]),
@@ -115,36 +135,33 @@ export default function StaffEditModal({ staffId, onClose, jobClassifications })
             <p className="text-xs text-muted-foreground mb-3">Only closed quarters are displayed. Q2 unlocks July 1, 2026.</p>
             <div className="grid grid-cols-4 gap-3">
               {[
-                { q: 'Q1', field: 'salary_q1', isLocked: false, unlockDate: null },
-                { q: 'Q2', field: 'salary_q2', isLocked: true, unlockDate: 'July 1, 2026' },
-                { q: 'Q3', field: 'salary_q3', isLocked: true, unlockDate: 'Oct 1, 2026' },
-                { q: 'Q4', field: 'salary_q4', isLocked: true, unlockDate: 'Jan 1, 2027' }
-              ].map(({ q, field, isLocked, unlockDate }) => (
-                <div key={q} className={isLocked ? 'opacity-40' : ''}>
-                  <label className="text-xs text-muted-foreground mb-1 block flex items-center gap-1">
-                    {q}
-                    {isLocked && <span title={`Available after ${unlockDate}`} className="text-muted-foreground">🔒</span>}
-                  </label>
+                { q: 'Q1', field: 'salary_q1', isClosed: true },
+                { q: 'Q2', field: 'salary_q2', isClosed: false, unlockDate: 'July 1, 2026' },
+                { q: 'Q3', field: 'salary_q3', isClosed: false, unlockDate: 'Oct 1, 2026' },
+                { q: 'Q4', field: 'salary_q4', isClosed: false, unlockDate: 'Jan 1, 2027' }
+              ]
+                .filter(({ isClosed }) => isClosed)
+                .map(({ q, field }) => (
+                <div key={q}>
+                  <label className="text-xs text-muted-foreground mb-1 block">{q}</label>
                   <Input
                     type="number"
                     placeholder="0"
-                    disabled={isLocked}
                     value={formData[field] || ''}
                     onChange={(e) => setFormData({ ...formData, [field]: e.target.value })}
                   />
-                  {isLocked && (
-                    <p className="text-xs text-muted-foreground mt-1">Available after {unlockDate}</p>
-                  )}
                 </div>
               ))}
             </div>
             <div className="mt-3 p-3 bg-muted/30 rounded">
-              <p className="text-xs text-muted-foreground">Annual Salary: <span className="font-semibold text-foreground">${(
-                (parseFloat(formData.salary_q1) || 0) +
-                (parseFloat(formData.salary_q2) || 0) +
-                (parseFloat(formData.salary_q3) || 0) +
-                (parseFloat(formData.salary_q4) || 0)
-              ).toLocaleString('en-US', { maximumFractionDigits: 0 })}</span></p>
+              {(() => {
+                const projData = calculateProjectedAnnualSalary(formData);
+                return (
+                  <p className="text-xs text-muted-foreground">
+                    Projected Annual Salary: <span className="font-semibold text-foreground">${projData.total.toLocaleString('en-US', { maximumFractionDigits: 0 })}</span> <span className="text-muted-foreground">({projData.formula})</span>
+                  </p>
+                );
+              })()}
             </div>
           </div>
 

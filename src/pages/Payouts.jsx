@@ -47,6 +47,26 @@ export default function Payouts() {
     is_active: true
   });
 
+  // Determine closed quarters as of April 7, 2026
+  const CLOSED_QUARTERS = ['q1']; // Only Q1 has closed (March 31 passed)
+
+  const calculateProjectedAnnualSalary = (salaries) => {
+    const q1 = parseFloat(salaries.salary_q1) || 0;
+    const q2 = parseFloat(salaries.salary_q2) || 0;
+    const q3 = parseFloat(salaries.salary_q3) || 0;
+    const q4 = parseFloat(salaries.salary_q4) || 0;
+
+    if (CLOSED_QUARTERS.includes('q4')) {
+      return { total: q1 + q2 + q3 + q4, formula: 'Q1 + Q2 + Q3 + Q4' };
+    } else if (CLOSED_QUARTERS.includes('q3')) {
+      return { total: q1 + q2 + q3 + q3, formula: 'Q1 + Q2 + Q3 × 2' };
+    } else if (CLOSED_QUARTERS.includes('q2')) {
+      return { total: q1 + q2 + q2 * 2, formula: 'Q1 + Q2 × 3' };
+    } else {
+      return { total: q1 * 4, formula: 'Q1 × 4' };
+    }
+  };
+
   // Fetch data
   const { data: properties = [] } = useQuery({
     queryKey: ['properties'],
@@ -128,11 +148,9 @@ export default function Payouts() {
   const selectedProperty = properties.find(p => p.id === selectedPropertyId);
   const selectedStaff = allStaff.find(s => s.id === selectedStaffId);
 
-  // Calculate estimated annual salary
-  const getEstimatedAnnualSalary = (staff) => {
-    const salaries = [staff.salary_q1, staff.salary_q2, staff.salary_q3, staff.salary_q4].filter(s => s);
-    if (salaries.length === 0) return 0;
-    return (salaries.reduce((sum, s) => sum + s, 0) / salaries.length) * 4;
+  // Calculate projected annual salary for existing staff
+  const getProjectedAnnualSalary = (staff) => {
+    return calculateProjectedAnnualSalary(staff);
   };
 
   // Calculate bonus for selected staff
@@ -145,10 +163,11 @@ export default function Payouts() {
 
     const entry = staffEntries[staffEntries.length - 1];
     const scorecard = calculateScorecard(entry, selectedProperty);
-    const estAnnualSalary = getEstimatedAnnualSalary(selectedStaff);
+    const projectedSalaryData = getProjectedAnnualSalary(selectedStaff);
+    const projectedAnnualSalary = projectedSalaryData.total;
 
     const quarterlyBonus = calculateQuarterlyBonus(
-      { ...selectedStaff, annual_salary: estAnnualSalary },
+      { ...selectedStaff, annual_salary: projectedAnnualSalary },
       scorecard,
       jobClass,
       entry
@@ -160,7 +179,8 @@ export default function Payouts() {
       quarterlyBonus,
       scorecard,
       entry,
-      estimatedAnnualSalary: estAnnualSalary,
+      projectedAnnualSalary: projectedAnnualSalary,
+      salaryFormula: projectedSalaryData.formula,
     };
   })() : null;
 
@@ -305,36 +325,33 @@ export default function Payouts() {
                     <p className="text-xs text-muted-foreground mb-3">Only closed quarters are displayed. Q2 unlocks July 1, 2026.</p>
                     <div className="grid grid-cols-4 gap-3">
                       {[
-                        { q: 'Q1', field: 'salary_q1', isLocked: false, unlockDate: null },
-                        { q: 'Q2', field: 'salary_q2', isLocked: true, unlockDate: 'July 1, 2026' },
-                        { q: 'Q3', field: 'salary_q3', isLocked: true, unlockDate: 'Oct 1, 2026' },
-                        { q: 'Q4', field: 'salary_q4', isLocked: true, unlockDate: 'Jan 1, 2027' }
-                      ].map(({ q, field, isLocked, unlockDate }) => (
-                        <div key={q} className={isLocked ? 'opacity-40' : ''}>
-                          <label className="text-xs text-muted-foreground mb-1 block flex items-center gap-1">
-                            {q}
-                            {isLocked && <span title={`Available after ${unlockDate}`} className="text-muted-foreground">🔒</span>}
-                          </label>
+                        { q: 'Q1', field: 'salary_q1', isClosed: true },
+                        { q: 'Q2', field: 'salary_q2', isClosed: false, unlockDate: 'July 1, 2026' },
+                        { q: 'Q3', field: 'salary_q3', isClosed: false, unlockDate: 'Oct 1, 2026' },
+                        { q: 'Q4', field: 'salary_q4', isClosed: false, unlockDate: 'Jan 1, 2027' }
+                      ]
+                        .filter(({ isClosed }) => isClosed)
+                        .map(({ q, field }) => (
+                        <div key={q}>
+                          <label className="text-xs text-muted-foreground mb-1 block">{q}</label>
                           <Input
                             placeholder="0"
                             type="number"
-                            disabled={isLocked}
                             value={newStaff[field] || ''}
                             onChange={e => setNewStaff({ ...newStaff, [field]: e.target.value })}
                           />
-                          {isLocked && (
-                            <p className="text-xs text-muted-foreground mt-1">Available after {unlockDate}</p>
-                          )}
                         </div>
                       ))}
                     </div>
                     <div className="mt-3 p-3 bg-muted/30 rounded">
-                      <p className="text-xs text-muted-foreground">Annual Salary: <span className="font-semibold text-foreground">${(
-                        (parseFloat(newStaff.salary_q1) || 0) +
-                        (parseFloat(newStaff.salary_q2) || 0) +
-                        (parseFloat(newStaff.salary_q3) || 0) +
-                        (parseFloat(newStaff.salary_q4) || 0)
-                      ).toLocaleString('en-US', { maximumFractionDigits: 0 })}</span></p>
+                      {(() => {
+                        const projData = calculateProjectedAnnualSalary(newStaff);
+                        return (
+                          <p className="text-xs text-muted-foreground">
+                            Projected Annual Salary: <span className="font-semibold text-foreground">${projData.total.toLocaleString('en-US', { maximumFractionDigits: 0 })}</span> <span className="text-muted-foreground">({projData.formula})</span>
+                          </p>
+                        );
+                      })()}
                     </div>
                   </div>
 
@@ -376,7 +393,7 @@ export default function Payouts() {
               staff={selectedStaffBonus}
               jobClass={selectedStaffBonus.jobClass}
               bonus={selectedStaffBonus.quarterlyBonus}
-              salary={selectedStaffBonus.estimatedAnnualSalary}
+              salary={selectedStaffBonus.projectedAnnualSalary}
               scorecard={selectedStaffBonus.scorecard}
               entry={selectedStaffBonus.entry}
             />
