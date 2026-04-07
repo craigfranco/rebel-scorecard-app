@@ -9,6 +9,8 @@ import { useToast } from '@/components/ui/use-toast';
 import { calculateQuarterlyBonus, calculateAnnualBonus, getMetricStatus } from '@/lib/bonusCalculation';
 import { calculateScorecard, MONTHS, getQuarterFromMonth } from '@/lib/scoring';
 import StaffTable from '@/components/payouts/StaffTable';
+import BonusSummaryTable from '@/components/payouts/BonusSummaryTable';
+import PayoutDetailCard from '@/components/payouts/PayoutDetailCard';
 
 const CURRENT_YEAR = 2026;
 
@@ -247,6 +249,9 @@ export default function Payouts() {
           {/* Staff Table */}
           <StaffTable staff={staffMembers} jobClassifications={jobClassifications} />
 
+          {/* Bonus Summary Table */}
+          <BonusSummaryTable jobClassifications={jobClassifications} />
+
           {/* Add Staff Form Modal */}
           {showAddForm && (
             <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -344,58 +349,19 @@ export default function Payouts() {
             </div>
           )}
 
-          {/* Bonus Breakdown */}
+          {/* Payout Detail Card */}
           {selectedStaffBonus && (
-            <div className="bg-card rounded-2xl border border-border p-6 shadow-sm">
-              <h3 className="font-bold mb-4 text-lg">Bonus Breakdown — {selectedStaffBonus.name}</h3>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="bg-muted/50 text-muted-foreground text-xs uppercase tracking-wide">
-                      <th className="py-3 px-4 text-left font-semibold">Metric</th>
-                      <th className="py-3 px-4 text-center font-semibold">Actual</th>
-                      <th className="py-3 px-4 text-center font-semibold">Target</th>
-                      <th className="py-3 px-4 text-center font-semibold">Status</th>
-                      <th className="py-3 px-4 text-right font-semibold">Bonus %</th>
-                      <th className="py-3 px-4 text-right font-semibold">Bonus $</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr className="border-t border-border hover:bg-muted/30">
-                      <td className="py-3 px-4 font-medium">Base Salary</td>
-                      <td colSpan="5" className="py-3 px-4 text-right">${(selectedStaffBonus.estimatedAnnualSalary).toFixed(0)}</td>
-                    </tr>
-                    {selectedStaffBonus.quarterlyBonus && Object.entries(selectedStaffBonus.quarterlyBonus).map(([key, val]) => (
-                      typeof val === 'number' && key !== 'total' && (
-                        <tr key={key} className="border-t border-border hover:bg-muted/30">
-                          <td className="py-3 px-4 font-medium capitalize">{key.replace('_', ' ')}</td>
-                          <td className="py-3 px-4 text-center text-muted-foreground">—</td>
-                          <td className="py-3 px-4 text-center text-muted-foreground">—</td>
-                          <td className="py-3 px-4 text-center">
-                            <span className={`inline-flex items-center gap-1 text-xs font-semibold ${val > 0 ? 'text-pass' : 'text-fail'}`}>
-                              {val > 0 ? <Check className="w-3 h-3" /> : <X className="w-3 h-3" />}
-                            </span>
-                          </td>
-                          <td className="py-3 px-4 text-right">{(selectedStaffBonus.jobClass[`${key}_percentage`] || 0).toFixed(1)}%</td>
-                          <td className="py-3 px-4 text-right font-semibold">${(val || 0).toFixed(0)}</td>
-                        </tr>
-                      )
-                    ))}
-                    <tr className="border-t border-border bg-muted/30 font-bold">
-                      <td colSpan="5" className="py-3 px-4 text-right">Total Quarterly Payout</td>
-                      <td className="py-3 px-4 text-right text-primary">${(selectedStaffBonus.quarterlyBonus?.total || 0).toFixed(0)}</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
+            <PayoutDetailCard
+              staff={selectedStaffBonus}
+              jobClass={selectedStaffBonus.jobClass}
+              bonus={selectedStaffBonus.quarterlyBonus}
+              salary={selectedStaffBonus.estimatedAnnualSalary}
+              scorecard={selectedStaffBonus.scorecard}
+              entry={selectedStaffBonus.entry}
+            />
           )}
 
-          {/* Legend */}
-          <div className="bg-blue-50 rounded-2xl border border-blue-200 p-6 text-sm text-blue-900">
-            <p className="font-semibold mb-2">2026 Operations Bonuses</p>
-            <p className="text-xs">Quarterly bonuses are 50% of annual rates. Bonuses are earned when KPI targets are met (GOP, GOP Margin, RGI, GSS). Check marks indicate metrics that passed thresholds.</p>
-          </div>
+
         </>
       )}
     </div>

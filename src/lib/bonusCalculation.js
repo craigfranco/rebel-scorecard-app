@@ -5,7 +5,9 @@ export const calculateBonusForMetric = (staff, scorecard, jobClass, entry) => {
     rgi: 0,
     gss: 0,
     total: 0,
-    metricsHit: {}
+    metricsHit: {},
+    gopGatekeeperPassed: false,
+    gopGatekeeperMessage: ''
   };
 
   // GOP Gatekeeper: GOP actual must equal budgeted target AND GOP margin must exceed prior year margin
@@ -17,6 +19,11 @@ export const calculateBonusForMetric = (staff, scorecard, jobClass, entry) => {
     entry.gop_margin_prior != null &&
     entry.budgeted_gop_actual >= entry.budgeted_gop_target &&
     entry.gop_margin_actual > entry.gop_margin_prior;
+
+  bonuses.gopGatekeeperPassed = gopGatekeeperMet;
+  if (!gopGatekeeperMet) {
+    bonuses.gopGatekeeperMessage = 'GOP Gatekeeper FAILED';
+  }
 
   // GOP Bonus - 10% if gatekeeper passed
   if (gopGatekeeperMet) {
@@ -30,14 +37,12 @@ export const calculateBonusForMetric = (staff, scorecard, jobClass, entry) => {
     bonuses.metricsHit.gopMargin = true;
   }
 
-  // RGI Bonus - 7.5% for 0.1-2.0%, 15% for 2.1%+
+  // RGI Bonus - use high/low percentages for GM, flat for others
   if (scorecard.rgi?.pass) {
     const rgiChange = scorecard.rgiChange || 0;
-    if (rgiChange >= 2.1) {
-      bonuses.rgi = (staff.annual_salary * jobClass.rgi_bonus_percentage_high) / 100;
-    } else if (rgiChange >= 0.1) {
-      bonuses.rgi = (staff.annual_salary * jobClass.rgi_bonus_percentage_low) / 100;
-    }
+    const useHighPercentage = rgiChange >= 2.1;
+    const rgiPercent = useHighPercentage ? jobClass.rgi_bonus_percentage_high : jobClass.rgi_bonus_percentage_low;
+    bonuses.rgi = (staff.annual_salary * rgiPercent) / 100;
     bonuses.metricsHit.rgi = true;
   }
 
@@ -52,15 +57,17 @@ export const calculateBonusForMetric = (staff, scorecard, jobClass, entry) => {
 };
 
 export const calculateQuarterlyBonus = (staff, scorecard, jobClass, entry) => {
-  const bonus = calculateBonusForMetric(staff, scorecard, jobClass, entry);
+  const annualBonus = calculateBonusForMetric(staff, scorecard, jobClass, entry);
   // Quarterly is 50% of annual
   return {
-    ...bonus,
-    gop: bonus.gop * 0.5,
-    gopMargin: bonus.gopMargin * 0.5,
-    rgi: bonus.rgi * 0.5,
-    gss: bonus.gss * 0.5,
-    total: bonus.total * 0.5
+    ...annualBonus,
+    gop: annualBonus.gop * 0.5,
+    gopMargin: annualBonus.gopMargin * 0.5,
+    rgi: annualBonus.rgi * 0.5,
+    gss: annualBonus.gss * 0.5,
+    total: annualBonus.total * 0.5,
+    quarterlyAmount: annualBonus.total * 0.5,
+    annualAmount: annualBonus.total * 0.5
   };
 };
 
