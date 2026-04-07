@@ -27,7 +27,7 @@ export default function AppLayout() {
       >
         {/* Logo */}
          <div className="flex items-center gap-3 px-6 py-5 border-b border-white/10">
-           <img src="https://media.base44.com/images/public/69d3e20c8254476c324dc91c/03b78211b_generated_image.png" alt="Balanced Scorecard" className="w-9 h-9" />
+           <img src="https://media.base44.com/images/public/69d3e20c8254476c324dc91c/03b78211b_generated_image.png" alt="Balanced Scorecard" className="w-14 h-14 opacity-80" />
            <div>
              <div className="text-white font-bold text-sm leading-tight">Balanced</div>
              <div className="text-white/70 text-xs">Scorecard</div>
