@@ -99,7 +99,9 @@ export default function KpiBreakdown() {
         score = sc.gopMargin.score;
         pass = sc.gopMargin.pass;
         actual = entry.gop_margin_actual != null ? `${entry.gop_margin_actual.toFixed(1)}%` : '—';
-        target = `PY: ${entry.gop_margin_prior != null ? entry.gop_margin_prior.toFixed(1) : '—'}%`;
+        target = entry.gop_margin_actual != null && entry.gop_margin_prior != null
+          ? entry.gop_margin_actual - entry.gop_margin_prior
+          : null;
       } else if (activeKpi === 'rgi') {
         kpiData = sc.rgi;
         score = sc.rgi.score;
@@ -236,7 +238,10 @@ export default function KpiBreakdown() {
                 {activeKpi === 'rgi' && (
                   <th className="py-3 px-4 text-center font-semibold">RGI % Change YOY</th>
                 )}
-                {activeKpi !== 'rgi' && (
+                {activeKpi === 'gopMargin' && (
+                  <th className="py-3 px-4 text-center font-semibold">PY Growth</th>
+                )}
+                {activeKpi !== 'rgi' && activeKpi !== 'gopMargin' && (
                   <th className="py-3 px-4 text-center font-semibold">Target</th>
                 )}
                 <th className="py-3 px-4 text-center font-semibold cursor-pointer" onClick={() => handleSort('score')}>
@@ -274,7 +279,16 @@ export default function KpiBreakdown() {
                         ) : '—'}
                       </td>
                     )}
-                    {activeKpi !== 'rgi' && (
+                    {activeKpi === 'gopMargin' && (
+                      <td className="py-3 px-4 text-center text-sm font-bold">
+                        {entry && target !== null ? (
+                          <span style={{ color: target >= 0 ? '#4CAF50' : '#ef4444' }}>
+                            {target >= 0 ? '+' : ''}{target.toFixed(1)}pp
+                          </span>
+                        ) : '—'}
+                      </td>
+                    )}
+                    {activeKpi !== 'rgi' && activeKpi !== 'gopMargin' && (
                       <td className="py-3 px-4 text-center text-xs text-muted-foreground">
                         {entry ? target : '—'}
                       </td>
