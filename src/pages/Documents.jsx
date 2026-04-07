@@ -112,6 +112,19 @@ export default function Documents() {
   const extractAndImportKpis = async (file_url, properties, month, year) => {
     console.log('Starting extraction for:', file_url);
     setUploadStatus('AI is extracting KPI data…');
+
+    // For GOP P&L files: col layout is
+    //   col A (REBEL HOTEL CO.) = Actuals AMT
+    //   col B (col_1)           = Actuals %REV
+    //   col C (col_2)           = Budget AMT
+    //   col D (col_3)           = Budget %REV
+    //   col E (P & L...)        = Variance AMT
+    //   col F (col_5)           = Variance %REV
+    //   col G (col_6)           = Prior Year AMT
+    //   col H (col_7)           = Prior Year %REV
+    //   col K (col_10)          = Property name
+    // Data starts at row index 3 (row 4 in Excel, skipping 3 header rows)
+
     const result = await base44.integrations.Core.ExtractDataFromUploadedFile({
       file_url,
       json_schema: {
@@ -119,20 +132,20 @@ export default function Documents() {
         properties: {
           rows: {
             type: 'array',
-            description: 'Extract every hotel/property data row. For P&L files: each row has numeric columns first, then the Property name in the middle. For STR files: the property name is the first column. Skip header rows, total rows, and blank rows.',
+            description: 'Extract every hotel/property data row starting from the 4th row (index 3). The property name is in column K (col_10). Skip any row where col_10 is blank or says "Property". Also extract STR RevPAR index change and GSS scores if present.',
             items: {
               type: 'object',
               properties: {
-                hotel_name: { type: 'string', description: 'Hotel or property name. In P&L files look for the column labeled "Property" which appears in the middle of the row.' },
-                budgeted_gop_actual: { type: 'string', description: 'Period Actuals AMT — the first dollar amount column (GOP actual for the period).' },
-                gop_margin_actual: { type: 'string', description: 'Period Actuals %REV — the percentage column next to Actuals AMT.' },
-                budgeted_gop_target: { type: 'string', description: 'Period Budget AMT — the Budget dollar amount column.' },
-                gop_margin_budget: { type: 'string', description: 'Period Budget %REV — the percentage column next to Budget AMT.' },
-                gop_margin_prior: { type: 'string', description: 'Prior Year %REV — the percentage column for last year.' },
-                gop_margin_variance: { type: 'string', description: 'Variance %REV — difference between actual and budget %REV.' },
+                hotel_name:          { type: 'string', description: 'Property name from column K (col_10).' },
+                budgeted_gop_actual: { type: 'string', description: 'Actuals AMT from column A (first column, labeled REBEL HOTEL CO. in header).' },
+                gop_margin_actual:   { type: 'string', description: 'Actuals %REV from column B (col_1).' },
+                budgeted_gop_target: { type: 'string', description: 'Budget AMT from column C (col_2).' },
+                gop_margin_budget:   { type: 'string', description: 'Budget %REV from column D (col_3).' },
+                gop_margin_variance: { type: 'string', description: 'Variance %REV from column F (col_5).' },
+                gop_margin_prior:    { type: 'string', description: 'Prior Year %REV from column H (col_7).' },
                 revpar_index_change: { type: 'string', description: 'RevPAR Index % Change — only present in STR/RGI files.' },
-                gss_actual: { type: 'string', description: 'GSS score — only present in GSS report files.' },
-                gss_prior: { type: 'string', description: 'Prior year GSS score — only present in GSS report files.' },
+                gss_actual:          { type: 'string', description: 'GSS score — only present in GSS report files.' },
+                gss_prior:           { type: 'string', description: 'Prior year GSS score — only present in GSS report files.' },
               },
               required: ['hotel_name'],
             },
