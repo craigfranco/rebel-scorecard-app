@@ -58,8 +58,9 @@ export default function AppLayout() {
           })}
         </nav>
 
-        <div className="px-6 py-4 border-t border-white/10">
-          <p className="text-white/40 text-xs">© 2026 Hotel Performance</p>
+        <div className="px-6 py-4 border-t border-white/10 flex items-center gap-2">
+          <img src="https://media.base44.com/images/public/69d3e20c8254476c324dc91c/821dc32af_d1eb1b4f2_RBLMark-RH_Blue.png" alt="Rebel Hotel Company" className="w-5 h-5 brightness-0 invert" />
+          <span className="text-white text-xs">Powered by Rebel Hotel Company</span>
         </div>
       </aside>
 
