@@ -94,6 +94,9 @@ export default function KpiBreakdown() {
         pass = sc.gop.pass;
         actual = entry.budgeted_gop_actual != null ? `$${(entry.budgeted_gop_actual / 1000).toFixed(0)}K` : '—';
         target = entry.budgeted_gop_target != null ? `$${(entry.budgeted_gop_target / 1000).toFixed(0)}K` : '—';
+        entry._gop_variance = (entry.budgeted_gop_actual != null && entry.budgeted_gop_target != null)
+          ? entry.budgeted_gop_actual - entry.budgeted_gop_target
+          : null;
       } else if (activeKpi === 'gopMargin') {
         kpiData = sc.gopMargin;
         score = sc.gopMargin.score;
@@ -240,13 +243,19 @@ export default function KpiBreakdown() {
                 {activeKpi === 'rgi' && (
                   <th className="py-3 px-4 text-center font-semibold">RGI % Change YOY</th>
                 )}
+                {activeKpi === 'gop' && (
+                  <th className="py-3 px-4 text-center font-semibold">Budget</th>
+                )}
+                {activeKpi === 'gop' && (
+                  <th className="py-3 px-4 text-center font-semibold">vs. Budget</th>
+                )}
                 {activeKpi === 'gopMargin' && (
                   <th className="py-3 px-4 text-center font-semibold">Last Year %</th>
                 )}
                 {activeKpi === 'gopMargin' && (
                   <th className="py-3 px-4 text-center font-semibold">LY Growth</th>
                 )}
-                {activeKpi !== 'rgi' && activeKpi !== 'gopMargin' && (
+                {activeKpi !== 'rgi' && activeKpi !== 'gopMargin' && activeKpi !== 'gop' && (
                   <th className="py-3 px-4 text-center font-semibold">Target</th>
                 )}
 
@@ -285,6 +294,20 @@ export default function KpiBreakdown() {
                         ) : '—'}
                       </td>
                     )}
+                    {activeKpi === 'gop' && (
+                      <td className="py-3 px-4 text-center text-sm text-muted-foreground">
+                        {entry ? target : '—'}
+                      </td>
+                    )}
+                    {activeKpi === 'gop' && (
+                      <td className="py-3 px-4 text-center text-sm font-bold">
+                        {entry && entry._gop_variance != null ? (
+                          <span style={{ color: entry._gop_variance >= 0 ? '#4CAF50' : '#ef4444' }}>
+                            {entry._gop_variance >= 0 ? '+' : ''}${(entry._gop_variance / 1000).toFixed(0)}K
+                          </span>
+                        ) : '—'}
+                      </td>
+                    )}
                     {activeKpi === 'gopMargin' && (
                       <td className="py-3 px-4 text-center text-sm font-medium">
                         {entry && entry._ly_margin != null ? `${entry._ly_margin.toFixed(1)}%` : '—'}
@@ -299,8 +322,8 @@ export default function KpiBreakdown() {
                         ) : '—'}
                       </td>
                     )}
-                    {activeKpi !== 'rgi' && activeKpi !== 'gopMargin' && (
-                      <td className="py-3 px-4 text-center text-xs text-muted-foreground" colSpan={1}>
+                    {activeKpi !== 'rgi' && activeKpi !== 'gopMargin' && activeKpi !== 'gop' && (
+                      <td className="py-3 px-4 text-center text-xs text-muted-foreground">
                         {entry ? target : '—'}
                       </td>
                     )}
