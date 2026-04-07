@@ -23,6 +23,44 @@ export default function SeedOnMount() {
         await base44.entities.Property.create({ ...hotel, ...gss, is_active: true });
       }
       queryClient.invalidateQueries({ queryKey: ['properties'] });
+
+      // Seed job classifications
+      const existingJobs = await base44.entities.JobClassification.list('title', 5);
+      if (existingJobs.length === 0) {
+        const jobs = [
+          {
+            title: 'General Manager',
+            max_bonus_percentage: 50,
+            gop_bonus_percentage: 10,
+            gop_margin_bonus_percentage: 10,
+            rgi_bonus_percentage_low: 7.5,
+            rgi_bonus_percentage_high: 15,
+            gss_bonus_percentage: 15,
+          },
+          {
+            title: 'Asst. GM / EC Members',
+            max_bonus_percentage: 40,
+            gop_bonus_percentage: 10,
+            gop_margin_bonus_percentage: 10,
+            rgi_bonus_percentage_low: 5,
+            rgi_bonus_percentage_high: 10,
+            gss_bonus_percentage: 10,
+          },
+          {
+            title: 'Department Heads',
+            max_bonus_percentage: 20,
+            gop_bonus_percentage: 5,
+            gop_margin_bonus_percentage: 5,
+            rgi_bonus_percentage_low: 2,
+            rgi_bonus_percentage_high: 5,
+            gss_bonus_percentage: 8,
+          },
+        ];
+        for (const job of jobs) {
+          await base44.entities.JobClassification.create(job);
+        }
+        queryClient.invalidateQueries({ queryKey: ['job-classifications'] });
+      }
     };
 
     run().catch(() => {}); // silent fail if not authed yet
