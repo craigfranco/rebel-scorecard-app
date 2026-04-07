@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -12,6 +12,7 @@ import { getClosedQuarters, calculateEstimatedAnnualSalary } from '@/lib/salaryC
 import StaffTable from '@/components/payouts/StaffTable';
 import BonusSummaryTable from '@/components/payouts/BonusSummaryTable';
 import PayoutBreakdownCard from '@/components/payouts/PayoutBreakdownCard';
+import BonusPayoutDrillDown from '@/components/payouts/BonusPayoutDrillDown';
 
 const CURRENT_YEAR = 2026;
 
@@ -37,6 +38,8 @@ export default function Payouts() {
   const [selectedYear, setSelectedYear] = useState(CURRENT_YEAR);
   const [selectedStaffId, setSelectedStaffId] = useState('');
   const [showAddForm, setShowAddForm] = useState(false);
+  const [drillDownStaffId, setDrillDownStaffId] = useState(null);
+  const [drillDownQuarter, setDrillDownQuarter] = useState(null);
   const [newStaff, setNewStaff] = useState({ 
     name: '', 
     property_id: '', 
@@ -181,6 +184,28 @@ export default function Payouts() {
     setSelectedStaffId('');
   }, [selectedPropertyId]);
 
+  // Get drill-down staff and property for detail view
+  const drillDownStaff = drillDownStaffId ? allStaff.find(s => s.id === drillDownStaffId) : null;
+  const drillDownProperty = drillDownStaff ? properties.find(p => p.id === drillDownStaff.property_id) : null;
+  const drillDownJobClass = drillDownStaff ? jobClassifications.find(jc => jc.id === drillDownStaff.job_classification_id) : null;
+
+  if (drillDownStaffId && drillDownQuarter && drillDownStaff && drillDownProperty && drillDownJobClass) {
+    return (
+      <div className="p-4 lg:p-8 max-w-7xl mx-auto">
+        <BonusPayoutDrillDown
+          staff={drillDownStaff}
+          property={drillDownProperty}
+          jobClass={drillDownJobClass}
+          quarter={drillDownQuarter}
+          onClose={() => {
+            setDrillDownStaffId(null);
+            setDrillDownQuarter(null);
+          }}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="p-4 lg:p-8 space-y-6 max-w-7xl mx-auto">
       {/* Header */}
@@ -244,7 +269,14 @@ export default function Payouts() {
           </Button>
 
           {/* Staff Table */}
-          <StaffTable staff={staffMembers} jobClassifications={jobClassifications} />
+          <StaffTable
+            staff={staffMembers}
+            jobClassifications={jobClassifications}
+            onQuarterClick={(staffId, quarter) => {
+              setDrillDownStaffId(staffId);
+              setDrillDownQuarter(quarter);
+            }}
+          />
 
           {/* Bonus Summary Table */}
           <BonusSummaryTable jobClassifications={jobClassifications} />

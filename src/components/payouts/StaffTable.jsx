@@ -19,7 +19,7 @@ const JOB_CLASS_LABELS = {
   'Department Head': 'Department Heads',
 };
 
-export default function StaffTable({ staff = [], jobClassifications = [] }) {
+export default function StaffTable({ staff = [], jobClassifications = [], onQuarterClick }) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [editingStaffId, setEditingStaffId] = useState(null);
@@ -107,8 +107,17 @@ export default function StaffTable({ staff = [], jobClassifications = [] }) {
                       >
                         <td className="py-3 px-4 font-medium">{s.name}</td>
                         <td className="py-3 px-4 text-center text-muted-foreground text-xs">{classTitle}</td>
-                        <td className="py-3 px-4 text-center text-muted-foreground">
-                          {getDisplayedQ1(s)}
+                        <td className="py-3 px-4 text-center">
+                          {closedQuarters.includes(1) ? (
+                            <button
+                              onClick={() => onQuarterClick?.(s.id, 1)}
+                              className="text-primary hover:text-primary/80 hover:underline font-medium"
+                            >
+                              {getDisplayedQ1(s)}
+                            </button>
+                          ) : (
+                            <span className="text-muted-foreground">{getDisplayedQ1(s)}</span>
+                          )}
                         </td>
                         <td className="py-3 px-4 text-center font-semibold">
                           {formatEstimatedAnnual(s)}
