@@ -197,16 +197,19 @@ export default function Payouts() {
                   value={newStaff.name}
                   onChange={e => setNewStaff({ ...newStaff, name: e.target.value })}
                 />
-                <Select value={newStaff.job_classification_id} onValueChange={id => setNewStaff({ ...newStaff, job_classification_id: id })}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Job Title" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {jobClassifications.map(jc => (
-                      <SelectItem key={jc.id} value={jc.id}>{jc.title}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <div>
+                   <label className="text-xs text-muted-foreground font-semibold mb-1 block">Job Title</label>
+                   <Select value={newStaff.job_classification_id} onValueChange={id => setNewStaff({ ...newStaff, job_classification_id: id })}>
+                     <SelectTrigger className="w-full">
+                       <SelectValue placeholder="Select job title..." />
+                     </SelectTrigger>
+                     <SelectContent>
+                       {jobClassifications.map(jc => (
+                         <SelectItem key={jc.id} value={jc.id}>{jc.title}</SelectItem>
+                       ))}
+                     </SelectContent>
+                   </Select>
+                 </div>
                 <div>
                   <label className="text-xs text-muted-foreground font-semibold mb-1 block">Q1 Salary</label>
                   <Input
