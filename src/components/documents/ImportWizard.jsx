@@ -12,7 +12,7 @@ import { MONTHS, getQuarterFromMonth } from '@/lib/scoring';
 
 const CURRENT_YEAR = 2026;
 const CURRENT_MONTH = 1;
-const DOC_TYPES = ['GOP Report', 'RGI/STR Report', 'GSS Report', 'Other'];
+const DOC_TYPES = ['GOP Report', 'RGI/STR Report', 'GSS Report', 'Forecast Accuracy', 'Other'];
 
 // For the known Rebel P&L file format, hardcode the column mapping
 const REBEL_PL_MAPPING = {
@@ -50,11 +50,12 @@ export default function ImportWizard({ file, properties, onClose, onSuccess }) {
       .then(result => {
         setParsed(result);
         // Auto-detect doc type from filename
-        const fn = file.name.toLowerCase();
-        let detectedType = 'GOP Report';
-        if (fn.includes('str') || fn.includes('rgi') || fn.includes('revpar')) detectedType = 'RGI/STR Report';
-        else if (fn.includes('gss') || fn.includes('satisfaction')) detectedType = 'GSS Report';
-        setDocType(detectedType);
+           const fn = file.name.toLowerCase();
+           let detectedType = 'GOP Report';
+           if (fn.includes('str') || fn.includes('rgi') || fn.includes('revpar')) detectedType = 'RGI/STR Report';
+           else if (fn.includes('gss') || fn.includes('satisfaction')) detectedType = 'GSS Report';
+           else if (fn.includes('forecast')) detectedType = 'Forecast Accuracy';
+           setDocType(detectedType);
 
         // Auto-detect mapping
         let autoMap;
@@ -118,7 +119,8 @@ export default function ImportWizard({ file, properties, onClose, onSuccess }) {
       if (row.revpar_index != null)        patch.revpar_index        = row.revpar_index;
       if (row.revpar_index_prior != null)  patch.revpar_index_prior  = row.revpar_index_prior;
       if (row.gss_actual != null)          patch.gss_actual          = row.gss_actual;
-      if (row.gss_prior != null)           patch.gss_prior           = row.gss_prior;
+       if (row.gss_prior != null)           patch.gss_prior           = row.gss_prior;
+       if (row.forecast_kicker != null)     patch.forecast_kicker     = row.forecast_kicker;
 
       if (Object.keys(patch).length === 0) { fail++; continue; }
 
