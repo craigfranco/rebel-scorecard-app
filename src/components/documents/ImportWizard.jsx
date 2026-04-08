@@ -120,6 +120,8 @@ export default function ImportWizard({ file, properties, onClose, onSuccess }) {
       if (row.revpar_index_prior != null)  patch.revpar_index_prior  = row.revpar_index_prior;
       if (row.gss_actual != null)          patch.gss_actual          = row.gss_actual;
        if (row.gss_prior != null)           patch.gss_prior           = row.gss_prior;
+       if (row.forecast_actual_revenue != null) patch.forecast_actual_revenue = row.forecast_actual_revenue;
+       if (row.forecast_primary_forecast != null) patch.forecast_primary_forecast = row.forecast_primary_forecast;
        if (row.forecast_actual_revenue != null && row.forecast_primary_forecast != null) {
          const diff = row.forecast_actual_revenue - row.forecast_primary_forecast;
          patch.forecast_kicker = diff >= 0;
