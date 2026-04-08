@@ -353,13 +353,17 @@ export default function HotelDetail() {
           </div>
 
           {/* Kickers */}
-          <div className="px-6 py-4 border-t border-border bg-muted/30 flex gap-6">
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium text-muted-foreground">Forecast Kicker:</span>
-              <span className={`text-sm font-bold ${activeEntry.forecast_kicker ? 'text-green-600' : 'text-red-500'}`}>
-                {activeEntry.forecast_kicker ? 'HIT ✓' : 'MISS ✗'}
-              </span>
-            </div>
+           <div className="px-6 py-4 border-t border-border bg-muted/30 flex gap-6">
+             <div className="flex items-center gap-2">
+               <span className="text-sm font-medium text-muted-foreground">Forecast Kicker:</span>
+               {!activeEntry.forecast_primary_forecast ? (
+                 <span className="text-sm font-bold text-red-500">ERROR: Forecast value is zero</span>
+               ) : (
+                 <span className={`text-sm font-bold ${activeEntry.forecast_kicker ? 'text-green-600' : 'text-red-500'}`}>
+                   {activeEntry.forecast_kicker ? 'HIT ✓' : 'MISS ✗'}
+                 </span>
+               )}
+             </div>
             <div className="flex items-center gap-2">
               <span className="text-sm font-medium text-muted-foreground">Red Zone Kicker:</span>
               <span className={`text-sm font-bold ${activeEntry.red_zone_kicker ? 'text-green-600' : 'text-red-500'}`}>
