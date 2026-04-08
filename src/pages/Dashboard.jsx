@@ -305,7 +305,7 @@ export default function Dashboard() {
                 <ScoreGauge score={scorecard.total.total} pass={scorecard.total.pass} />
               )}
               <div className="w-full space-y-2">
-                <KickerBadge type="forecast" hit={activeEntry.forecast_kicker || false} />
+                <KickerBadge type="forecast" hit={activeEntry.forecast_kicker || false} forecastValue={activeEntry.forecast_primary_forecast} />
                 <KickerBadge type="redzone" hit={activeEntry.red_zone_kicker || false} />
               </div>
             </div>
