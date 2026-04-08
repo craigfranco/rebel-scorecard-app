@@ -21,6 +21,10 @@ function aggregateEntries(arr) {
   const sumTargetGop = sorted.reduce((s, e) => s + (e.budgeted_gop_target || 0), 0);
   const sumPriorGop = sorted.reduce((s, e) => s + (e.budgeted_gop_prior || 0), 0);
   
+  const avgRevparIndex = sorted.reduce((s, e) => s + (e.revpar_index || 0), 0) / sorted.length;
+  const avgRevparIndexPrior = sorted.reduce((s, e) => s + (e.revpar_index_prior || 0), 0) / sorted.length;
+  const revparIndexChange = avgRevparIndexPrior > 0 ? ((avgRevparIndex - avgRevparIndexPrior) / avgRevparIndexPrior) * 100 : null;
+  
   return {
     ...last,
     budgeted_gop_actual: sumActualGop,
@@ -28,6 +32,9 @@ function aggregateEntries(arr) {
     budgeted_gop_prior: sumPriorGop,
     gop_margin_actual: sumTargetGop > 0 ? (sumActualGop / sumTargetGop) * 100 : null,
     gop_margin_prior: sumPriorGop > 0 ? (sumActualGop / sumPriorGop) * 100 : null,
+    revpar_index: avgRevparIndex,
+    revpar_index_prior: avgRevparIndexPrior,
+    revpar_index_change: revparIndexChange,
   };
 }
 
