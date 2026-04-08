@@ -8,7 +8,7 @@ import { ArrowUp, ArrowDown, Minus, ChevronUp, ChevronDown, ChevronsUpDown } fro
 import { calculateScorecard, MONTHS, getQuarterFromMonth } from '../lib/scoring';
 
 const CURRENT_YEAR = 2026;
-const CURRENT_MONTH = 3;
+const CURRENT_MONTH = 1;
 
 const KPI_TABS = [
   { key: 'gop', label: 'Budgeted GOP', max: 35 },
