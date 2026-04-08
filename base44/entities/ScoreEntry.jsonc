@@ -65,6 +65,14 @@
       "type": "number",
       "description": "GSS score prior year"
     },
+    "forecast_actual_revenue": {
+      "type": "number",
+      "description": "Actual revenue for forecast accuracy"
+    },
+    "forecast_primary_forecast": {
+      "type": "number",
+      "description": "Primary forecast revenue for forecast accuracy"
+    },
     "forecast_kicker": {
       "type": "boolean",
       "description": "Forecast accuracy: actual vs primary forecast within acceptable range"
