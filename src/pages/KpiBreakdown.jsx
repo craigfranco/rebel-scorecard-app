@@ -120,10 +120,10 @@ export default function KpiBreakdown() {
         actual = entry.gss_actual != null ? entry.gss_actual : '—';
         target = `+${sc.gssStd.target} YOY`;
       } else if (activeKpi === 'forecast') {
-        pass = entry.forecast_kicker || false;
+        pass = entry.forecast_kicker === 'Hit';
         score = pass ? 1 : 0;
-        actual = pass ? 'HIT' : 'MISS';
-        target = '3 of 4 quarters ±3%';
+        actual = entry.forecast_kicker || '—';
+        target = '—';
       } else if (activeKpi === 'redzone') {
         pass = entry.red_zone_kicker || false;
         score = pass ? 1 : 0;
