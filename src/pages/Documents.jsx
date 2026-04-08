@@ -16,6 +16,7 @@ const KPI_TAG_STYLES = {
   'GOP Report':     { label: 'GOP',     bg: 'bg-emerald-50', text: 'text-emerald-700' },
   'RGI/STR Report': { label: 'RGI/STR', bg: 'bg-blue-50',    text: 'text-blue-700' },
   'GSS Report':     { label: 'GSS',     bg: 'bg-purple-50',  text: 'text-purple-700' },
+  'Forecast Accuracy': { label: 'Forecast', bg: 'bg-amber-50', text: 'text-amber-700' },
   'Other':          { label: 'Other',   bg: 'bg-muted',      text: 'text-muted-foreground' },
 };
 
@@ -32,6 +33,7 @@ const DOC_TYPE_FIELDS = {
   'GOP Report': ['budgeted_gop_actual', 'budgeted_gop_target', 'gop_margin_actual', 'gop_margin_budget', 'gop_margin_variance', 'gop_margin_prior'],
   'RGI/STR Report': ['revpar_index_change'],
   'GSS Report': ['gss_actual', 'gss_prior'],
+  'Forecast Accuracy': ['forecast_kicker'],
 };
 
 export default function Documents() {
@@ -107,7 +109,7 @@ export default function Documents() {
       <div className="bg-card rounded-2xl border border-border shadow-sm p-6 space-y-4">
         <h2 className="font-bold text-foreground">Upload a Report</h2>
         <p className="text-sm text-muted-foreground">
-          Upload a GOP, RGI/STR, or GSS report. The app will read the file, let you map columns, match hotels, and confirm before writing any data.
+          Upload a GOP, RGI/STR, GSS, or Forecast Accuracy report. The app will read the file, let you map columns, match hotels, and confirm before writing any data.
         </p>
         <UploadZone
           onFile={handleFile}
@@ -134,6 +136,7 @@ export default function Documents() {
               <SelectItem value="GOP Report">GOP</SelectItem>
               <SelectItem value="RGI/STR Report">RGI/STR</SelectItem>
               <SelectItem value="GSS Report">GSS</SelectItem>
+              <SelectItem value="Forecast Accuracy">Forecast Accuracy</SelectItem>
             </SelectContent>
           </Select>
           <Select value={String(clearMonth)} onValueChange={v => setClearMonth(Number(v))}>
