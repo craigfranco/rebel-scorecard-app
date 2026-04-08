@@ -16,12 +16,18 @@ function aggregateEntries(arr) {
   if (!arr.length) return null;
   const sorted = [...arr].sort((a, b) => a.month - b.month);
   const last = sorted[sorted.length - 1];
+  
+  const sumActualGop = sorted.reduce((s, e) => s + (e.budgeted_gop_actual || 0), 0);
+  const sumTargetGop = sorted.reduce((s, e) => s + (e.budgeted_gop_target || 0), 0);
+  const sumPriorGop = sorted.reduce((s, e) => s + (e.budgeted_gop_prior || 0), 0);
+  
   return {
     ...last,
-    budgeted_gop_actual: sorted.reduce((s, e) => s + (e.budgeted_gop_actual || 0), 0),
-    budgeted_gop_target: sorted.reduce((s, e) => s + (e.budgeted_gop_target || 0), 0),
-    gop_margin_actual: sorted.reduce((s, e) => s + (e.gop_margin_actual || 0), 0) / sorted.length,
-    gop_margin_prior: sorted.reduce((s, e) => s + (e.gop_margin_prior || 0), 0) / sorted.length,
+    budgeted_gop_actual: sumActualGop,
+    budgeted_gop_target: sumTargetGop,
+    budgeted_gop_prior: sumPriorGop,
+    gop_margin_actual: sumTargetGop > 0 ? (sumActualGop / sumTargetGop) * 100 : null,
+    gop_margin_prior: sumPriorGop > 0 ? (sumActualGop / sumPriorGop) * 100 : null,
   };
 }
 
