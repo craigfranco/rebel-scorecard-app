@@ -122,8 +122,8 @@ export default function KpiBreakdown() {
       } else if (activeKpi === 'forecast') {
         pass = entry.forecast_kicker || false;
         score = pass ? 1 : 0;
-        actual = entry.forecast_result || '—';
-        target = '—';
+        actual = entry.forecast_actual_revenue != null ? `$${(entry.forecast_actual_revenue / 1000).toFixed(0)}K` : '—';
+        target = entry.forecast_primary_forecast != null ? `$${(entry.forecast_primary_forecast / 1000).toFixed(0)}K` : '—';
       } else if (activeKpi === 'redzone') {
         pass = entry.red_zone_kicker || false;
         score = pass ? 1 : 0;
@@ -255,7 +255,13 @@ export default function KpiBreakdown() {
                 {activeKpi === 'gopMargin' && (
                   <th className="py-3 px-4 text-center font-semibold">LY Growth</th>
                 )}
-                {activeKpi !== 'rgi' && activeKpi !== 'gopMargin' && activeKpi !== 'gop' && (
+                {activeKpi === 'forecast' && (
+                  <th className="py-3 px-4 text-center font-semibold">Forecast</th>
+                )}
+                {activeKpi === 'forecast' && (
+                  <th className="py-3 px-4 text-center font-semibold">Variance</th>
+                )}
+                {activeKpi !== 'rgi' && activeKpi !== 'gopMargin' && activeKpi !== 'gop' && activeKpi !== 'forecast' && (
                   <th className="py-3 px-4 text-center font-semibold">Target</th>
                 )}
 
@@ -322,7 +328,21 @@ export default function KpiBreakdown() {
                         ) : '—'}
                       </td>
                     )}
-                    {activeKpi !== 'rgi' && activeKpi !== 'gopMargin' && activeKpi !== 'gop' && (
+                    {activeKpi === 'forecast' && (
+                      <td className="py-3 px-4 text-center text-sm text-muted-foreground">
+                        {entry ? target : '—'}
+                      </td>
+                    )}
+                    {activeKpi === 'forecast' && (
+                      <td className="py-3 px-4 text-center text-sm font-bold">
+                        {entry && entry.forecast_actual_revenue != null && entry.forecast_primary_forecast != null ? (
+                          <span style={{ color: entry.forecast_actual_revenue >= entry.forecast_primary_forecast ? '#4CAF50' : '#ef4444' }}>
+                            {entry.forecast_actual_revenue >= entry.forecast_primary_forecast ? '+' : ''}{((entry.forecast_actual_revenue - entry.forecast_primary_forecast) / 1000).toFixed(0)}K
+                          </span>
+                        ) : '—'}
+                      </td>
+                    )}
+                    {activeKpi !== 'rgi' && activeKpi !== 'gopMargin' && activeKpi !== 'gop' && activeKpi !== 'forecast' && (
                       <td className="py-3 px-4 text-center text-xs text-muted-foreground">
                         {entry ? target : '—'}
                       </td>
@@ -340,7 +360,7 @@ export default function KpiBreakdown() {
                           className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold text-white"
                           style={{ backgroundColor: pass ? '#4CAF50' : '#ef4444' }}
                         >
-                          {pass ? 'PASS' : 'FAIL'}
+                          {activeKpi === 'forecast' ? (pass ? 'HIT' : 'MISS') : (pass ? 'PASS' : 'FAIL')}
                         </span>
                       ) : (
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-muted text-muted-foreground">
