@@ -46,18 +46,11 @@ export function calcRGIScore(revparIndexChange) {
 }
 
 export function calcGSSScore(actual, prior, gssTarget) {
-   if (actual == null || prior == null) return { score: 0, diff: 0, pass: false, incomplete: true };
-   const diff = actual - prior;
-   const pass = diff >= gssTarget;
-   const score = pass ? 15 : Math.min(14, Math.max(0, (diff / gssTarget) * 15));
-   return { score: Math.round(score * 10) / 10, diff: Math.round(diff * 100) / 100, pass, incomplete: false };
-}
-
-export function calcForecastAccuracyScore(forecastResult) {
-   if (forecastResult == null || forecastResult === '') return { score: 0, pass: false, incomplete: true };
-   const pass = forecastResult === 'Hit';
-   const score = pass ? 5 : 0;
-   return { score, pass, incomplete: false };
+  if (actual == null || prior == null) return { score: 0, diff: 0, pass: false, incomplete: true };
+  const diff = actual - prior;
+  const pass = diff >= gssTarget;
+  const score = pass ? 15 : Math.min(14, Math.max(0, (diff / gssTarget) * 15));
+  return { score: Math.round(score * 10) / 10, diff: Math.round(diff * 100) / 100, pass, incomplete: false };
 }
 
 export function calcTotalScore(gopScore, gopMarginScore, rgiScore, gssScore) {
@@ -82,19 +75,17 @@ export function calculateScorecard(entry, property) {
     gssStd.target
   );
   const total = calcTotalScore(gop.score, gopMargin.score, rgi.score, gss.score);
-  const forecastAccuracy = calcForecastAccuracyScore(entry.forecast_kicker);
   return {
     gop,
     gopMargin,
     rgi,
     gss,
-    forecastAccuracy,
     gssStd,
     total,
     forecastKicker: entry.forecast_kicker || false,
     redZoneKicker: entry.red_zone_kicker || false,
   };
-  }
+}
 
 export const MONTHS = [
   'January', 'February', 'March', 'April', 'May', 'June',
