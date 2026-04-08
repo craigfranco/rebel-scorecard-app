@@ -67,7 +67,15 @@
     },
     "forecast_kicker": {
       "type": "boolean",
-      "description": "3 of 4 quarterly forecasts within +/-3%"
+      "description": "Forecast accuracy: actual vs primary forecast within acceptable range"
+    },
+    "forecast_result": {
+      "type": "string",
+      "enum": [
+        "Hit",
+        "Miss"
+      ],
+      "description": "Forecast accuracy result (Hit if actual >= forecast, Miss otherwise)"
     },
     "red_zone_kicker": {
       "type": "boolean",

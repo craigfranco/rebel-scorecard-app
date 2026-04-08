@@ -120,9 +120,9 @@ export default function KpiBreakdown() {
         actual = entry.gss_actual != null ? entry.gss_actual : '—';
         target = `+${sc.gssStd.target} YOY`;
       } else if (activeKpi === 'forecast') {
-        pass = entry.forecast_kicker === 'Hit';
+        pass = entry.forecast_kicker || false;
         score = pass ? 1 : 0;
-        actual = entry.forecast_kicker || '—';
+        actual = entry.forecast_result || '—';
         target = '—';
       } else if (activeKpi === 'redzone') {
         pass = entry.red_zone_kicker || false;

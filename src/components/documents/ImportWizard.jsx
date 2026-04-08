@@ -122,7 +122,8 @@ export default function ImportWizard({ file, properties, onClose, onSuccess }) {
        if (row.gss_prior != null)           patch.gss_prior           = row.gss_prior;
        if (row.forecast_actual_revenue != null && row.forecast_primary_forecast != null) {
          const diff = row.forecast_actual_revenue - row.forecast_primary_forecast;
-         patch.forecast_kicker = diff >= 0 ? 'Hit' : 'Miss';
+         patch.forecast_kicker = diff >= 0;
+         patch.forecast_result = diff >= 0 ? 'Hit' : 'Miss';
        }
 
       if (Object.keys(patch).length === 0) { fail++; continue; }
