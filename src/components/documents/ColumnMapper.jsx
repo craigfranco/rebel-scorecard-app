@@ -22,6 +22,11 @@ const KPI_FIELDS = {
     { key: 'gss_actual',          label: 'GSS Score (Actual)', required: true },
     { key: 'gss_prior',           label: 'GSS Score (Prior Year)' },
   ],
+  'Forecast Accuracy': [
+    { key: 'hotel_name',                 label: 'Hotel / Property Name', required: true },
+    { key: 'forecast_actual_revenue',    label: 'Actual Revenue ($)', required: true },
+    { key: 'forecast_primary_forecast',  label: 'Primary Forecast Revenue ($)', required: true },
+  ],
 };
 
 export default function ColumnMapper({ headers, mapping, setMapping, docType }) {

@@ -120,7 +120,10 @@ export default function ImportWizard({ file, properties, onClose, onSuccess }) {
       if (row.revpar_index_prior != null)  patch.revpar_index_prior  = row.revpar_index_prior;
       if (row.gss_actual != null)          patch.gss_actual          = row.gss_actual;
        if (row.gss_prior != null)           patch.gss_prior           = row.gss_prior;
-       if (row.forecast_kicker != null)     patch.forecast_kicker     = row.forecast_kicker;
+       if (row.forecast_actual_revenue != null && row.forecast_primary_forecast != null) {
+         const diff = row.forecast_actual_revenue - row.forecast_primary_forecast;
+         patch.forecast_kicker = diff >= 0 ? 'Hit' : 'Miss';
+       }
 
       if (Object.keys(patch).length === 0) { fail++; continue; }
 

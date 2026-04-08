@@ -150,6 +150,13 @@ export function autoDetectMapping(headers, docType) {
       gss_prior:  find('gssprior', 'prioryear', 'prior', 'lastyear') ?? null,
     };
   }
+  if (docType === 'Forecast Accuracy') {
+    return {
+      ...base,
+      forecast_actual_revenue: find('actualrevenue', 'actualrev', 'actual') ?? null,
+      forecast_primary_forecast: find('primaryforecast', 'forecast', 'forecastrev') ?? null,
+    };
+  }
   return base;
 }
 
@@ -180,6 +187,8 @@ export function applyMapping(rows, mapping) {
       revpar_index_prior:  num(get(mapping.revpar_index_prior)),
       gss_actual:          num(get(mapping.gss_actual)),
       gss_prior:           num(get(mapping.gss_prior)),
-    };
-  }).filter(r => r.hotel_name && r.hotel_name !== 'Property' && r.hotel_name.length > 1);
+      forecast_actual_revenue: num(get(mapping.forecast_actual_revenue)),
+      forecast_primary_forecast: num(get(mapping.forecast_primary_forecast)),
+      };
+      }).filter(r => r.hotel_name && r.hotel_name !== 'Property' && r.hotel_name.length > 1);
 }
