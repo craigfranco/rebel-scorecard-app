@@ -5,7 +5,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { Download, ArrowLeft, User, MapPin, FileText, Loader2 } from 'lucide-react';
+import { Download, ArrowLeft, User, MapPin, Loader2 } from 'lucide-react';
 import { calculateScorecard, MONTHS, getQuarterFromMonth } from '../lib/scoring';
 import { useToast } from '@/components/ui/use-toast';
 
@@ -46,17 +46,6 @@ export default function HotelDetail() {
     enabled: !!propertyId,
   });
 
-  const { data: documents = [] } = useQuery({
-    queryKey: ['docs', propertyId],
-    queryFn: () => base44.entities.Document.filter({ property_id: propertyId }),
-    enabled: !!propertyId,
-  });
-
-  const { data: sharedDocs = [] } = useQuery({
-    queryKey: ['docs-shared'],
-    queryFn: () => base44.entities.Document.filter({ scope: 'company-wide' }),
-  });
-
   const getActiveEntry = () => {
     if (timeFilter === 'month') return entries.find(e => e.month === selectedMonth && e.year === CURRENT_YEAR) || {};
     if (timeFilter === 'quarter') {
@@ -70,7 +59,6 @@ export default function HotelDetail() {
 
   const activeEntry = getActiveEntry();
   const scorecard = property ? calculateScorecard(activeEntry, property) : null;
-  const allDocs = [...documents, ...sharedDocs];
 
   const periodLabel = timeFilter === 'month'
     ? `${MONTHS[selectedMonth - 1]} ${CURRENT_YEAR}`
@@ -391,30 +379,7 @@ export default function HotelDetail() {
         </div>
       )}
 
-      {/* Documents */}
-      {allDocs.length > 0 && (
-        <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
-          <div className="px-6 py-4 border-b border-border">
-            <h2 className="font-bold text-foreground">Linked Documents ({allDocs.length})</h2>
-          </div>
-          <div className="divide-y divide-border">
-            {allDocs.map(doc => (
-              <div key={doc.id} className="px-6 py-3 flex items-center gap-3 hover:bg-muted/20">
-                <FileText className="w-4 h-4 text-muted-foreground shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <div className="font-medium text-sm truncate">{doc.filename}</div>
-                  <div className="text-xs text-muted-foreground">{doc.doc_type} · {doc.scope === 'company-wide' ? 'Shared' : 'Hotel-specific'}</div>
-                </div>
-                <a href={doc.file_url} target="_blank" rel="noopener noreferrer">
-                  <Button size="sm" variant="ghost" className="gap-1 h-7 text-xs">
-                    <Download className="w-3 h-3" /> Download
-                  </Button>
-                </a>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+
     </div>
   );
 }
