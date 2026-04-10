@@ -36,7 +36,6 @@ export default function BonusPayoutDrillDown({ staff, property, jobClass, quarte
     : null;
 
   const annualSalary = calculateEstimatedAnnualSalary(staff, closedQuarters);
-  const q1Salary = staff.salary_q1 || 0;
 
   // Calculate bonus details
   const scorecardData = latestEntry ? calculateScorecard(latestEntry, property) : null;
@@ -127,10 +126,11 @@ export default function BonusPayoutDrillDown({ staff, property, jobClass, quarte
 
   const quarterlySubtotal = metrics.reduce((sum, m) => sum + (m.status === 'pass' ? m.quarterly : 0), 0);
   const annualSubtotal = metrics.reduce((sum, m) => sum + (m.status === 'pass' ? m.annual : 0), 0);
-  const maxBonus = (annualSalary * jobClass.max_bonus_percentage) / 100;
-  const finalBonus = Math.min(annualSubtotal, maxBonus);
-  const quarterlyPayout = finalBonus * 0.5;
-  const annualPayout = finalBonus * 0.5;
+  const maxQuarterlyBonus = (quarterlySalary * jobClass.max_bonus_percentage) / 100;
+  const maxAnnualBonus = (annualSalary * jobClass.max_bonus_percentage) / 100;
+  const finalQuarterlyBonus = Math.min(quarterlySubtotal, maxQuarterlyBonus);
+  const finalAnnualBonus = Math.min(annualSubtotal, maxAnnualBonus);
+  const maxBonus = maxAnnualBonus;
 
   const StatusBadge = ({ status }) => {
     if (status === 'pass') return <span className="inline-flex items-center gap-1 text-pass font-semibold text-xs"><Check className="w-4 h-4" /> Pass</span>;
@@ -171,23 +171,19 @@ export default function BonusPayoutDrillDown({ staff, property, jobClass, quarte
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6 text-sm">
           <div className="bg-card rounded-lg p-4 border border-border">
-            <p className="text-muted-foreground text-xs mb-1">Q1 Salary</p>
-            <p className="font-bold text-lg">${q1Salary.toLocaleString('en-US', { maximumFractionDigits: 0 })}</p>
+            <p className="text-muted-foreground text-xs mb-1">Q{quarter} Salary</p>
+            <p className="font-bold text-lg">${quarterlySalary.toLocaleString('en-US', { maximumFractionDigits: 0 })}</p>
           </div>
           <div className="bg-card rounded-lg p-4 border border-border">
             <p className="text-muted-foreground text-xs mb-1">Estimated Annual Salary</p>
             <p className="font-bold text-lg">${annualSalary.toLocaleString('en-US', { maximumFractionDigits: 0 })}</p>
-            <p className="text-muted-foreground text-xs mt-1">(Q1 × 4)</p>
+            <p className="text-muted-foreground text-xs mt-1">(sum of quarterly salaries)</p>
           </div>
           <div className="bg-card rounded-lg p-4 border border-border">
             <p className="text-muted-foreground text-xs mb-1">Max Bonus Potential</p>
-            <p className="font-bold text-lg">${maxBonus.toLocaleString('en-US', { maximumFractionDigits: 0 })}</p>
-            <p className="text-muted-foreground text-xs mt-1">({jobClass?.max_bonus_percentage}%)</p>
-          </div>
-          <div className="bg-card rounded-lg p-4 border border-border">
-            <p className="text-muted-foreground text-xs mb-1">Total Projected Bonus</p>
-            <p className="font-bold text-lg text-navy">${finalBonus.toLocaleString('en-US', { maximumFractionDigits: 0 })}</p>
-            <p className="text-muted-foreground text-xs mt-1">{((finalBonus / annualSalary) * 100).toFixed(1)}% of salary</p>
+            <p className="font-bold text-lg">${maxQuarterlyBonus.toLocaleString('en-US', { maximumFractionDigits: 0 })}</p>
+            <p className="font-bold text-lg text-navy">${finalQuarterlyBonus.toLocaleString('en-US', { maximumFractionDigits: 0 })}</p>
+            <p className="text-muted-foreground text-xs mt-1">{quarterlySalary > 0 ? ((finalQuarterlyBonus / quarterlySalary) * 100).toFixed(1) : '0'}% of Q{quarter} salary</p>
           </div>
         </div>
       </div>
@@ -296,28 +292,28 @@ export default function BonusPayoutDrillDown({ staff, property, jobClass, quarte
       <div className="rounded-lg p-6" style={{ backgroundColor: '#2d4b5e' }}>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-6 text-white text-sm">
           <div>
-            <p className="text-white/70 text-xs mb-1">Q1 Quarterly Payout (50%)</p>
-            <p className="font-bold text-2xl">${quarterlyPayout.toLocaleString('en-US', { maximumFractionDigits: 0 })}</p>
+            <p className="text-white/70 text-xs mb-1">Q{quarter} Quarterly Payout</p>
+            <p className="font-bold text-2xl">${finalQuarterlyBonus.toLocaleString('en-US', { maximumFractionDigits: 0 })}</p>
           </div>
           <div>
             <p className="text-white/70 text-xs mb-1">Projected Annual Payout (50%)</p>
-            <p className="font-bold text-2xl">${annualPayout.toLocaleString('en-US', { maximumFractionDigits: 0 })}</p>
+            <p className="font-bold text-2xl">${(finalAnnualBonus * 0.5).toLocaleString('en-US', { maximumFractionDigits: 0 })}</p>
           </div>
           <div>
             <p className="text-white/70 text-xs mb-1">TOTAL PROJECTED BONUS</p>
-            <p className="font-bold text-2xl">${finalBonus.toLocaleString('en-US', { maximumFractionDigits: 0 })}</p>
+            <p className="font-bold text-2xl">${(finalQuarterlyBonus + finalAnnualBonus * 0.5).toLocaleString('en-US', { maximumFractionDigits: 0 })}</p>
           </div>
           <div>
-            <p className="text-white/70 text-xs mb-1">As % of Est. Annual Salary</p>
-            <p className="font-bold text-2xl">{((finalBonus / annualSalary) * 100).toFixed(2)}%</p>
+            <p className="text-white/70 text-xs mb-1">As % of Q{quarter} Salary</p>
+            <p className="font-bold text-2xl">{quarterlySalary > 0 ? ((finalQuarterlyBonus / quarterlySalary) * 100).toFixed(2) : '0'}%</p>
           </div>
           <div>
-            <p className="text-white/70 text-xs mb-1">Max Possible Bonus</p>
-            <p className="font-bold text-2xl">${maxBonus.toLocaleString('en-US', { maximumFractionDigits: 0 })}</p>
+            <p className="text-white/70 text-xs mb-1">Max Q{quarter} Bonus</p>
+            <p className="font-bold text-2xl">${maxQuarterlyBonus.toLocaleString('en-US', { maximumFractionDigits: 0 })}</p>
           </div>
           <div>
             <p className="text-white/70 text-xs mb-1">Achievement</p>
-            <p className="font-bold text-2xl">{((finalBonus / maxBonus) * 100).toFixed(0)}% of max</p>
+            <p className="font-bold text-2xl">{maxQuarterlyBonus > 0 ? ((finalQuarterlyBonus / maxQuarterlyBonus) * 100).toFixed(0) : '0'}% of max</p>
           </div>
         </div>
       </div>

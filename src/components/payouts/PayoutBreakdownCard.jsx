@@ -41,7 +41,14 @@ export default function PayoutBreakdownCard({ staff, jobClass, bonus, salary, sc
   if (!staff || !jobClass || !bonus) return null;
 
   const annualSalary = salary;
-  const q1Salary = staff.salary_q1 || 0;
+  const getQuarterlySalary = (period) => {
+    if (period === 'q1') return staff.salary_q1 || 0;
+    if (period === 'q2') return staff.salary_q2 || 0;
+    if (period === 'q3') return staff.salary_q3 || 0;
+    if (period === 'q4') return staff.salary_q4 || 0;
+    return 0;
+  };
+  const quarterlySalary = getQuarterlySalary(selectedPeriod);
 
   // Build metric rows
   const metricRows = [
@@ -92,6 +99,7 @@ export default function PayoutBreakdownCard({ staff, jobClass, bonus, salary, sc
     const isQuarterly = selectedPeriod.match(/q\d/);
     const pct = isQuarterly ? 50 : 100;
     const singlePeriodLabel = `(${pct}%)`;
+    const salaryBase = isQuarterly ? quarterlySalary : annualSalary;
 
     return (
       <div className="overflow-x-auto">
@@ -108,15 +116,13 @@ export default function PayoutBreakdownCard({ staff, jobClass, bonus, salary, sc
           </thead>
           <tbody>
             {metricRows.map((row) => {
-              const annualCalc = (annualSalary * row.percentage) / 100;
-              const displayAmount = isQuarterly ? annualCalc * 0.5 : annualCalc;
-
+              const displayAmount = (salaryBase * row.percentage) / 100;
               return (
                 <tr key={row.key} className="border-t border-border hover:bg-muted/30">
                   <td className="py-3 px-4 font-medium">{row.label}</td>
                   <td className="py-3 px-4 text-center">{row.percentage}%</td>
                   <td className="py-3 px-4 text-right">
-                    ${annualSalary.toLocaleString('en-US', { maximumFractionDigits: 0 })}
+                    ${salaryBase.toLocaleString('en-US', { maximumFractionDigits: 0 })}
                   </td>
                   <td className="py-3 px-4 text-right font-semibold">
                     ${displayAmount.toLocaleString('en-US', { maximumFractionDigits: 0 })}
@@ -144,14 +150,12 @@ export default function PayoutBreakdownCard({ staff, jobClass, bonus, salary, sc
                 </tr>
               );
             })}
-
-            {/* Total Row */}
             <tr className="border-t border-border font-bold text-white" style={{ backgroundColor: '#2d4b5e' }}>
               <td colSpan="4" className="py-3 px-4 text-right">
-                {selectedPeriod.match(/q\d/) ? 'QUARTERLY TOTAL' : 'ANNUAL TOTAL'}
+                {isQuarterly ? 'QUARTERLY TOTAL' : 'ANNUAL TOTAL'}
               </td>
               <td className="py-3 px-4 text-right">
-                ${selectedPeriod.match(/q\d/) ? (quarterlyPayoutTotal).toLocaleString('en-US', { maximumFractionDigits: 0 }) : annualPayoutTotal.toLocaleString('en-US', { maximumFractionDigits: 0 })}
+                ${isQuarterly ? quarterlyPayoutTotal.toLocaleString('en-US', { maximumFractionDigits: 0 }) : annualPayoutTotal.toLocaleString('en-US', { maximumFractionDigits: 0 })}
               </td>
               <td></td>
               <td></td>
