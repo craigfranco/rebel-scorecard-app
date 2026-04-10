@@ -117,7 +117,7 @@ export default function KpiBreakdown() {
         kpiData = sc.gss;
         score = sc.gss.score;
         pass = sc.gss.pass;
-        actual = entry.gss_actual != null ? `${entry.gss_actual} /${sc.gssStd.scale}` : '—';
+        actual = entry.gss_actual != null ? `${Number(entry.gss_actual).toFixed(1)} /${sc.gssStd.scale}` : '—';
         target = `+${sc.gssStd.target} YOY`;
         entry._gss_prior = entry.gss_prior;
         entry._gss_scale = sc.gssStd.scale;
@@ -353,7 +353,7 @@ export default function KpiBreakdown() {
                     )}
                     {activeKpi === 'gss' && (
                       <td className="py-3 px-4 text-center text-sm text-muted-foreground">
-                        {entry && entry._gss_prior != null ? `${entry._gss_prior} /${entry._gss_scale}` : '—'}
+                        {entry && entry._gss_prior != null ? `${Number(entry._gss_prior).toFixed(1)} /${entry._gss_scale}` : '—'}
                       </td>
                     )}
                     {activeKpi === 'gss' && (
