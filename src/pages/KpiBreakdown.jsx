@@ -360,7 +360,7 @@ export default function KpiBreakdown() {
                       <td className="py-3 px-4 text-center text-sm font-bold">
                         {entry && entry._gss_growth != null ? (
                           <span style={{ color: entry._gss_growth >= 0 ? '#4CAF50' : '#ef4444' }}>
-                            {entry._gss_growth >= 0 ? '+' : ''}{entry._gss_growth.toFixed(1)}%
+                            {entry._gss_growth >= 0 ? '+' : ''}{entry._gss_growth.toFixed(1)}
                           </span>
                         ) : '—'}
                       </td>
