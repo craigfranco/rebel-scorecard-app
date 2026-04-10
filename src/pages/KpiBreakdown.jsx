@@ -117,8 +117,11 @@ export default function KpiBreakdown() {
         kpiData = sc.gss;
         score = sc.gss.score;
         pass = sc.gss.pass;
-        actual = entry.gss_actual != null ? entry.gss_actual : '—';
+        actual = entry.gss_actual != null ? `${entry.gss_actual} /${sc.gssStd.scale}` : '—';
         target = `+${sc.gssStd.target} YOY`;
+        entry._gss_prior = entry.gss_prior;
+        entry._gss_scale = sc.gssStd.scale;
+        entry._gss_growth = (entry.gss_actual != null && entry.gss_prior != null) ? entry.gss_actual - entry.gss_prior : null;
       } else if (activeKpi === 'forecast') {
         pass = entry.forecast_kicker || false;
         score = pass ? 1 : 0;
@@ -261,7 +264,13 @@ export default function KpiBreakdown() {
                 {activeKpi === 'forecast' && (
                   <th className="py-3 px-4 text-center font-semibold">Variance</th>
                 )}
-                {activeKpi !== 'rgi' && activeKpi !== 'gopMargin' && activeKpi !== 'gop' && activeKpi !== 'forecast' && (
+                {activeKpi === 'gss' && (
+                  <th className="py-3 px-4 text-center font-semibold">Last Year</th>
+                )}
+                {activeKpi === 'gss' && (
+                  <th className="py-3 px-4 text-center font-semibold">Growth</th>
+                )}
+                {activeKpi !== 'rgi' && activeKpi !== 'gopMargin' && activeKpi !== 'gop' && activeKpi !== 'forecast' && activeKpi !== 'gss' && (
                   <th className="py-3 px-4 text-center font-semibold">Target</th>
                 )}
 
@@ -342,7 +351,21 @@ export default function KpiBreakdown() {
                         ) : '—'}
                       </td>
                     )}
-                    {activeKpi !== 'rgi' && activeKpi !== 'gopMargin' && activeKpi !== 'gop' && activeKpi !== 'forecast' && (
+                    {activeKpi === 'gss' && (
+                      <td className="py-3 px-4 text-center text-sm text-muted-foreground">
+                        {entry && entry._gss_prior != null ? `${entry._gss_prior} /${entry._gss_scale}` : '—'}
+                      </td>
+                    )}
+                    {activeKpi === 'gss' && (
+                      <td className="py-3 px-4 text-center text-sm font-bold">
+                        {entry && entry._gss_growth != null ? (
+                          <span style={{ color: entry._gss_growth >= 0 ? '#4CAF50' : '#ef4444' }}>
+                            {entry._gss_growth >= 0 ? '+' : ''}{entry._gss_growth.toFixed(2)}
+                          </span>
+                        ) : '—'}
+                      </td>
+                    )}
+                    {activeKpi !== 'rgi' && activeKpi !== 'gopMargin' && activeKpi !== 'gop' && activeKpi !== 'forecast' && activeKpi !== 'gss' && (
                       <td className="py-3 px-4 text-center text-xs text-muted-foreground">
                         {entry ? target : '—'}
                       </td>
