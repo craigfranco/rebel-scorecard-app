@@ -1,12 +1,12 @@
 // Scoring logic for Balanced Scorecard
 
 export const GSS_STANDARDS = {
-  Marriott: { metric: 'ITR', target: 1.0, label: 'Marriott ITR +1.0' },
-  Hilton: { metric: 'Stay Score', target: 1.0, label: 'Hilton Stay Score +1.0' },
-  IHG: { metric: 'Overall Experience', target: 1.0, label: 'IHG Overall Experience +1.0' },
-  Hyatt: { metric: 'Perf Tier', target: 1.0, label: 'Hyatt Perf Tier +1.0' },
-  Choice: { metric: 'Choice Likelihood', target: 0.3, label: 'Choice Likelihood +0.3' },
-  Independent: { metric: 'Revinate', target: 0.03, label: 'Independent Revinate +0.03' },
+  Marriott: { metric: 'ITR', target: 1.0, label: 'Marriott ITR +1.0', scale: 100 },
+  Hilton: { metric: 'Stay Score', target: 1.0, label: 'Hilton Stay Score +1.0', scale: 100 },
+  IHG: { metric: 'Overall Experience', target: 1.0, label: 'IHG Overall Experience +1.0', scale: 100 },
+  Hyatt: { metric: 'Perf Tier', target: 1.0, label: 'Hyatt Perf Tier +1.0', scale: 100 },
+  Choice: { metric: 'Choice Likelihood', target: 0.3, label: 'Choice Likelihood +0.3', scale: 10 },
+  Independent: { metric: 'Revinate', target: 0.03, label: 'Independent Revinate +0.03', scale: 5 },
 };
 
 export function getGssStandard(parentBrand) {

@@ -149,7 +149,7 @@ export default function HotelDetail() {
         { label: 'Budgeted GOP', weight: '35%', target: '100% of Budget', actual: scorecard.gop.pct != null ? `${scorecard.gop.pct >= 0 ? '+' : ''}${scorecard.gop.pct.toFixed(2)}%` : '—', score: scorecard.gop.score, max: 35, pass: scorecard.gop.pass },
         { label: 'GOP Margin Improvement', weight: '35%', target: '+0.1% vs PY', actual: scorecard.gopMargin.diff != null ? `${scorecard.gopMargin.diff >= 0 ? '+' : ''}${scorecard.gopMargin.diff.toFixed(2)}pp` : '—', score: scorecard.gopMargin.score, max: 35, pass: scorecard.gopMargin.pass },
         { label: 'RevPAR Index % Change (STR RGI)', weight: '15%', target: '≥ +0.1% YOY', actual: scorecard.rgi.diff != null ? `${scorecard.rgi.diff >= 0 ? '+' : ''}${scorecard.rgi.diff.toFixed(2)}%` : '—', score: scorecard.rgi.score, max: 15, pass: scorecard.rgi.pass },
-        { label: `GSS — ${scorecard.gssStd.label}`, weight: '15%', target: `+${scorecard.gssStd.target} YOY`, actual: scorecard.gss.diff != null ? `${scorecard.gss.diff >= 0 ? '+' : ''}${scorecard.gss.diff.toFixed(2)}` : '—', score: scorecard.gss.score, max: 15, pass: scorecard.gss.pass },
+        { label: `GSS — ${scorecard.gssStd.label} (/${scorecard.gssStd.scale})`, weight: '15%', target: `+${scorecard.gssStd.target} YOY`, actual: scorecard.gss.diff != null ? `${scorecard.gss.diff >= 0 ? '+' : ''}${scorecard.gss.diff.toFixed(2)}` : '—', score: scorecard.gss.score, max: 15, pass: scorecard.gss.pass },
       ] : [];
 
       y += 4;
@@ -333,7 +333,7 @@ export default function HotelDetail() {
                    { label: 'Budgeted GOP', weight: '35%', target: '100% of Budget', actual: scorecard.gop.pct != null ? `${scorecard.gop.pct >= 0 ? '+' : ''}${scorecard.gop.pct.toFixed(2)}%` : '—', score: scorecard.gop.score, max: 35, pass: scorecard.gop.pass },
                    { label: 'GOP Margin Improvement', weight: '35%', target: '+0.1% vs PY', actual: scorecard.gopMargin.diff != null ? `${scorecard.gopMargin.diff >= 0 ? '+' : ''}${scorecard.gopMargin.diff.toFixed(2)}pp` : '—', score: scorecard.gopMargin.score, max: 35, pass: scorecard.gopMargin.pass },
                    { label: 'RevPAR Index % Change (STR RGI)', weight: '15%', target: '≥ +0.1% YOY', actual: scorecard.rgi.diff != null ? `${scorecard.rgi.diff >= 0 ? '+' : ''}${scorecard.rgi.diff.toFixed(2)}%` : '—', score: scorecard.rgi.score, max: 15, pass: scorecard.rgi.pass },
-                   { label: `GSS — ${scorecard.gssStd.label}`, weight: '15%', target: `+${scorecard.gssStd.target} YOY`, actual: scorecard.gss.diff != null ? `${scorecard.gss.diff >= 0 ? '+' : ''}${scorecard.gss.diff.toFixed(2)}` : '—', score: scorecard.gss.score, max: 15, pass: scorecard.gss.pass },
+                   { label: `GSS — ${scorecard.gssStd.label} (/${scorecard.gssStd.scale})`, weight: '15%', target: `+${scorecard.gssStd.target} YOY`, actual: scorecard.gss.diff != null ? `${scorecard.gss.diff >= 0 ? '+' : ''}${scorecard.gss.diff.toFixed(2)}` : '—', score: scorecard.gss.score, max: 15, pass: scorecard.gss.pass },
                 ].map((row, i) => (
                   <tr key={i} className={`border-b border-border ${i % 2 === 0 ? '' : 'bg-muted/20'}`}>
                     <td className="py-3 px-4 font-medium">{row.label}</td>
