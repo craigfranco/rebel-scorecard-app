@@ -15,8 +15,10 @@ import NotesPanel from '@/components/scorecard/NotesPanel';
 import { calculateScorecard, MONTHS, getQuarterFromMonth } from '../lib/scoring';
 import SeedOnMount from '../components/SeedOnMount';
 
-const CURRENT_YEAR = 2026;
-const CURRENT_MONTH = 3; // March (for demo)
+const today = new Date();
+const CURRENT_YEAR = today.getFullYear();
+// Last closed month: on May 1 you can see April, etc.
+const LAST_CLOSED_MONTH = today.getMonth(); // getMonth() is 0-indexed, so April=3 → last closed=3 (March in 1-indexed)
 
 export default function Dashboard() {
   const { toast } = useToast();
@@ -24,7 +26,7 @@ export default function Dashboard() {
 
   const [selectedPropertyId, setSelectedPropertyId] = useState('');
   const [timeFilter, setTimeFilter] = useState('month');
-  const [selectedMonth, setSelectedMonth] = useState(CURRENT_MONTH);
+  const [selectedMonth, setSelectedMonth] = useState(LAST_CLOSED_MONTH);
   const [selectedYear, setSelectedYear] = useState(CURRENT_YEAR);
   const [notes, setNotes] = useState({ key_wins: '', previous_results: '', next_priorities: '' });
   const [preparedBy, setPreparedBy] = useState('');
@@ -266,9 +268,10 @@ export default function Dashboard() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {MONTHS.map((m, i) => (
-                  <SelectItem key={i + 1} value={String(i + 1)}>{m} {selectedYear}</SelectItem>
-                ))}
+                {MONTHS.map((m, i) => {
+                  if (i + 1 > LAST_CLOSED_MONTH) return null;
+                  return <SelectItem key={i + 1} value={String(i + 1)}>{m} {selectedYear}</SelectItem>;
+                })}
               </SelectContent>
             </Select>
           </div>

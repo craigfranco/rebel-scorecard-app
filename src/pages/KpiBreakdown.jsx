@@ -7,8 +7,9 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowUp, ArrowDown, Minus, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
 import { calculateScorecard, MONTHS, getQuarterFromMonth } from '../lib/scoring';
 
-const CURRENT_YEAR = 2026;
-const CURRENT_MONTH = 1;
+const today = new Date();
+const CURRENT_YEAR = today.getFullYear();
+const LAST_CLOSED_MONTH = today.getMonth(); // 0-indexed month = last closed month in 1-indexed
 
 const KPI_TABS = [
   { key: 'gop', label: 'Budgeted GOP', max: 35 },
@@ -51,7 +52,7 @@ export default function KpiBreakdown() {
   const navigate = useNavigate();
   const [activeKpi, setActiveKpi] = useState('gop');
   const [timeFilter, setTimeFilter] = useState('month');
-  const [selectedMonth, setSelectedMonth] = useState(CURRENT_MONTH);
+  const [selectedMonth, setSelectedMonth] = useState(LAST_CLOSED_MONTH);
   const [selectedYear, setSelectedYear] = useState(CURRENT_YEAR);
   const [sortCol, setSortCol] = useState('score');
   const [sortDir, setSortDir] = useState('desc');
@@ -207,9 +208,10 @@ export default function KpiBreakdown() {
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {MONTHS.map((m, i) => (
-              <SelectItem key={i + 1} value={String(i + 1)}>{m} {selectedYear}</SelectItem>
-            ))}
+            {MONTHS.map((m, i) => {
+              if (i + 1 > LAST_CLOSED_MONTH) return null;
+              return <SelectItem key={i + 1} value={String(i + 1)}>{m} {selectedYear}</SelectItem>;
+            })}
           </SelectContent>
         </Select>
       </div>
