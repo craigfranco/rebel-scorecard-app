@@ -23,12 +23,17 @@ function aggregateEntries(arr) {
   if (!arr.length) return null;
   const sorted = [...arr].sort((a, b) => a.month - b.month);
   const last = sorted[sorted.length - 1];
+  const n = sorted.length;
+  const avg = (key) => sorted.reduce((s, e) => s + (e[key] || 0), 0) / n;
   return {
     ...last,
-    budgeted_gop_actual: sorted.reduce((s, e) => s + (e.budgeted_gop_actual || 0), 0),
-    budgeted_gop_target: sorted.reduce((s, e) => s + (e.budgeted_gop_target || 0), 0),
-    gop_margin_actual: sorted.reduce((s, e) => s + (e.gop_margin_actual || 0), 0) / sorted.length,
-    gop_margin_prior: sorted.reduce((s, e) => s + (e.gop_margin_prior || 0), 0) / sorted.length,
+    budgeted_gop_actual: avg('budgeted_gop_actual'),
+    budgeted_gop_target: avg('budgeted_gop_target'),
+    budgeted_gop_prior: avg('budgeted_gop_prior'),
+    gop_margin_actual: avg('gop_margin_actual'),
+    gop_margin_prior: avg('gop_margin_prior'),
+    gss_actual: avg('gss_actual'),
+    gss_prior: avg('gss_prior'),
   };
 }
 
