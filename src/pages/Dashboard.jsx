@@ -25,7 +25,7 @@ export default function Dashboard() {
   const queryClient = useQueryClient();
 
   const [selectedPropertyId, setSelectedPropertyId] = useState('');
-  const [timeFilter, setTimeFilter] = useState('month');
+  const [timeFilter, setTimeFilter] = useState('quarter');
   const [selectedMonth, setSelectedMonth] = useState(LAST_CLOSED_MONTH);
   const [selectedYear, setSelectedYear] = useState(CURRENT_YEAR);
   const [notes, setNotes] = useState({ key_wins: '', previous_results: '', next_priorities: '' });
