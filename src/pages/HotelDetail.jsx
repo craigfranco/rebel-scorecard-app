@@ -6,40 +6,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Download, ArrowLeft, User, MapPin, Loader2 } from 'lucide-react';
-import { calculateScorecard, MONTHS, getQuarterFromMonth } from '../lib/scoring';
+import { calculateScorecard, MONTHS, getQuarterFromMonth, aggregateQuarterEntries } from '../lib/scoring';
 import { useToast } from '@/components/ui/use-toast';
 
 const CURRENT_YEAR = 2026;
 const CURRENT_MONTH = 3;
 
-function aggregateEntries(arr) {
-  if (!arr.length) return null;
-  const sorted = [...arr].sort((a, b) => a.month - b.month);
-  const last = sorted[sorted.length - 1];
-
-  const sumActualGop = arr.reduce((s, e) => s + (e.budgeted_gop_actual ?? 0), 0);
-  const sumTargetGop = arr.reduce((s, e) => s + (e.budgeted_gop_target ?? 0), 0);
-  const sumPriorGop = arr.reduce((s, e) => s + (e.budgeted_gop_prior ?? 0), 0);
-
-  // For margin, RGI, GSS — use the most recent entry that has the value (same as AllProperties)
-  const withMargin = sorted.filter(e => e.gop_margin_actual != null);
-  const withRGI = sorted.filter(e => e.revpar_index_change != null);
-  const withGSS = sorted.filter(e => e.gss_actual != null);
-
-  return {
-    ...last,
-    budgeted_gop_actual: arr.some(e => e.budgeted_gop_actual != null) ? sumActualGop : null,
-    budgeted_gop_target: arr.some(e => e.budgeted_gop_target != null) ? sumTargetGop : null,
-    budgeted_gop_prior: arr.some(e => e.budgeted_gop_prior != null) ? sumPriorGop : null,
-    gop_margin_actual: withMargin.length ? withMargin[withMargin.length - 1].gop_margin_actual : null,
-    gop_margin_prior: withMargin.length ? withMargin[withMargin.length - 1].gop_margin_prior : null,
-    revpar_index_change: withRGI.length ? withRGI[withRGI.length - 1].revpar_index_change : null,
-    revpar_index: withRGI.length ? withRGI[withRGI.length - 1].revpar_index : null,
-    revpar_index_prior: withRGI.length ? withRGI[withRGI.length - 1].revpar_index_prior : null,
-    gss_actual: withGSS.length ? withGSS[withGSS.length - 1].gss_actual : null,
-    gss_prior: withGSS.length ? withGSS[withGSS.length - 1].gss_prior : null,
-  };
-}
 
 export default function HotelDetail() {
   const { id: propertyId } = useParams();
@@ -67,10 +39,10 @@ export default function HotelDetail() {
     if (timeFilter === 'quarter') {
       const q = getQuarterFromMonth(selectedMonth);
       const qEntries = entries.filter(e => getQuarterFromMonth(e.month) === q);
-      return aggregateEntries(qEntries) || {};
+      return aggregateQuarterEntries(qEntries) || {};
     }
     const ytdEntries = entries.filter(e => e.month <= selectedMonth);
-    return aggregateEntries(ytdEntries) || {};
+    return aggregateQuarterEntries(ytdEntries) || {};
   };
 
   const activeEntry = getActiveEntry();

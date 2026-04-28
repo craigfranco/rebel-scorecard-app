@@ -3,7 +3,7 @@ import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Download, Check, X } from 'lucide-react';
-import { calculateScorecard, getQuarterFromMonth } from '@/lib/scoring';
+import { calculateScorecard, getQuarterFromMonth, aggregateQuarterEntries } from '@/lib/scoring';
 import { calculateEstimatedAnnualSalary, getClosedQuarters } from '@/lib/salaryCalculation';
 import { calculateQuarterlyBonus, getMetricStatus } from '@/lib/bonusCalculation';
 
@@ -26,14 +26,9 @@ export default function BonusPayoutDrillDown({ staff, property, jobClass, quarte
         : Promise.resolve([]),
   });
 
-  // Get most recent entry for this quarter
-  const quarterEntries = entries.filter(e => {
-    const q = getQuarterFromMonth(e.month);
-    return q === quarter;
-  });
-  const latestEntry = quarterEntries.length > 0
-    ? quarterEntries.reduce((latest, curr) => curr.month > latest.month ? curr : latest)
-    : null;
+  // Aggregate all entries for this quarter (same logic as AllProperties/HotelDetail)
+  const quarterEntries = entries.filter(e => getQuarterFromMonth(e.month) === quarter);
+  const latestEntry = aggregateQuarterEntries(quarterEntries);
 
   const annualSalary = calculateEstimatedAnnualSalary(staff, closedQuarters);
 
