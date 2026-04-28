@@ -51,7 +51,7 @@ function getRowColor(pass, score, max) {
 export default function KpiBreakdown() {
   const navigate = useNavigate();
   const [activeKpi, setActiveKpi] = useState('gop');
-  const [timeFilter, setTimeFilter] = useState('month');
+  const [timeFilter, setTimeFilter] = useState('quarter');
   const [selectedMonth, setSelectedMonth] = useState(LAST_CLOSED_MONTH);
   const [selectedYear, setSelectedYear] = useState(CURRENT_YEAR);
   const [sortCol, setSortCol] = useState('score');
