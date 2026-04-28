@@ -232,9 +232,18 @@ export default function Dashboard() {
               <span>Dashboard</span>
             </div>
             <h1 className="text-2xl font-bold">Hotel Performance Scorecard</h1>
+            <p className="text-white/60 text-xs mt-0.5">Track GOP, margin, RGI, and GSS performance across your portfolio</p>
             {selectedProperty && (
-              <div className="flex items-center gap-2 mt-1">
+              <div className="flex items-center gap-2 mt-2 flex-wrap">
+                <span className="text-white/70 text-sm">{selectedProperty.name}</span>
+                <span className="text-white/40">·</span>
                 <span className="text-white/70 text-sm">{selectedProperty.city}, {selectedProperty.state}</span>
+                {selectedProperty.parent_brand && (
+                  <>
+                    <span className="text-white/40">·</span>
+                    <span className="text-white/60 text-sm">{selectedProperty.parent_brand}{selectedProperty.sub_brand ? ` — ${selectedProperty.sub_brand}` : ''}</span>
+                  </>
+                )}
                 {selectedProperty.gm_name && (
                   <>
                     <span className="text-white/40">·</span>
