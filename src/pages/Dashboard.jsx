@@ -31,7 +31,7 @@ export default function Dashboard() {
   const [notes, setNotes] = useState({ key_wins: '', previous_results: '', next_priorities: '' });
   const [preparedBy, setPreparedBy] = useState('');
   const [reviewedBy, setReviewedBy] = useState('');
-  const [kpiInputs, setKpiInputs] = useState({ budgeted_gop_actual: '', budgeted_gop_target: '', budgeted_gop_prior: '', gop_margin_actual: '', gop_margin_prior: '', revpar_index_change: '', revpar_index: '', gss_actual: '', gss_prior: '' });
+  const [kpiInputs, setKpiInputs] = useState({ budgeted_gop_actual: '', budgeted_gop_target: '', budgeted_gop_prior: '', gop_margin_actual: '', gop_margin_prior: '', revpar_index_change: '', revpar_index: '', revpar_index_prior: '', gss_actual: '', gss_prior: '' });
 
   const { data: properties = [] } = useQuery({
     queryKey: ['properties'],
@@ -114,6 +114,7 @@ export default function Dashboard() {
         gop_margin_prior:    activeEntry.gop_margin_prior   != null ? String(activeEntry.gop_margin_prior)   : '',
         revpar_index_change: activeEntry.revpar_index_change != null ? String(activeEntry.revpar_index_change) : '',
         revpar_index:        activeEntry.revpar_index        != null ? String(activeEntry.revpar_index)        : '',
+        revpar_index_prior:  activeEntry.revpar_index_prior  != null ? String(activeEntry.revpar_index_prior)  : '',
         gss_actual:          activeEntry.gss_actual          != null ? String(activeEntry.gss_actual)          : '',
         gss_prior:           activeEntry.gss_prior           != null ? String(activeEntry.gss_prior)           : '',
       });
@@ -140,6 +141,7 @@ export default function Dashboard() {
       gop_margin_prior:     parseNum(kpiInputs.gop_margin_prior),
       revpar_index_change:  parseNum(kpiInputs.revpar_index_change),
       revpar_index:         parseNum(kpiInputs.revpar_index),
+      revpar_index_prior:   parseNum(kpiInputs.revpar_index_prior),
       gss_actual:           parseNum(kpiInputs.gss_actual),
       gss_prior:            parseNum(kpiInputs.gss_prior),
       ...(existing ? { id: existing.id } : {}),
