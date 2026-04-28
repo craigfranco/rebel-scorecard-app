@@ -98,8 +98,8 @@ export default function KpiBreakdown() {
         kpiData = sc.gop;
         score = sc.gop.score;
         pass = sc.gop.pass;
-        actual = entry.budgeted_gop_actual != null ? `$${(entry.budgeted_gop_actual / 1000).toFixed(0)}K` : '—';
-        target = entry.budgeted_gop_target != null ? `$${(entry.budgeted_gop_target / 1000).toFixed(0)}K` : '—';
+        actual = entry.budgeted_gop_actual != null ? `$${(entry.budgeted_gop_actual / 1000).toFixed(1)}K` : '—';
+        target = entry.budgeted_gop_target != null ? `$${(entry.budgeted_gop_target / 1000).toFixed(1)}K` : '—';
         entry._gop_variance = (entry.budgeted_gop_actual != null && entry.budgeted_gop_target != null)
           ? entry.budgeted_gop_actual - entry.budgeted_gop_target
           : null;
@@ -325,7 +325,7 @@ export default function KpiBreakdown() {
                       <td className="py-3 px-4 text-center text-sm font-bold">
                         {entry && entry._gop_variance != null ? (
                           <span style={{ color: entry._gop_variance >= 0 ? '#4CAF50' : '#ef4444' }}>
-                            {entry._gop_variance >= 0 ? '+' : ''}${(entry._gop_variance / 1000).toFixed(0)}K
+                            {entry._gop_variance >= 0 ? '+' : ''}${(entry._gop_variance / 1000).toFixed(1)}K
                           </span>
                         ) : '—'}
                       </td>
