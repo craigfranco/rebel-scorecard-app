@@ -34,7 +34,7 @@ function aggregateEntries(arr) {
 
 export default function AllProperties() {
   const [search, setSearch] = useState('');
-  const [timeFilter, setTimeFilter] = useState('month');
+  const [timeFilter, setTimeFilter] = useState('quarter');
   const [selectedMonth, setSelectedMonth] = useState(CURRENT_MONTH);
   const [sortCol, setSortCol] = useState('score');
   const [sortDir, setSortDir] = useState('desc');
