@@ -1,20 +1,25 @@
 import React, { useState } from 'react';
 import { Link, useLocation, Outlet } from 'react-router-dom';
-import { LayoutDashboard, BookOpen, Building2, Settings, Menu, PieChart, FolderOpen, DollarSign } from 'lucide-react';
+import { LayoutDashboard, BookOpen, Building2, Settings, Menu, PieChart, FolderOpen, DollarSign, ChevronDown } from 'lucide-react';
 
 const NAV_ITEMS = [
   { path: '/', icon: LayoutDashboard, label: 'Dashboard' },
   { path: '/properties', icon: Building2, label: 'All Properties' },
   { path: '/kpi-breakdown', icon: PieChart, label: 'KPI Breakdown' },
-  { path: '/documents', icon: FolderOpen, label: 'Documents' },
   { path: '/payouts', icon: DollarSign, label: 'Payouts' },
   { path: '/kpi-reference', icon: BookOpen, label: 'KPI Reference' },
+];
+
+const ADMIN_ITEMS = [
+  { path: '/documents', icon: FolderOpen, label: 'Documents' },
   { path: '/settings', icon: Settings, label: 'Settings' },
 ];
 
 export default function AppLayout() {
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const adminActive = ADMIN_ITEMS.some(i => location.pathname.startsWith(i.path));
+  const [adminOpen, setAdminOpen] = useState(adminActive);
 
   return (
     <div className="min-h-screen flex bg-background">
@@ -32,7 +37,7 @@ export default function AppLayout() {
           </div>
 
         {/* Nav */}
-        <nav className="flex-1 px-3 py-4 space-y-1">
+        <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
           {NAV_ITEMS.map(({ path, icon: Icon, label }) => {
             const active = path === '/' ? location.pathname === '/' : location.pathname.startsWith(path);
             return (
@@ -51,6 +56,41 @@ export default function AppLayout() {
               </Link>
             );
           })}
+
+          {/* Admin section */}
+          <div className="pt-3">
+            <button
+              onClick={() => setAdminOpen(o => !o)}
+              className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold uppercase tracking-wider transition-all ${
+                adminActive ? 'text-white' : 'text-white/40 hover:text-white/70'
+              }`}
+            >
+              <span>Admin</span>
+              <ChevronDown className={`w-3.5 h-3.5 transition-transform ${adminOpen ? 'rotate-180' : ''}`} />
+            </button>
+            {adminOpen && (
+              <div className="mt-1 space-y-1">
+                {ADMIN_ITEMS.map(({ path, icon: Icon, label }) => {
+                  const active = location.pathname.startsWith(path);
+                  return (
+                    <Link
+                      key={path}
+                      to={path}
+                      onClick={() => setMobileOpen(false)}
+                      className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                        active
+                          ? 'bg-white/20 text-white shadow-sm'
+                          : 'text-white/65 hover:text-white hover:bg-white/10'
+                      }`}
+                    >
+                      <Icon className="w-4 h-4 shrink-0" />
+                      {label}
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </nav>
 
         <div className="px-6 py-4 border-t border-white/10 flex items-start gap-2">
