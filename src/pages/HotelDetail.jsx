@@ -16,25 +16,28 @@ function aggregateEntries(arr) {
   if (!arr.length) return null;
   const sorted = [...arr].sort((a, b) => a.month - b.month);
   const last = sorted[sorted.length - 1];
-  
-  const sumActualGop = sorted.reduce((s, e) => s + (e.budgeted_gop_actual || 0), 0);
-  const sumTargetGop = sorted.reduce((s, e) => s + (e.budgeted_gop_target || 0), 0);
-  const sumPriorGop = sorted.reduce((s, e) => s + (e.budgeted_gop_prior || 0), 0);
-  
-  const avgRevparIndex = sorted.reduce((s, e) => s + (e.revpar_index || 0), 0) / sorted.length;
-  const avgRevparIndexPrior = sorted.reduce((s, e) => s + (e.revpar_index_prior || 0), 0) / sorted.length;
-  const revparIndexChange = avgRevparIndexPrior > 0 ? ((avgRevparIndex - avgRevparIndexPrior) / avgRevparIndexPrior) * 100 : null;
-  
+
+  const sumActualGop = arr.reduce((s, e) => s + (e.budgeted_gop_actual ?? 0), 0);
+  const sumTargetGop = arr.reduce((s, e) => s + (e.budgeted_gop_target ?? 0), 0);
+  const sumPriorGop = arr.reduce((s, e) => s + (e.budgeted_gop_prior ?? 0), 0);
+
+  // For margin, RGI, GSS — use the most recent entry that has the value (same as AllProperties)
+  const withMargin = sorted.filter(e => e.gop_margin_actual != null);
+  const withRGI = sorted.filter(e => e.revpar_index_change != null);
+  const withGSS = sorted.filter(e => e.gss_actual != null);
+
   return {
     ...last,
-    budgeted_gop_actual: sumActualGop,
-    budgeted_gop_target: sumTargetGop,
-    budgeted_gop_prior: sumPriorGop,
-    gop_margin_actual: sumTargetGop > 0 ? (sumActualGop / sumTargetGop) * 100 : null,
-    gop_margin_prior: sumPriorGop > 0 ? (sumActualGop / sumPriorGop) * 100 : null,
-    revpar_index: avgRevparIndex,
-    revpar_index_prior: avgRevparIndexPrior,
-    revpar_index_change: revparIndexChange,
+    budgeted_gop_actual: arr.some(e => e.budgeted_gop_actual != null) ? sumActualGop : null,
+    budgeted_gop_target: arr.some(e => e.budgeted_gop_target != null) ? sumTargetGop : null,
+    budgeted_gop_prior: arr.some(e => e.budgeted_gop_prior != null) ? sumPriorGop : null,
+    gop_margin_actual: withMargin.length ? withMargin[withMargin.length - 1].gop_margin_actual : null,
+    gop_margin_prior: withMargin.length ? withMargin[withMargin.length - 1].gop_margin_prior : null,
+    revpar_index_change: withRGI.length ? withRGI[withRGI.length - 1].revpar_index_change : null,
+    revpar_index: withRGI.length ? withRGI[withRGI.length - 1].revpar_index : null,
+    revpar_index_prior: withRGI.length ? withRGI[withRGI.length - 1].revpar_index_prior : null,
+    gss_actual: withGSS.length ? withGSS[withGSS.length - 1].gss_actual : null,
+    gss_prior: withGSS.length ? withGSS[withGSS.length - 1].gss_prior : null,
   };
 }
 
