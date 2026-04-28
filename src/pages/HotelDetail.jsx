@@ -42,7 +42,7 @@ export default function HotelDetail() {
   const { id: propertyId } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [timeFilter, setTimeFilter] = useState('month');
+  const [timeFilter, setTimeFilter] = useState('quarter');
   const [selectedMonth, setSelectedMonth] = useState(CURRENT_MONTH);
   const [generatingPdf, setGeneratingPdf] = useState(false);
   const printRef = useRef();
