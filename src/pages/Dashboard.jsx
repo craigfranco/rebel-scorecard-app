@@ -1,16 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Save, User, ChevronRight } from 'lucide-react';
-import { useToast } from '@/components/ui/use-toast';
+import { User, ChevronRight } from 'lucide-react';
 import ScoreGauge from '@/components/scorecard/ScoreGauge';
 import KpiRow from '@/components/scorecard/KpiRow';
 import KickerBadge from '@/components/scorecard/KickerBadge';
-import NotesPanel from '@/components/scorecard/NotesPanel';
 
 import { calculateScorecard, MONTHS, getQuarterFromMonth } from '../lib/scoring';
 import SeedOnMount from '../components/SeedOnMount';
@@ -21,16 +17,12 @@ const CURRENT_YEAR = today.getFullYear();
 const LAST_CLOSED_MONTH = today.getMonth(); // getMonth() is 0-indexed, so April=3 → last closed=3 (March in 1-indexed)
 
 export default function Dashboard() {
-  const { toast } = useToast();
   const queryClient = useQueryClient();
 
   const [selectedPropertyId, setSelectedPropertyId] = useState('');
   const [timeFilter, setTimeFilter] = useState('quarter');
   const [selectedMonth, setSelectedMonth] = useState(LAST_CLOSED_MONTH);
   const [selectedYear, setSelectedYear] = useState(CURRENT_YEAR);
-  const [notes, setNotes] = useState({ key_wins: '', previous_results: '', next_priorities: '' });
-  const [preparedBy, setPreparedBy] = useState('');
-  const [reviewedBy, setReviewedBy] = useState('');
   const [kpiInputs, setKpiInputs] = useState({ budgeted_gop_actual: '', budgeted_gop_target: '', budgeted_gop_prior: '', gop_margin_actual: '', gop_margin_prior: '', revpar_index_change: '', revpar_index: '', revpar_index_prior: '', gss_actual: '', gss_prior: '' });
 
   const { data: properties = [] } = useQuery({
@@ -47,20 +39,7 @@ export default function Dashboard() {
     enabled: !!selectedPropertyId,
   });
 
-  const saveMutation = useMutation({
-    mutationFn: async (data) => {
-      const existing = entries.find(e => e.month === selectedMonth && e.year === selectedYear);
-      if (existing) {
-        return base44.entities.ScoreEntry.update(existing.id, data);
-      } else {
-        return base44.entities.ScoreEntry.create(data);
-      }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['score-entries'] });
-      toast({ title: 'Saved!', description: 'Scorecard data saved successfully.' });
-    },
-  });
+
 
   const selectedProperty = properties.find(p => p.id === selectedPropertyId);
 
@@ -96,16 +75,9 @@ export default function Dashboard() {
     ? calculateScorecard(activeEntry, selectedProperty)
     : null;
 
-  // Sync notes + kpi inputs from entry
+  // Sync kpi inputs from entry
   useEffect(() => {
     if (activeEntry) {
-      setNotes({
-        key_wins: activeEntry.key_wins || '',
-        previous_results: activeEntry.previous_results || '',
-        next_priorities: activeEntry.next_priorities || '',
-      });
-      setPreparedBy(activeEntry.prepared_by || '');
-      setReviewedBy(activeEntry.reviewed_by || '');
       setKpiInputs({
         budgeted_gop_actual: activeEntry.budgeted_gop_actual != null ? String(activeEntry.budgeted_gop_actual) : '',
         budgeted_gop_target: activeEntry.budgeted_gop_target != null ? String(activeEntry.budgeted_gop_target) : '',
@@ -122,32 +94,6 @@ export default function Dashboard() {
   }, [selectedPropertyId, selectedMonth, selectedYear, entries.length]);
 
   const parseNum = (v) => v === '' || v == null ? null : parseFloat(v);
-
-  const handleSave = () => {
-    if (!selectedPropertyId) return;
-    const existing = entries.find(e => e.month === selectedMonth && e.year === selectedYear);
-    const data = {
-      property_id: selectedPropertyId,
-      month: selectedMonth,
-      year: selectedYear,
-      quarter: getQuarterFromMonth(selectedMonth),
-      ...notes,
-      prepared_by: preparedBy,
-      reviewed_by: reviewedBy,
-      budgeted_gop_actual:  parseNum(kpiInputs.budgeted_gop_actual),
-      budgeted_gop_target:  parseNum(kpiInputs.budgeted_gop_target),
-      budgeted_gop_prior:   parseNum(kpiInputs.budgeted_gop_prior),
-      gop_margin_actual:    parseNum(kpiInputs.gop_margin_actual),
-      gop_margin_prior:     parseNum(kpiInputs.gop_margin_prior),
-      revpar_index_change:  parseNum(kpiInputs.revpar_index_change),
-      revpar_index:         parseNum(kpiInputs.revpar_index),
-      revpar_index_prior:   parseNum(kpiInputs.revpar_index_prior),
-      gss_actual:           parseNum(kpiInputs.gss_actual),
-      gss_prior:            parseNum(kpiInputs.gss_prior),
-      ...(existing ? { id: existing.id } : {}),
-    };
-    saveMutation.mutate(data);
-  };
 
   // Auto-select first property
   useEffect(() => {
@@ -382,37 +328,7 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Notes panels */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <NotesPanel title="Key Wins & Risks" icon="🏆" value={notes.key_wins} onChange={v => setNotes(n => ({ ...n, key_wins: v }))} placeholder="Document key wins and risks for this period..." />
-            <NotesPanel title="Previous Month Results" icon="📊" value={notes.previous_results} onChange={v => setNotes(n => ({ ...n, previous_results: v }))} placeholder="Summarize previous month performance..." />
-            <NotesPanel title="Next Month Priorities" icon="🎯" value={notes.next_priorities} onChange={v => setNotes(n => ({ ...n, next_priorities: v }))} placeholder="List priorities for the upcoming month..." />
-          </div>
 
-          {/* Prepared/Reviewed + Save */}
-          <div className="bg-card rounded-2xl border border-border p-5 shadow-sm">
-            <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
-              <div className="flex-1 flex flex-col sm:flex-row gap-4">
-                <div className="flex-1">
-                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5 block">Prepared By</label>
-                  <Input value={preparedBy} onChange={e => setPreparedBy(e.target.value)} placeholder="Name" className="text-sm" />
-                </div>
-                <div className="flex-1">
-                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5 block">Reviewed By</label>
-                  <Input value={reviewedBy} onChange={e => setReviewedBy(e.target.value)} placeholder="Name" className="text-sm" />
-                </div>
-              </div>
-              <Button
-                onClick={handleSave}
-                disabled={saveMutation.isPending}
-                className="gap-2 px-6"
-                style={{ backgroundColor: '#2d4b5e' }}
-              >
-                <Save className="w-4 h-4" />
-                {saveMutation.isPending ? 'Saving...' : 'Save Notes'}
-              </Button>
-            </div>
-          </div>
         </>
       )}
     </div>
