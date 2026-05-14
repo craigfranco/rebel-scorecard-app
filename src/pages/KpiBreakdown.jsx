@@ -9,7 +9,8 @@ import { calculateScorecard, MONTHS, getQuarterFromMonth } from '../lib/scoring'
 
 const today = new Date();
 const CURRENT_YEAR = today.getFullYear();
-const LAST_CLOSED_MONTH = today.getMonth(); // 0-indexed month = last closed month in 1-indexed
+// A month is "closed" (visible) only on or after the 18th of the following month.
+const LAST_CLOSED_MONTH = today.getDate() >= 18 ? today.getMonth() : today.getMonth() - 1;
 
 const KPI_TABS = [
   { key: 'gop', label: 'Budgeted GOP', max: 35 },

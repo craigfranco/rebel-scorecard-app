@@ -14,7 +14,9 @@ import SeedOnMount from '../components/SeedOnMount';
 const today = new Date();
 const CURRENT_YEAR = today.getFullYear();
 // Last closed month: on May 1 you can see April, etc.
-const LAST_CLOSED_MONTH = today.getMonth(); // getMonth() is 0-indexed, so April=3 → last closed=3 (March in 1-indexed)
+// A month is "closed" (visible) only on or after the 18th of the following month.
+// e.g. April is visible starting May 18th.
+const LAST_CLOSED_MONTH = today.getDate() >= 18 ? today.getMonth() : today.getMonth() - 1;
 
 export default function Dashboard() {
   const queryClient = useQueryClient();

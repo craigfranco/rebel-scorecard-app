@@ -9,8 +9,10 @@ import { Download, ArrowLeft, User, MapPin, Loader2 } from 'lucide-react';
 import { calculateScorecard, MONTHS, getQuarterFromMonth, aggregateQuarterEntries } from '../lib/scoring';
 import { useToast } from '@/components/ui/use-toast';
 
-const CURRENT_YEAR = 2026;
-const CURRENT_MONTH = 3;
+const today = new Date();
+const CURRENT_YEAR = today.getFullYear();
+// A month is "closed" (visible) only on or after the 18th of the following month.
+const LAST_CLOSED_MONTH = today.getDate() >= 18 ? today.getMonth() : today.getMonth() - 1;
 
 
 export default function HotelDetail() {
@@ -18,7 +20,7 @@ export default function HotelDetail() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [timeFilter, setTimeFilter] = useState('quarter');
-  const [selectedMonth, setSelectedMonth] = useState(CURRENT_MONTH);
+  const [selectedMonth, setSelectedMonth] = useState(LAST_CLOSED_MONTH);
   const [generatingPdf, setGeneratingPdf] = useState(false);
   const printRef = useRef();
 
@@ -268,9 +270,10 @@ export default function HotelDetail() {
         <Select value={String(selectedMonth)} onValueChange={v => setSelectedMonth(Number(v))}>
           <SelectTrigger className="w-44 text-sm"><SelectValue /></SelectTrigger>
           <SelectContent>
-            {MONTHS.map((m, i) => (
-              <SelectItem key={i + 1} value={String(i + 1)}>{m} {CURRENT_YEAR}</SelectItem>
-            ))}
+            {MONTHS.map((m, i) => {
+              if (i + 1 > LAST_CLOSED_MONTH) return null;
+              return <SelectItem key={i + 1} value={String(i + 1)}>{m} {CURRENT_YEAR}</SelectItem>;
+            })}
           </SelectContent>
         </Select>
       </div>
