@@ -5,7 +5,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useNavigate } from 'react-router-dom';
 import { ArrowUp, ArrowDown, Minus, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
-import { calculateScorecard, MONTHS, getQuarterFromMonth } from '../lib/scoring';
+import { calculateScorecard, MONTHS, getQuarterFromMonth, aggregateEntries } from '../lib/scoring';
 
 const today = new Date();
 const CURRENT_YEAR = today.getFullYear();
@@ -21,23 +21,7 @@ const KPI_TABS = [
   { key: 'redzone', label: 'Red Zone Kicker', max: null },
 ];
 
-function aggregateEntries(arr) {
-  if (!arr.length) return null;
-  const sorted = [...arr].sort((a, b) => a.month - b.month);
-  const last = sorted[sorted.length - 1];
-  const n = sorted.length;
-  const avg = (key) => sorted.reduce((s, e) => s + (e[key] || 0), 0) / n;
-  return {
-    ...last,
-    budgeted_gop_actual: avg('budgeted_gop_actual'),
-    budgeted_gop_target: avg('budgeted_gop_target'),
-    budgeted_gop_prior: avg('budgeted_gop_prior'),
-    gop_margin_actual: avg('gop_margin_actual'),
-    gop_margin_prior: avg('gop_margin_prior'),
-    gss_actual: avg('gss_actual'),
-    gss_prior: avg('gss_prior'),
-  };
-}
+// Using aggregateEntries from lib/scoring.js
 
 function getRowColor(pass, score, max) {
   if (max === null) {
@@ -52,7 +36,7 @@ function getRowColor(pass, score, max) {
 export default function KpiBreakdown() {
   const navigate = useNavigate();
   const [activeKpi, setActiveKpi] = useState('gop');
-  const [timeFilter, setTimeFilter] = useState('quarter');
+  const [timeFilter, setTimeFilter] = useState('qtd');
   const [selectedMonth, setSelectedMonth] = useState(LAST_CLOSED_MONTH);
   const [selectedYear, setSelectedYear] = useState(CURRENT_YEAR);
   const [sortCol, setSortCol] = useState('score');
@@ -70,16 +54,8 @@ export default function KpiBreakdown() {
 
   const getEntry = (propertyId) => {
     const propEntries = allEntries.filter(e => e.property_id === propertyId);
-    if (timeFilter === 'month') {
-      return propEntries.find(e => e.month === selectedMonth) || null;
-    }
-    if (timeFilter === 'quarter') {
-      const q = getQuarterFromMonth(selectedMonth);
-      const qEntries = propEntries.filter(e => getQuarterFromMonth(e.month) === q);
-      return aggregateEntries(qEntries);
-    }
-    const ytdEntries = propEntries.filter(e => e.month <= selectedMonth);
-    return aggregateEntries(ytdEntries);
+    if (!propEntries.length) return null;
+    return aggregateEntries(propEntries, timeFilter, selectedMonth, selectedYear);
   };
 
   const kpiTab = KPI_TABS.find(k => k.key === activeKpi);
@@ -166,6 +142,8 @@ export default function KpiBreakdown() {
     ? `${MONTHS[selectedMonth - 1]} ${selectedYear}`
     : timeFilter === 'quarter'
     ? `Q${getQuarterFromMonth(selectedMonth)} ${selectedYear}`
+    : timeFilter === 'qtd'
+    ? `Q${getQuarterFromMonth(selectedMonth)} QTD ${selectedYear}`
     : `YTD ${selectedYear}`;
 
   const handleSort = (col) => {
@@ -201,6 +179,7 @@ export default function KpiBreakdown() {
           <TabsList className="bg-card border border-border shadow-sm">
             <TabsTrigger value="month">Month</TabsTrigger>
             <TabsTrigger value="quarter">Quarter</TabsTrigger>
+            <TabsTrigger value="qtd">QTD</TabsTrigger>
             <TabsTrigger value="ytd">YTD</TabsTrigger>
           </TabsList>
         </Tabs>

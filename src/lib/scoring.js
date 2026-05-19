@@ -85,41 +85,13 @@ export function calculateScorecard(entry, property) {
   };
 }
 
-export function aggregateQuarterEntries(arr) {
-  if (!arr.length) return null;
-  const sorted = [...arr].sort((a, b) => a.month - b.month);
-  const last = sorted[sorted.length - 1];
-
-  const sumActualGop = arr.reduce((s, e) => s + (e.budgeted_gop_actual ?? 0), 0);
-  const sumTargetGop = arr.reduce((s, e) => s + (e.budgeted_gop_target ?? 0), 0);
-  const sumPriorGop = arr.reduce((s, e) => s + (e.budgeted_gop_prior ?? 0), 0);
-
-  const withMargin = sorted.filter(e => e.gop_margin_actual != null);
-  const withRGI = sorted.filter(e => e.revpar_index_change != null);
-  const withGSS = sorted.filter(e => e.gss_actual != null);
-
-  return {
-    ...last,
-    budgeted_gop_actual: arr.some(e => e.budgeted_gop_actual != null) ? sumActualGop : null,
-    budgeted_gop_target: arr.some(e => e.budgeted_gop_target != null) ? sumTargetGop : null,
-    budgeted_gop_prior: arr.some(e => e.budgeted_gop_prior != null) ? sumPriorGop : null,
-    gop_margin_actual: withMargin.length ? withMargin[withMargin.length - 1].gop_margin_actual : null,
-    gop_margin_prior: withMargin.length ? withMargin[withMargin.length - 1].gop_margin_prior : null,
-    revpar_index_change: withRGI.length ? withRGI[withRGI.length - 1].revpar_index_change : null,
-    revpar_index: withRGI.length ? withRGI[withRGI.length - 1].revpar_index : null,
-    revpar_index_prior: withRGI.length ? withRGI[withRGI.length - 1].revpar_index_prior : null,
-    gss_actual: withGSS.length ? withGSS[withGSS.length - 1].gss_actual : null,
-    gss_prior: withGSS.length ? withGSS[withGSS.length - 1].gss_prior : null,
-  };
-}
-
-export const MONTHS = [
-  'January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December'
-];
-
-export const QUARTERS = ['Q1 (Jan-Mar)', 'Q2 (Apr-Jun)', 'Q3 (Jul-Sep)', 'Q4 (Oct-Dec)'];
-
-export function getQuarterFromMonth(month) {
-  return Math.ceil(month / 3);
-}
+// Re-export all from aggregation.js
+export { 
+  MONTHS,
+  QUARTERS,
+  aggregateEntries, 
+  aggregateQuarterEntries, 
+  getQuarterFromMonth, 
+  getQuarterMonths,
+  getQuarterStartMonth
+} from './aggregation';

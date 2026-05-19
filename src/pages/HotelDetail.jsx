@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Download, ArrowLeft, User, MapPin, Loader2 } from 'lucide-react';
-import { calculateScorecard, MONTHS, getQuarterFromMonth, aggregateQuarterEntries } from '../lib/scoring';
+import { calculateScorecard, MONTHS, getQuarterFromMonth, aggregateEntries } from '../lib/scoring';
 import { useToast } from '@/components/ui/use-toast';
 
 const today = new Date();
@@ -19,7 +19,7 @@ export default function HotelDetail() {
   const { id: propertyId } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [timeFilter, setTimeFilter] = useState('quarter');
+  const [timeFilter, setTimeFilter] = useState('qtd');
   const [selectedMonth, setSelectedMonth] = useState(LAST_CLOSED_MONTH);
   const [generatingPdf, setGeneratingPdf] = useState(false);
   const printRef = useRef();
@@ -37,14 +37,8 @@ export default function HotelDetail() {
   });
 
   const getActiveEntry = () => {
-    if (timeFilter === 'month') return entries.find(e => e.month === selectedMonth && e.year === CURRENT_YEAR) || {};
-    if (timeFilter === 'quarter') {
-      const q = getQuarterFromMonth(selectedMonth);
-      const qEntries = entries.filter(e => getQuarterFromMonth(e.month) === q);
-      return aggregateQuarterEntries(qEntries) || {};
-    }
-    const ytdEntries = entries.filter(e => e.month <= selectedMonth);
-    return aggregateQuarterEntries(ytdEntries) || {};
+    if (!entries.length) return {};
+    return aggregateEntries(entries, timeFilter, selectedMonth, CURRENT_YEAR) || {};
   };
 
   const activeEntry = getActiveEntry();
@@ -54,6 +48,8 @@ export default function HotelDetail() {
     ? `${MONTHS[selectedMonth - 1]} ${CURRENT_YEAR}`
     : timeFilter === 'quarter'
     ? `Q${getQuarterFromMonth(selectedMonth)} ${CURRENT_YEAR}`
+    : timeFilter === 'qtd'
+    ? `Q${getQuarterFromMonth(selectedMonth)} QTD ${CURRENT_YEAR}`
     : `YTD ${CURRENT_YEAR}`;
 
   const handleDownloadPdf = async () => {
@@ -264,6 +260,7 @@ export default function HotelDetail() {
           <TabsList className="bg-card border border-border shadow-sm">
             <TabsTrigger value="month">Month</TabsTrigger>
             <TabsTrigger value="quarter">Quarter</TabsTrigger>
+            <TabsTrigger value="qtd">QTD</TabsTrigger>
             <TabsTrigger value="ytd">YTD</TabsTrigger>
           </TabsList>
         </Tabs>
