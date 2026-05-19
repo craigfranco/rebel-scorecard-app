@@ -2,29 +2,20 @@ import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { User, ChevronRight } from 'lucide-react';
 import ScoreGauge from '@/components/scorecard/ScoreGauge';
 import KpiRow from '@/components/scorecard/KpiRow';
 import KickerBadge from '@/components/scorecard/KickerBadge';
 
-import { calculateScorecard, MONTHS, getQuarterFromMonth } from '../lib/scoring';
+import { calculateScorecard, MONTHS, getQuarterFromMonth, aggregateEntries } from '../lib/scoring';
+import { useTimePeriod } from '@/lib/TimePeriodContext';
 import SeedOnMount from '../components/SeedOnMount';
-
-const today = new Date();
-const CURRENT_YEAR = today.getFullYear();
-// Last closed month: on May 1 you can see April, etc.
-// A month is "closed" (visible) only on or after the 18th of the following month.
-// e.g. April is visible starting May 18th.
-const LAST_CLOSED_MONTH = today.getDate() >= 18 ? today.getMonth() : today.getMonth() - 1;
 
 export default function Dashboard() {
   const queryClient = useQueryClient();
+  const { selectedMonth, selectedYear, periodType } = useTimePeriod();
 
   const [selectedPropertyId, setSelectedPropertyId] = useState('');
-  const [timeFilter, setTimeFilter] = useState('quarter');
-  const [selectedMonth, setSelectedMonth] = useState(LAST_CLOSED_MONTH);
-  const [selectedYear, setSelectedYear] = useState(CURRENT_YEAR);
   const [kpiInputs, setKpiInputs] = useState({ budgeted_gop_actual: '', budgeted_gop_target: '', budgeted_gop_prior: '', gop_margin_actual: '', gop_margin_prior: '', revpar_index_change: '', revpar_index: '', revpar_index_prior: '', gss_actual: '', gss_prior: '' });
 
   const { data: properties = [] } = useQuery({
@@ -45,34 +36,8 @@ export default function Dashboard() {
 
   const selectedProperty = properties.find(p => p.id === selectedPropertyId);
 
-  // Get entry for selected period
-  const getActiveEntry = () => {
-    if (timeFilter === 'month') {
-      return entries.find(e => e.month === selectedMonth && e.year === selectedYear) || {};
-    }
-    if (timeFilter === 'quarter') {
-      const q = getQuarterFromMonth(selectedMonth);
-      const qEntries = entries.filter(e => getQuarterFromMonth(e.month) === q);
-      return aggregateEntries(qEntries);
-    }
-    // YTD
-    const ytdEntries = entries.filter(e => e.month <= selectedMonth);
-    return aggregateEntries(ytdEntries);
-  };
-
-  const aggregateEntries = (arr) => {
-    if (!arr.length) return {};
-    const last = arr[arr.length - 1];
-    const totalActualGOP = arr.reduce((s, e) => s + (e.budgeted_gop_actual || 0), 0);
-    const totalTargetGOP = arr.reduce((s, e) => s + (e.budgeted_gop_target || 0), 0);
-    return {
-      ...last,
-      budgeted_gop_actual: totalActualGOP,
-      budgeted_gop_target: totalTargetGOP,
-    };
-  };
-
-  const activeEntry = getActiveEntry();
+  // Get entry for selected period using global aggregation
+  const activeEntry = aggregateEntries(entries, periodType, selectedMonth, selectedYear) || {};
   const scorecard = selectedProperty
     ? calculateScorecard(activeEntry, selectedProperty)
     : null;
@@ -205,46 +170,23 @@ export default function Dashboard() {
             )}
           </div>
 
-          <div className="flex flex-col sm:flex-row gap-3">
-            <Select value={selectedPropertyId} onValueChange={setSelectedPropertyId}>
-              <SelectTrigger className="w-full sm:w-72 bg-white/10 border-white/20 text-white">
-                <SelectValue placeholder="Select property..." />
-              </SelectTrigger>
-              <SelectContent>
-                {properties.map(p => (
-                  <SelectItem key={p.id} value={p.id}>
-                    <div>
-                      <div className="font-medium text-sm">{p.name}</div>
-                      <div className="text-xs text-muted-foreground">{p.city}, {p.state}</div>
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <Select value={String(selectedMonth)} onValueChange={v => setSelectedMonth(Number(v))}>
-              <SelectTrigger className="w-full sm:w-40 bg-white/10 border-white/20 text-white">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {MONTHS.map((m, i) => {
-                  if (i + 1 > LAST_CLOSED_MONTH) return null;
-                  return <SelectItem key={i + 1} value={String(i + 1)}>{m} {selectedYear}</SelectItem>;
-                })}
-              </SelectContent>
-            </Select>
-          </div>
+          <Select value={selectedPropertyId} onValueChange={setSelectedPropertyId}>
+            <SelectTrigger className="w-full sm:w-72 bg-white/10 border-white/20 text-white">
+              <SelectValue placeholder="Select property..." />
+            </SelectTrigger>
+            <SelectContent>
+              {properties.map(p => (
+                <SelectItem key={p.id} value={p.id}>
+                  <div>
+                    <div className="font-medium text-sm">{p.name}</div>
+                    <div className="text-xs text-muted-foreground">{p.city}, {p.state}</div>
+                  </div>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       </div>
-
-      {/* Time filter tabs */}
-      <Tabs value={timeFilter} onValueChange={setTimeFilter}>
-        <TabsList className="bg-card border border-border shadow-sm">
-          <TabsTrigger value="month">Month</TabsTrigger>
-          <TabsTrigger value="quarter">Quarter</TabsTrigger>
-          <TabsTrigger value="ytd">YTD</TabsTrigger>
-        </TabsList>
-      </Tabs>
 
       {!selectedProperty ? (
         <div className="bg-card rounded-2xl border border-border p-16 text-center shadow-sm">
@@ -276,7 +218,7 @@ export default function Dashboard() {
             <div className="lg:col-span-3 bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
               <div className="px-6 py-4 border-b border-border">
                 <h2 className="font-bold text-foreground">
-                  KPI Scorecard — {timeFilter === 'month' ? MONTHS[selectedMonth - 1] : timeFilter === 'quarter' ? `Q${getQuarterFromMonth(selectedMonth)}` : 'YTD'} {selectedYear}
+                  KPI Scorecard — {periodType === 'month' ? MONTHS[selectedMonth - 1] : periodType === 'quarter' ? `Q${getQuarterFromMonth(selectedMonth)}` : periodType === 'qtd' ? `Q${getQuarterFromMonth(selectedMonth)} QTD` : 'YTD'} {selectedYear}
                 </h2>
                 <p className="text-xs text-muted-foreground mt-0.5">{selectedProperty.name} · {selectedProperty.parent_brand}</p>
               </div>

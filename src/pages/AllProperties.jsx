@@ -7,9 +7,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { calculateScorecard, MONTHS, getQuarterFromMonth } from '../lib/scoring';
 import { Link } from 'react-router-dom';
-
-const CURRENT_YEAR = 2026;
-const CURRENT_MONTH = 3;
+import { useTimePeriod } from '@/lib/TimePeriodContext';
 
 function aggregateEntries(arr) {
   if (!arr.length) return null;
@@ -33,9 +31,8 @@ function aggregateEntries(arr) {
 }
 
 export default function AllProperties() {
+  const { selectedMonth, selectedYear, periodType, getPeriodLabel, getPeriodMonths } = useTimePeriod();
   const [search, setSearch] = useState('');
-  const [timeFilter, setTimeFilter] = useState('quarter');
-  const [selectedMonth, setSelectedMonth] = useState(CURRENT_MONTH);
   const [sortCol, setSortCol] = useState('score');
   const [sortDir, setSortDir] = useState('desc');
 
@@ -53,17 +50,17 @@ export default function AllProperties() {
     const propEntries = allEntries.filter(e => e.property_id === propertyId);
     if (!propEntries.length) return null;
 
-    if (timeFilter === 'month') {
-      return propEntries.find(e => e.month === selectedMonth) || null;
+    const periodMonths = getPeriodMonths();
+    const periodEntries = propEntries.filter(e => 
+      periodMonths.includes(e.month) && 
+      e.year === selectedYear
+    );
+    
+    if (periodType === 'month') {
+      return periodEntries[0] || null;
     }
-    if (timeFilter === 'quarter') {
-      const q = getQuarterFromMonth(selectedMonth);
-      const qEntries = propEntries.filter(e => getQuarterFromMonth(e.month) === q && e.month <= selectedMonth);
-      return aggregateEntries(qEntries);
-    }
-    // YTD
-    const ytdEntries = propEntries.filter(e => e.month <= selectedMonth);
-    return aggregateEntries(ytdEntries);
+    
+    return aggregateEntries(periodEntries, periodType, selectedMonth, selectedYear);
   };
 
   const rows = properties
@@ -92,11 +89,7 @@ export default function AllProperties() {
   const failing = rows.filter(r => r.scorecard && !Object.values(r.scorecard).some(v => v?.incomplete) && !r.scorecard.total.pass).length;
   const noData = rows.filter(r => !r.scorecard).length;
 
-  const periodLabel = timeFilter === 'month'
-    ? `${MONTHS[selectedMonth - 1]} ${CURRENT_YEAR}`
-    : timeFilter === 'quarter'
-    ? `Q${getQuarterFromMonth(selectedMonth)} ${CURRENT_YEAR}`
-    : `YTD through ${MONTHS[selectedMonth - 1]} ${CURRENT_YEAR}`;
+  const periodLabel = getPeriodLabel();
 
   const handleSort = (col) => {
     if (sortCol === col) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
@@ -117,27 +110,10 @@ export default function AllProperties() {
             <h1 className="text-2xl font-bold">All Properties</h1>
             <p className="text-white/70 text-sm mt-1">Portfolio-wide scorecard — {periodLabel}</p>
           </div>
-          <Select value={String(selectedMonth)} onValueChange={v => setSelectedMonth(Number(v))}>
-            <SelectTrigger className="w-48 bg-white/10 border-white/20 text-white">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {MONTHS.map((m, i) => (
-                <SelectItem key={i + 1} value={String(i + 1)}>{m} {CURRENT_YEAR}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
         </div>
       </div>
 
-      {/* Time filter */}
-      <Tabs value={timeFilter} onValueChange={setTimeFilter}>
-        <TabsList className="bg-card border border-border shadow-sm">
-          <TabsTrigger value="month">Month</TabsTrigger>
-          <TabsTrigger value="quarter">Quarter</TabsTrigger>
-          <TabsTrigger value="ytd">YTD</TabsTrigger>
-        </TabsList>
-      </Tabs>
+      {/* Time period selector removed - using global selector from TimePeriodContext */}
 
       {/* Stats */}
       <div className="grid grid-cols-3 gap-4">

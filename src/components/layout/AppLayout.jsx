@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useLocation, Outlet } from 'react-router-dom';
 import { LayoutDashboard, BookOpen, Building2, Settings, Menu, PieChart, FolderOpen, DollarSign, ChevronDown } from 'lucide-react';
+import TimePeriodSelector from './TimePeriodSelector';
 
 const NAV_ITEMS = [
   { path: '/', icon: LayoutDashboard, label: 'Dashboard' },
@@ -117,6 +118,9 @@ export default function AppLayout() {
           <span className="font-bold text-sm">Balanced Scorecard</span>
           <div className="w-9" />
         </header>
+
+        {/* Time period selector */}
+        <TimePeriodSelector />
 
         <main className="flex-1 overflow-auto">
           <Outlet />

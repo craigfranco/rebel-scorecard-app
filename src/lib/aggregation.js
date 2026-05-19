@@ -82,6 +82,13 @@ export function aggregateEntries(entries, periodType, selectedMonth, selectedYea
     return Math.round((sum / values.length) * 100) / 100;
   };
 
+  // Calculate gop_margin_variance from averaged actual and budget
+  const avgActualMargin = avgField('gop_margin_actual');
+  const avgBudgetMargin = avgField('gop_margin_budget');
+  const calculatedVariance = (avgActualMargin != null && avgBudgetMargin != null)
+    ? Math.round((avgActualMargin - avgBudgetMargin) * 100) / 100
+    : null;
+
   // ALL fields (boolean kickers - must all be true)
   const allField = (field) => {
     const values = sorted.filter(e => e[field] != null).map(e => e[field]);
@@ -105,10 +112,10 @@ export function aggregateEntries(entries, periodType, selectedMonth, selectedYea
     forecast_primary_forecast: sumField('forecast_primary_forecast'),
     
     // AVERAGE: Percentage/index metrics
-    gop_margin_actual: avgField('gop_margin_actual'),
+    gop_margin_actual: avgActualMargin,
     gop_margin_prior: avgField('gop_margin_prior'),
-    gop_margin_budget: avgField('gop_margin_budget'),
-    gop_margin_variance: avgField('gop_margin_variance'),
+    gop_margin_budget: avgBudgetMargin,
+    gop_margin_variance: calculatedVariance,
     revpar_index: avgField('revpar_index'),
     revpar_index_change: avgField('revpar_index_change'),
     revpar_index_prior: avgField('revpar_index_prior'),

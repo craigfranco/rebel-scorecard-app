@@ -3,24 +3,18 @@ import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Download, ArrowLeft, User, MapPin, Loader2 } from 'lucide-react';
 import { calculateScorecard, MONTHS, getQuarterFromMonth, aggregateEntries } from '../lib/scoring';
 import { useToast } from '@/components/ui/use-toast';
-
-const today = new Date();
-const CURRENT_YEAR = today.getFullYear();
-// A month is "closed" (visible) only on or after the 18th of the following month.
-const LAST_CLOSED_MONTH = today.getDate() >= 18 ? today.getMonth() : today.getMonth() - 1;
+import { useTimePeriod } from '@/lib/TimePeriodContext';
 
 
 export default function HotelDetail() {
   const { id: propertyId } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [timeFilter, setTimeFilter] = useState('qtd');
-  const [selectedMonth, setSelectedMonth] = useState(LAST_CLOSED_MONTH);
+  const { selectedMonth, selectedYear, periodType } = useTimePeriod();
   const [generatingPdf, setGeneratingPdf] = useState(false);
   const printRef = useRef();
 
@@ -31,26 +25,21 @@ export default function HotelDetail() {
   });
 
   const { data: entries = [] } = useQuery({
-    queryKey: ['entries', propertyId, CURRENT_YEAR],
-    queryFn: () => base44.entities.ScoreEntry.filter({ property_id: propertyId, year: CURRENT_YEAR }),
+    queryKey: ['entries', propertyId, selectedYear],
+    queryFn: () => base44.entities.ScoreEntry.filter({ property_id: propertyId, year: selectedYear }),
     enabled: !!propertyId,
   });
 
-  const getActiveEntry = () => {
-    if (!entries.length) return {};
-    return aggregateEntries(entries, timeFilter, selectedMonth, CURRENT_YEAR) || {};
-  };
-
-  const activeEntry = getActiveEntry();
+  const activeEntry = aggregateEntries(entries, periodType, selectedMonth, selectedYear) || {};
   const scorecard = property ? calculateScorecard(activeEntry, property) : null;
 
-  const periodLabel = timeFilter === 'month'
-    ? `${MONTHS[selectedMonth - 1]} ${CURRENT_YEAR}`
-    : timeFilter === 'quarter'
-    ? `Q${getQuarterFromMonth(selectedMonth)} ${CURRENT_YEAR}`
-    : timeFilter === 'qtd'
-    ? `Q${getQuarterFromMonth(selectedMonth)} QTD ${CURRENT_YEAR}`
-    : `YTD ${CURRENT_YEAR}`;
+  const periodLabel = periodType === 'month'
+    ? `${MONTHS[selectedMonth - 1]} ${selectedYear}`
+    : periodType === 'quarter'
+    ? `Q${getQuarterFromMonth(selectedMonth)} ${selectedYear}`
+    : periodType === 'qtd'
+    ? `Q${getQuarterFromMonth(selectedMonth)} QTD ${selectedYear}`
+    : `YTD ${selectedYear}`;
 
   const handleDownloadPdf = async () => {
     setGeneratingPdf(true);
@@ -254,26 +243,7 @@ export default function HotelDetail() {
         </div>
       </div>
 
-      {/* Time filter */}
-      <div className="flex flex-wrap items-center gap-3">
-        <Tabs value={timeFilter} onValueChange={setTimeFilter}>
-          <TabsList className="bg-card border border-border shadow-sm">
-            <TabsTrigger value="month">Month</TabsTrigger>
-            <TabsTrigger value="quarter">Quarter</TabsTrigger>
-            <TabsTrigger value="qtd">QTD</TabsTrigger>
-            <TabsTrigger value="ytd">YTD</TabsTrigger>
-          </TabsList>
-        </Tabs>
-        <Select value={String(selectedMonth)} onValueChange={v => setSelectedMonth(Number(v))}>
-          <SelectTrigger className="w-44 text-sm"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            {MONTHS.map((m, i) => {
-              if (i + 1 > LAST_CLOSED_MONTH) return null;
-              return <SelectItem key={i + 1} value={String(i + 1)}>{m} {CURRENT_YEAR}</SelectItem>;
-            })}
-          </SelectContent>
-        </Select>
-      </div>
+
 
       {/* Score + KPI */}
       {scorecard && (

@@ -5,12 +5,9 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useNavigate } from 'react-router-dom';
 import { ArrowUp, ArrowDown, Minus, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
-import { calculateScorecard, MONTHS, getQuarterFromMonth, aggregateEntries } from '../lib/scoring';
-
-const today = new Date();
-const CURRENT_YEAR = today.getFullYear();
-// A month is "closed" (visible) only on or after the 18th of the following month.
-const LAST_CLOSED_MONTH = today.getDate() >= 18 ? today.getMonth() : today.getMonth() - 1;
+import { calculateScorecard, MONTHS, getQuarterFromMonth } from '../lib/scoring';
+import { aggregateEntries } from '../lib/aggregation';
+import { useTimePeriod } from '@/lib/TimePeriodContext';
 
 const KPI_TABS = [
   { key: 'gop', label: 'Budgeted GOP', max: 35 },
@@ -35,10 +32,8 @@ function getRowColor(pass, score, max) {
 
 export default function KpiBreakdown() {
   const navigate = useNavigate();
+  const { selectedMonth, selectedYear, periodType, getPeriodLabel, getPeriodMonths } = useTimePeriod();
   const [activeKpi, setActiveKpi] = useState('gop');
-  const [timeFilter, setTimeFilter] = useState('qtd');
-  const [selectedMonth, setSelectedMonth] = useState(LAST_CLOSED_MONTH);
-  const [selectedYear, setSelectedYear] = useState(CURRENT_YEAR);
   const [sortCol, setSortCol] = useState('score');
   const [sortDir, setSortDir] = useState('desc');
 
@@ -55,71 +50,89 @@ export default function KpiBreakdown() {
   const getEntry = (propertyId) => {
     const propEntries = allEntries.filter(e => e.property_id === propertyId);
     if (!propEntries.length) return null;
-    return aggregateEntries(propEntries, timeFilter, selectedMonth, selectedYear);
+    const periodMonths = getPeriodMonths();
+    const periodEntries = propEntries.filter(e => 
+      periodMonths.includes(e.month) && 
+      e.year === selectedYear
+    );
+    
+    if (periodType === 'month') {
+      return periodEntries[0] || null;
+    }
+    
+    return aggregateEntries(periodEntries, periodType, selectedMonth, selectedYear);
   };
 
   const kpiTab = KPI_TABS.find(k => k.key === activeKpi);
 
   const rows = useMemo(() => {
-    return properties.map(p => {
-      const entry = getEntry(p.id);
-      if (!entry) return { property: p, entry: null, kpiData: null, score: null, pass: null };
-      const sc = calculateScorecard(entry, p);
-      let kpiData = null;
-      let score = null;
-      let pass = null;
-      let actual = '—';
-      let target = '—';
+    return properties
+      .filter(p => {
+        // For red zone kicker, exclude Independent properties
+        if (activeKpi === 'redzone' && p.parent_brand === 'Independent') {
+          return false;
+        }
+        return true;
+      })
+      .map(p => {
+        const entry = getEntry(p.id);
+        if (!entry) return { property: p, entry: null, kpiData: null, score: null, pass: null };
+        const sc = calculateScorecard(entry, p);
+        let kpiData = null;
+        let score = null;
+        let pass = null;
+        let actual = '—';
+        let target = '—';
 
-      if (activeKpi === 'gop') {
-        kpiData = sc.gop;
-        score = sc.gop.score;
-        pass = sc.gop.pass;
-        actual = entry.budgeted_gop_actual != null ? `$${(entry.budgeted_gop_actual / 1000).toFixed(1)}K` : '—';
-        target = entry.budgeted_gop_target != null ? `$${(entry.budgeted_gop_target / 1000).toFixed(1)}K` : '—';
-        entry._gop_variance = (entry.budgeted_gop_actual != null && entry.budgeted_gop_target != null)
-          ? entry.budgeted_gop_actual - entry.budgeted_gop_target
-          : null;
-      } else if (activeKpi === 'gopMargin') {
-        kpiData = sc.gopMargin;
-        score = sc.gopMargin.score;
-        pass = sc.gopMargin.pass;
-        actual = entry.gop_margin_actual != null ? `${entry.gop_margin_actual.toFixed(1)}%` : '—';
-        target = entry.gop_margin_actual != null && entry.gop_margin_prior != null
-          ? entry.gop_margin_actual - entry.gop_margin_prior
-          : null;
-        // store LY% for display in extra column
-        entry._ly_margin = entry.gop_margin_prior;
-      } else if (activeKpi === 'rgi') {
-        kpiData = sc.rgi;
-        score = sc.rgi.score;
-        pass = sc.rgi.pass;
-        actual = entry.revpar_index != null ? entry.revpar_index.toFixed(1) : '—';
-        target = '≥ +0.1% YOY';
-      } else if (activeKpi === 'gss') {
-        kpiData = sc.gss;
-        score = sc.gss.score;
-        pass = sc.gss.pass;
-        actual = entry.gss_actual != null ? `${Number(entry.gss_actual).toFixed(1)} /${sc.gssStd.scale}` : '—';
-        target = `+${sc.gssStd.target} YOY`;
-        entry._gss_prior = entry.gss_prior;
-        entry._gss_scale = sc.gssStd.scale;
-        entry._gss_growth = (entry.gss_actual != null && entry.gss_prior != null) ? entry.gss_actual - entry.gss_prior : null;
-      } else if (activeKpi === 'forecast') {
-        pass = entry.forecast_kicker || false;
-        score = pass ? 1 : 0;
-        actual = entry.forecast_actual_revenue != null ? `$${(entry.forecast_actual_revenue / 1000).toFixed(0)}K` : '—';
-        target = entry.forecast_primary_forecast != null ? `$${(entry.forecast_primary_forecast / 1000).toFixed(0)}K` : '—';
-      } else if (activeKpi === 'redzone') {
-        pass = entry.red_zone_kicker || false;
-        score = pass ? 1 : 0;
-        actual = pass ? 'HIT' : 'MISS';
-        target = 'Exit & stay out';
-      }
+        if (activeKpi === 'gop') {
+          kpiData = sc.gop;
+          score = sc.gop.score;
+          pass = sc.gop.pass;
+          actual = entry.budgeted_gop_actual != null ? `$${(entry.budgeted_gop_actual / 1000).toFixed(1)}K` : '—';
+          target = entry.budgeted_gop_target != null ? `$${(entry.budgeted_gop_target / 1000).toFixed(1)}K` : '—';
+          entry._gop_variance = (entry.budgeted_gop_actual != null && entry.budgeted_gop_target != null)
+            ? entry.budgeted_gop_actual - entry.budgeted_gop_target
+            : null;
+        } else if (activeKpi === 'gopMargin') {
+          kpiData = sc.gopMargin;
+          score = sc.gopMargin.score;
+          pass = sc.gopMargin.pass;
+          actual = entry.gop_margin_actual != null ? `${entry.gop_margin_actual.toFixed(1)}%` : '—';
+          target = entry.gop_margin_actual != null && entry.gop_margin_prior != null
+            ? entry.gop_margin_actual - entry.gop_margin_prior
+            : null;
+          // store LY% for display in extra column
+          entry._ly_margin = entry.gop_margin_prior;
+        } else if (activeKpi === 'rgi') {
+          kpiData = sc.rgi;
+          score = sc.rgi.score;
+          pass = sc.rgi.pass;
+          actual = entry.revpar_index != null ? entry.revpar_index.toFixed(1) : '—';
+          target = '≥ +0.1% YOY';
+        } else if (activeKpi === 'gss') {
+          kpiData = sc.gss;
+          score = sc.gss.score;
+          pass = sc.gss.pass;
+          actual = entry.gss_actual != null ? `${Number(entry.gss_actual).toFixed(1)} /${sc.gssStd.scale}` : '—';
+          target = `+${sc.gssStd.target} YOY`;
+          entry._gss_prior = entry.gss_prior;
+          entry._gss_scale = sc.gssStd.scale;
+          entry._gss_growth = (entry.gss_actual != null && entry.gss_prior != null) ? entry.gss_actual - entry.gss_prior : null;
+        } else if (activeKpi === 'forecast') {
+          pass = entry.forecast_kicker || false;
+          score = pass ? 1 : 0;
+          actual = entry.forecast_actual_revenue != null ? `$${(entry.forecast_actual_revenue / 1000).toFixed(0)}K` : '—';
+          target = entry.forecast_primary_forecast != null ? `$${(entry.forecast_primary_forecast / 1000).toFixed(0)}K` : '—';
+        } else if (activeKpi === 'redzone') {
+          pass = entry.red_zone_kicker || false;
+          score = pass ? 1 : 0;
+          actual = pass ? 'HIT' : 'MISS';
+          target = 'Exit & stay out';
+        }
 
-      return { property: p, entry, score, pass, actual, target };
-    });
-  }, [properties, allEntries, activeKpi, timeFilter, selectedMonth, selectedYear]);
+        return { property: p, entry, score, pass, actual, target };
+      });
+  }, [properties, allEntries, activeKpi, periodType, selectedMonth, selectedYear]);
 
   const sortedRows = useMemo(() => {
     return [...rows].sort((a, b) => {
@@ -138,13 +151,7 @@ export default function KpiBreakdown() {
   const passing = rows.filter(r => r.pass === true).length;
   const total = rows.filter(r => r.pass !== null).length;
 
-  const periodLabel = timeFilter === 'month'
-    ? `${MONTHS[selectedMonth - 1]} ${selectedYear}`
-    : timeFilter === 'quarter'
-    ? `Q${getQuarterFromMonth(selectedMonth)} ${selectedYear}`
-    : timeFilter === 'qtd'
-    ? `Q${getQuarterFromMonth(selectedMonth)} QTD ${selectedYear}`
-    : `YTD ${selectedYear}`;
+  const periodLabel = getPeriodLabel();
 
   const handleSort = (col) => {
     if (sortCol === col) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
@@ -173,28 +180,7 @@ export default function KpiBreakdown() {
         </TabsList>
       </Tabs>
 
-      {/* Time filter row */}
-      <div className="flex flex-wrap items-center gap-3">
-        <Tabs value={timeFilter} onValueChange={setTimeFilter}>
-          <TabsList className="bg-card border border-border shadow-sm">
-            <TabsTrigger value="month">Month</TabsTrigger>
-            <TabsTrigger value="quarter">Quarter</TabsTrigger>
-            <TabsTrigger value="qtd">QTD</TabsTrigger>
-            <TabsTrigger value="ytd">YTD</TabsTrigger>
-          </TabsList>
-        </Tabs>
-        <Select value={String(selectedMonth)} onValueChange={v => setSelectedMonth(Number(v))}>
-          <SelectTrigger className="w-44 text-sm">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {MONTHS.map((m, i) => {
-              if (i + 1 > LAST_CLOSED_MONTH) return null;
-              return <SelectItem key={i + 1} value={String(i + 1)}>{m} {selectedYear}</SelectItem>;
-            })}
-          </SelectContent>
-        </Select>
-      </div>
+      {/* Time period selector removed - using global selector from TimePeriodContext */}
 
       {/* Summary bar */}
       <div className="bg-card rounded-2xl border border-border p-4 shadow-sm flex items-center gap-4">

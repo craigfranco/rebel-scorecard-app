@@ -7,14 +7,13 @@ import { Button } from '@/components/ui/button';
 import { Plus, Save, ChevronRight, Check, X } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { calculateQuarterlyBonus, calculateAnnualBonus, getMetricStatus } from '@/lib/bonusCalculation';
-import { calculateScorecard, MONTHS, getQuarterFromMonth } from '@/lib/scoring';
+import { calculateScorecard } from '@/lib/scoring';
 import { getClosedQuarters, calculateEstimatedAnnualSalary } from '@/lib/salaryCalculation';
 import StaffTable from '@/components/payouts/StaffTable';
 import BonusSummaryTable from '@/components/payouts/BonusSummaryTable';
 import PayoutBreakdownCard from '@/components/payouts/PayoutBreakdownCard';
 import BonusPayoutDrillDown from '@/components/payouts/BonusPayoutDrillDown';
-
-const CURRENT_YEAR = 2026;
+import { useTimePeriod } from '@/lib/TimePeriodContext';
 
 const Switch = ({ checked, onChange }) => (
   <button
@@ -32,10 +31,10 @@ const Switch = ({ checked, onChange }) => (
 export default function Payouts() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { selectedYear } = useTimePeriod();
   const closedQuarters = getClosedQuarters();
 
   const [selectedPropertyId, setSelectedPropertyId] = useState('');
-  const [selectedYear, setSelectedYear] = useState(CURRENT_YEAR);
   const [selectedStaffId, setSelectedStaffId] = useState('');
   const [showAddForm, setShowAddForm] = useState(false);
   const [drillDownStaffId, setDrillDownStaffId] = useState(null);
@@ -48,7 +47,7 @@ export default function Payouts() {
     salary_q2: '',
     salary_q3: '',
     salary_q4: '',
-    year: CURRENT_YEAR,
+    year: selectedYear,
     is_active: true
   });
 
@@ -124,7 +123,7 @@ export default function Payouts() {
         salary_q2: '',
         salary_q3: '',
         salary_q4: '',
-        year: CURRENT_YEAR,
+        year: selectedYear,
         is_active: true
       });
       setShowAddForm(false);
@@ -259,7 +258,7 @@ export default function Payouts() {
               salary_q2: '',
               salary_q3: '',
               salary_q4: '',
-              year: CURRENT_YEAR,
+              year: selectedYear,
               is_active: true
             });
             setShowAddForm(true);
