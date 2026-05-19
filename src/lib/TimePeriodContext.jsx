@@ -188,6 +188,8 @@ export function TimePeriodProvider({ children }) {
     getPeriodMonths,
     LAST_CLOSED_MONTH,
     CURRENT_YEAR,
+    APP_START_YEAR,
+    APP_START_MONTH,
     isInitialized,
   };
 
