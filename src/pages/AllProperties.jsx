@@ -42,8 +42,8 @@ export default function AllProperties() {
   });
 
   const { data: allEntries = [] } = useQuery({
-    queryKey: ['all-entries', CURRENT_YEAR],
-    queryFn: () => base44.entities.ScoreEntry.filter({ year: CURRENT_YEAR }),
+    queryKey: ['all-entries', selectedYear],
+    queryFn: () => base44.entities.ScoreEntry.filter({ year: selectedYear }),
   });
 
   const getEntryForProperty = (propertyId) => {

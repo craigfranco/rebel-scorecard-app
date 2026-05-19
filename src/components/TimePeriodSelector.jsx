@@ -1,122 +1,160 @@
 import React from 'react';
 import { useTimePeriod } from '@/lib/TimePeriodContext';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { MONTHS, getQuarterFromMonth } from '@/lib/aggregation';
+import { Button } from '@/components/ui/button';
+import { MONTHS } from '@/lib/aggregation';
 
 export default function TimePeriodSelector() {
   const { 
     selectedMonth, 
     setSelectedMonth, 
     selectedYear, 
-    setSelectedYear,
     periodType, 
     setPeriodType,
     availableMonths,
-    LAST_CLOSED_MONTH,
+    availableQuarters,
     CURRENT_YEAR
   } = useTimePeriod();
 
-  const currentQuarter = getQuarterFromMonth(selectedMonth);
-
-  // Build dynamic options based on current quarter
-  const getQuarterOptions = () => {
-    const options = [];
-    
-    // Add individual months for current quarter
-    const quarterStart = (currentQuarter - 1) * 3;
-    for (let i = 0; i < 3; i++) {
-      const monthIndex = quarterStart + i;
-      if (monthIndex <= LAST_CLOSED_MONTH) {
-        options.push(
-          <SelectItem key={`month-${monthIndex + 1}`} value={`month-${monthIndex + 1}`}>
-            {MONTHS[monthIndex]}
-          </SelectItem>
-        );
-      }
-    }
-    
-    // Add QTD if we're not in the first month of the quarter
-    if (selectedMonth > quarterStart + 1) {
-      options.push(
-        <SelectItem key="qtd" value="qtd">
-          Q{currentQuarter}TD
-        </SelectItem>
-      );
-    }
-    
-    // Add full quarter option if all 3 months are available
-    if (quarterStart + 2 <= LAST_CLOSED_MONTH) {
-      options.push(
-        <SelectItem key="quarter" value="quarter">
-          Q{currentQuarter}
-        </SelectItem>
-      );
-    }
-    
-    return options;
+  const handleMonthSelect = (month) => {
+    setSelectedMonth(month);
+    setPeriodType('month');
   };
 
-  // Add YTD option if we're past January
-  const showYTD = selectedMonth > 1;
+  const handleQuarterSelect = (quarter) => {
+    // Set to first month of the quarter
+    const firstMonth = (quarter - 1) * 3 + 1;
+    setSelectedMonth(firstMonth);
+    setPeriodType('quarter');
+  };
 
   return (
-    <div className="sticky top-0 z-50 bg-background border-b border-border shadow-sm">
-      <div className="max-w-7xl mx-auto px-4 lg:px-8 py-3">
-        <div className="flex items-center justify-between gap-4">
-          {/* Period Type Tabs */}
-          <Tabs value={periodType} onValueChange={setPeriodType} className="w-full">
-            <TabsList className="bg-muted/50">
-              <TabsTrigger value="month">Month</TabsTrigger>
-              <TabsTrigger value="quarter">Quarter</TabsTrigger>
-              <TabsTrigger value="qtd">QTD</TabsTrigger>
-              <TabsTrigger value="ytd">YTD</TabsTrigger>
+    <div className="sticky top-0 z-50 bg-card border-b border-border shadow-sm">
+      <div className="max-w-7xl mx-auto px-4 lg:px-8 py-3 space-y-3">
+        {/* Header with year */}
+        <div className="flex items-center justify-between">
+          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+            {CURRENT_YEAR}
+          </span>
+          <Tabs value={periodType} onValueChange={setPeriodType} className="w-auto">
+            <TabsList className="bg-muted/50 h-8">
+              <TabsTrigger value="month" className="text-xs h-6">Month</TabsTrigger>
+              <TabsTrigger value="quarter" className="text-xs h-6">Quarter</TabsTrigger>
+              <TabsTrigger value="qtd" className="text-xs h-6">QTD</TabsTrigger>
+              <TabsTrigger value="ytd" className="text-xs h-6">YTD</TabsTrigger>
             </TabsList>
           </Tabs>
-
-          {/* Month/Quarter Selector */}
-          <div className="flex items-center gap-2">
-            <Select 
-              value={`${periodType}-${selectedMonth}`} 
-              onValueChange={(value) => {
-                if (value.startsWith('month-')) {
-                  setPeriodType('month');
-                  setSelectedMonth(Number(value.split('-')[1]));
-                } else if (value === 'quarter') {
-                  setPeriodType('quarter');
-                } else if (value === 'qtd') {
-                  setPeriodType('qtd');
-                } else if (value === 'ytd') {
-                  setPeriodType('ytd');
-                }
-              }}
-            >
-              <SelectTrigger className="w-40">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {getQuarterOptions()}
-                {showYTD && (
-                  <SelectItem value="ytd">YTD</SelectItem>
-                )}
-              </SelectContent>
-            </Select>
-
-            {/* Year Selector */}
-            <Select 
-              value={String(selectedYear)} 
-              onValueChange={(year) => setSelectedYear(Number(year))}
-            >
-              <SelectTrigger className="w-24">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={String(CURRENT_YEAR)}>{CURRENT_YEAR}</SelectItem>
-                <SelectItem value={String(CURRENT_YEAR - 1)}>{CURRENT_YEAR - 1}</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
         </div>
+
+        {/* Month Pills - scrollable horizontally */}
+        {periodType === 'month' && (
+          <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent">
+            {availableMonths.map(({ month, year }) => (
+              <Button
+                key={`${year}-${month}`}
+                variant={selectedMonth === month && year === selectedYear ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => handleMonthSelect(month)}
+                className={`flex-shrink-0 text-xs font-medium min-w-[60px] ${
+                  selectedMonth === month && year === selectedYear 
+                    ? 'bg-primary text-primary-foreground' 
+                    : 'bg-transparent hover:bg-muted'
+                }`}
+                style={
+                  selectedMonth === month && year === selectedYear 
+                    ? { backgroundColor: '#2d4b5e' } 
+                    : {}
+                }
+              >
+                {MONTHS[month - 1]}
+              </Button>
+            ))}
+          </div>
+        )}
+
+        {/* Quarter Pills + QTD/YTD */}
+        {periodType === 'quarter' && (
+          <div className="flex gap-2 overflow-x-auto pb-1">
+            {availableQuarters.map((quarter) => (
+              <Button
+                key={`q${quarter}`}
+                variant={periodType === 'quarter' && selectedMonth === (quarter - 1) * 3 + 1 ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => handleQuarterSelect(quarter)}
+                className={`flex-shrink-0 text-xs font-medium min-w-[60px] ${
+                  periodType === 'quarter' && selectedMonth === (quarter - 1) * 3 + 1
+                    ? 'bg-primary text-primary-foreground' 
+                    : 'bg-transparent hover:bg-muted'
+                }`}
+                style={
+                  periodType === 'quarter' && selectedMonth === (quarter - 1) * 3 + 1
+                    ? { backgroundColor: '#2d4b5e' } 
+                    : {}
+                }
+              >
+                Q{quarter}
+              </Button>
+            ))}
+            <Button
+              variant={periodType === 'qtd' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setPeriodType('qtd')}
+              className={`flex-shrink-0 text-xs font-medium min-w-[60px] ${
+                periodType === 'qtd'
+                  ? 'bg-primary text-primary-foreground' 
+                  : 'bg-transparent hover:bg-muted'
+              }`}
+              style={periodType === 'qtd' ? { backgroundColor: '#2d4b5e' } : {}}
+            >
+              QTD
+            </Button>
+            <Button
+              variant={periodType === 'ytd' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setPeriodType('ytd')}
+              className={`flex-shrink-0 text-xs font-medium min-w-[60px] ${
+                periodType === 'ytd'
+                  ? 'bg-primary text-primary-foreground' 
+                  : 'bg-transparent hover:bg-muted'
+              }`}
+              style={periodType === 'ytd' ? { backgroundColor: '#2d4b5e' } : {}}
+            >
+              YTD
+            </Button>
+          </div>
+        )}
+
+        {/* QTD View */}
+        {periodType === 'qtd' && (
+          <div className="flex gap-2 items-center">
+            <span className="text-sm font-medium text-muted-foreground">QTD:</span>
+            <div className="flex gap-1">
+              {availableMonths
+                .filter(({ month }) => month <= ((Math.ceil(selectedMonth / 3) - 1) * 3 + 1) && month <= selectedMonth)
+                .map(({ month }) => (
+                  <span key={month} className="text-xs font-medium px-2 py-1 bg-muted rounded">
+                    {MONTHS[month - 1]}
+                  </span>
+                ))}
+            </div>
+          </div>
+        )}
+
+        {/* YTD View */}
+        {periodType === 'ytd' && (
+          <div className="flex gap-2 items-center">
+            <span className="text-sm font-medium text-muted-foreground">YTD:</span>
+            <div className="flex gap-1 flex-wrap">
+              {availableMonths
+                .filter(({ year }) => year === selectedYear)
+                .map(({ month }) => (
+                  <span key={month} className="text-xs font-medium px-2 py-1 bg-muted rounded">
+                    {MONTHS[month - 1]}
+                  </span>
+                ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

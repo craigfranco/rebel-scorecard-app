@@ -55,10 +55,15 @@ export function aggregateEntries(entries, periodType, selectedMonth, selectedYea
       e.year === selectedYear
     );
   } else if (periodType === 'ytd') {
-    filteredEntries = entries.filter(e => 
-      e.month <= selectedMonth && 
-      e.year === selectedYear
-    );
+    // YTD: From Jan of selectedYear (or APP_START_YEAR if earlier) through selectedMonth
+    // Handle multi-year case: include all months from Jan selectedYear to selectedMonth
+    filteredEntries = entries.filter(e => {
+      if (e.year === selectedYear) {
+        return e.month <= selectedMonth;
+      }
+      // Include previous years if we're in a multi-year scenario
+      return e.year < selectedYear && e.year >= 2026;
+    });
   }
 
   if (filteredEntries.length === 0) return null;
