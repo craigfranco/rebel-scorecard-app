@@ -1,0 +1,137 @@
+// Comprehensive aggregation logic for Balanced Scorecard time periods
+
+export const MONTHS = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December'
+];
+
+export const QUARTERS = ['Q1 (Jan-Mar)', 'Q2 (Apr-Jun)', 'Q3 (Jul-Sep)', 'Q4 (Oct-Dec)'];
+
+export function getQuarterFromMonth(month) {
+  return Math.ceil(month / 3);
+}
+
+export function getQuarterMonths(quarter) {
+  const start = (quarter - 1) * 3 + 1;
+  return [start, start + 1, start + 2];
+}
+
+export function getQuarterStartMonth(quarter) {
+  return (quarter - 1) * 3 + 1;
+}
+
+/**
+ * Aggregates ScoreEntry data based on time period type
+ * 
+ * Rules:
+ * - Dollar amounts (budgeted_gop_actual, budgeted_gop_target, budgeted_gop_prior, 
+ *   forecast_actual_revenue, forecast_primary_forecast): SUM
+ * - Percentage/index metrics (gop_margin_actual, gop_margin_prior, gop_margin_budget,
+ *   gop_margin_variance, revpar_index, revpar_index_change, gss_actual, gss_prior): AVERAGE
+ * - Forecast result (Hit/Miss): Hit only if ALL months hit
+ * - Red zone kicker: Hit only if ALL months hit
+ */
+export function aggregateEntries(entries, periodType, selectedMonth, selectedYear) {
+  if (!entries || entries.length === 0) return null;
+
+  let filteredEntries = [];
+
+  // Filter entries based on period type
+  if (periodType === 'month') {
+    filteredEntries = entries.filter(e => e.month === selectedMonth && e.year === selectedYear);
+  } else if (periodType === 'quarter') {
+    const quarter = getQuarterFromMonth(selectedMonth);
+    const quarterMonths = getQuarterMonths(quarter);
+    filteredEntries = entries.filter(e => 
+      quarterMonths.includes(e.month) && 
+      e.year === selectedYear
+    );
+  } else if (periodType === 'qtd') {
+    const quarter = getQuarterFromMonth(selectedMonth);
+    const quarterStart = getQuarterStartMonth(quarter);
+    filteredEntries = entries.filter(e => 
+      e.month >= quarterStart && 
+      e.month <= selectedMonth && 
+      e.year === selectedYear
+    );
+  } else if (periodType === 'ytd') {
+    filteredEntries = entries.filter(e => 
+      e.month <= selectedMonth && 
+      e.year === selectedYear
+    );
+  }
+
+  if (filteredEntries.length === 0) return null;
+
+  // Sort by month
+  const sorted = [...filteredEntries].sort((a, b) => a.month - b.month);
+  const last = sorted[sorted.length - 1];
+
+  // SUM fields (dollar amounts)
+  const sumField = (field) => {
+    const values = sorted.filter(e => e[field] != null).map(e => e[field]);
+    if (values.length === 0) return null;
+    return values.reduce((sum, val) => sum + val, 0);
+  };
+
+  // AVERAGE fields (percentages/indices)
+  const avgField = (field) => {
+    const values = sorted.filter(e => e[field] != null).map(e => e[field]);
+    if (values.length === 0) return null;
+    const sum = values.reduce((s, v) => s + v, 0);
+    return Math.round((sum / values.length) * 100) / 100;
+  };
+
+  // ALL fields (boolean kickers - must all be true)
+  const allField = (field) => {
+    const values = sorted.filter(e => e[field] != null).map(e => e[field]);
+    if (values.length === 0) return false;
+    return values.every(v => v === true);
+  };
+
+  // Forecast result: Hit only if ALL months hit
+  const forecastResults = sorted.filter(e => e.forecast_result).map(e => e.forecast_result);
+  const forecastResult = forecastResults.length > 0 && forecastResults.every(r => r === 'Hit') ? 'Hit' : 'Miss';
+
+  return {
+    // Keep metadata from last entry
+    ...last,
+    
+    // SUM: Dollar amounts
+    budgeted_gop_actual: sumField('budgeted_gop_actual'),
+    budgeted_gop_target: sumField('budgeted_gop_target'),
+    budgeted_gop_prior: sumField('budgeted_gop_prior'),
+    forecast_actual_revenue: sumField('forecast_actual_revenue'),
+    forecast_primary_forecast: sumField('forecast_primary_forecast'),
+    
+    // AVERAGE: Percentage/index metrics
+    gop_margin_actual: avgField('gop_margin_actual'),
+    gop_margin_prior: avgField('gop_margin_prior'),
+    gop_margin_budget: avgField('gop_margin_budget'),
+    gop_margin_variance: avgField('gop_margin_variance'),
+    revpar_index: avgField('revpar_index'),
+    revpar_index_change: avgField('revpar_index_change'),
+    revpar_index_prior: avgField('revpar_index_prior'),
+    gss_actual: avgField('gss_actual'),
+    gss_prior: avgField('gss_prior'),
+    
+    // ALL: Boolean kickers
+    forecast_kicker: allField('forecast_kicker'),
+    red_zone_kicker: allField('red_zone_kicker'),
+    forecast_result: forecastResult,
+    
+    // Text fields: use last entry
+    key_wins: last.key_wins,
+    previous_results: last.previous_results,
+    next_priorities: last.next_priorities,
+    prepared_by: last.prepared_by,
+    reviewed_by: last.reviewed_by,
+  };
+}
+
+/**
+ * Legacy wrapper for backward compatibility
+ */
+export function aggregateQuarterEntries(arr) {
+  return aggregateEntries(arr, 'quarter', arr[0]?.month, arr[0]?.year);
+}
