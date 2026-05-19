@@ -3,32 +3,13 @@ import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import { Search, TrendingUp, TrendingDown, Minus, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
 import { Input } from '@/components/ui/input';
-import { calculateScorecard, MONTHS, getQuarterFromMonth } from '../lib/scoring';
+import { calculateScorecard, MONTHS, getQuarterFromMonth, aggregateEntries } from '../lib/scoring';
 import { Link } from 'react-router-dom';
 import { useTimePeriod } from '@/lib/TimePeriodContext';
 import PortfolioDashboard from '@/components/dashboard/PortfolioDashboard';
 import { getBrandColor, getStatusBadge, formatPercentage } from '@/lib/portfolioHelpers';
 
-function aggregateEntries(arr) {
-  if (!arr.length) return null;
-  const last = [...arr].sort((a, b) => b.month - a.month)[0];
-  const totalActualGOP = arr.reduce((s, e) => s + (e.budgeted_gop_actual ?? 0), 0);
-  const totalTargetGOP = arr.reduce((s, e) => s + (e.budgeted_gop_target ?? 0), 0);
-  // For margin, RGI, GSS — use the most recent entry that has the value
-  const withMargin = arr.filter(e => e.gop_margin_actual != null);
-  const withRGI = arr.filter(e => e.revpar_index_change != null);
-  const withGSS = arr.filter(e => e.gss_actual != null);
-  return {
-    ...last,
-    budgeted_gop_actual: arr.some(e => e.budgeted_gop_actual != null) ? totalActualGOP : null,
-    budgeted_gop_target: arr.some(e => e.budgeted_gop_target != null) ? totalTargetGOP : null,
-    gop_margin_actual: withMargin.length ? withMargin.sort((a,b)=>b.month-a.month)[0].gop_margin_actual : null,
-    gop_margin_prior: withMargin.length ? withMargin.sort((a,b)=>b.month-a.month)[0].gop_margin_prior : null,
-    revpar_index_change: withRGI.length ? withRGI.sort((a,b)=>b.month-a.month)[0].revpar_index_change : null,
-    gss_actual: withGSS.length ? withGSS.sort((a,b)=>b.month-a.month)[0].gss_actual : null,
-    gss_prior: withGSS.length ? withGSS.sort((a,b)=>b.month-a.month)[0].gss_prior : null,
-  };
-}
+
 
 export default function AllProperties() {
   const { selectedMonth, selectedYear, periodType, getPeriodLabel, getPeriodMonths } = useTimePeriod();
@@ -60,6 +41,7 @@ export default function AllProperties() {
       return periodEntries[0] || null;
     }
     
+    // Use the proper aggregation from lib/aggregation.js for quarter, qtd, ytd
     return aggregateEntries(periodEntries, periodType, selectedMonth, selectedYear);
   };
 

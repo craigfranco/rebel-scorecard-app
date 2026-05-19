@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import KpiTile from './KpiTile';
 import { TrendingUp, DollarSign, Target, Star } from 'lucide-react';
 import { formatCurrency, formatPercentage } from '@/lib/portfolioHelpers';
+import { aggregateEntries, getQuarterMonths, getQuarterStartMonth } from '@/lib/aggregation';
 
 export default function PortfolioDashboard({ properties, entries, periodType, selectedMonth, selectedYear }) {
   // Aggregate data across all properties
@@ -29,13 +30,42 @@ export default function PortfolioDashboard({ properties, entries, periodType, se
       const propEntries = entries.filter(e => e.property_id === property.id);
       if (!propEntries.length) return;
 
-      // Get entry for selected period
+      // Get entry for selected period using proper aggregation
       let entry;
       if (periodType === 'month') {
         entry = propEntries.find(e => e.month === selectedMonth && e.year === selectedYear);
-      } else {
-        // For quarter/YTD, use most recent
-        entry = propEntries.sort((a, b) => b.month - a.month)[0];
+      } else if (periodType === 'quarter') {
+        // Quarter: all 3 months in the quarter
+        const quarter = Math.ceil(selectedMonth / 3);
+        const quarterMonths = getQuarterMonths(quarter);
+        const periodEntries = propEntries.filter(e => 
+          quarterMonths.includes(e.month) && 
+          e.year === selectedYear
+        );
+        if (periodEntries.length > 0) {
+          entry = aggregateEntries(periodEntries, periodType, selectedMonth, selectedYear);
+        }
+      } else if (periodType === 'qtd') {
+        // QTD: from quarter start through selected month
+        const quarter = Math.ceil(selectedMonth / 3);
+        const quarterStart = getQuarterStartMonth(quarter);
+        const periodEntries = propEntries.filter(e => 
+          e.month >= quarterStart && 
+          e.month <= selectedMonth && 
+          e.year === selectedYear
+        );
+        if (periodEntries.length > 0) {
+          entry = aggregateEntries(periodEntries, periodType, selectedMonth, selectedYear);
+        }
+      } else if (periodType === 'ytd') {
+        // YTD: all months from Jan through selected month in selected year
+        const periodEntries = propEntries.filter(e => 
+          e.year === selectedYear && 
+          e.month <= selectedMonth
+        );
+        if (periodEntries.length > 0) {
+          entry = aggregateEntries(periodEntries, periodType, selectedMonth, selectedYear);
+        }
       }
 
       if (!entry) return;

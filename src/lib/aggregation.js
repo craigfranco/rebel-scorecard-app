@@ -87,11 +87,22 @@ export function aggregateEntries(entries, periodType, selectedMonth, selectedYea
     return Math.round((sum / values.length) * 100) / 100;
   };
 
-  // Calculate gop_margin_variance from averaged actual and budget
-  const avgActualMargin = avgField('gop_margin_actual');
-  const avgBudgetMargin = avgField('gop_margin_budget');
-  const calculatedVariance = (avgActualMargin != null && avgBudgetMargin != null)
-    ? Math.round((avgActualMargin - avgBudgetMargin) * 100) / 100
+  // RECALCULATE margins from summed dollars (not averaged)
+  const totalActualGOP = sumField('budgeted_gop_actual');
+  const totalActualRevenue = sumField('forecast_actual_revenue');
+  const totalBudgetGOP = sumField('budgeted_gop_target');
+  const totalBudgetRevenue = sumField('forecast_primary_forecast');
+  
+  const calculatedActualMargin = (totalActualGOP != null && totalActualRevenue != null && totalActualRevenue !== 0)
+    ? Math.round((totalActualGOP / totalActualRevenue) * 100 * 100) / 100
+    : null;
+    
+  const calculatedBudgetMargin = (totalBudgetGOP != null && totalBudgetRevenue != null && totalBudgetRevenue !== 0)
+    ? Math.round((totalBudgetGOP / totalBudgetRevenue) * 100 * 100) / 100
+    : null;
+    
+  const calculatedVariance = (calculatedActualMargin != null && calculatedBudgetMargin != null)
+    ? Math.round((calculatedActualMargin - calculatedBudgetMargin) * 100) / 100
     : null;
 
   // ALL fields (boolean kickers - must all be true)
@@ -116,10 +127,10 @@ export function aggregateEntries(entries, periodType, selectedMonth, selectedYea
     forecast_actual_revenue: sumField('forecast_actual_revenue'),
     forecast_primary_forecast: sumField('forecast_primary_forecast'),
     
-    // AVERAGE: Percentage/index metrics
-    gop_margin_actual: avgActualMargin,
+    // RECALCULATED: GOP margins from summed dollars
+    gop_margin_actual: calculatedActualMargin,
     gop_margin_prior: avgField('gop_margin_prior'),
-    gop_margin_budget: avgBudgetMargin,
+    gop_margin_budget: calculatedBudgetMargin,
     gop_margin_variance: calculatedVariance,
     revpar_index: avgField('revpar_index'),
     revpar_index_change: avgField('revpar_index_change'),
