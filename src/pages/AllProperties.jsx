@@ -3,11 +3,11 @@ import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import { Search, TrendingUp, TrendingDown, Minus, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
 import { Input } from '@/components/ui/input';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { calculateScorecard, MONTHS, getQuarterFromMonth } from '../lib/scoring';
 import { Link } from 'react-router-dom';
 import { useTimePeriod } from '@/lib/TimePeriodContext';
+import PortfolioDashboard from '@/components/dashboard/PortfolioDashboard';
+import { getBrandColor, getStatusBadge, formatPercentage } from '@/lib/portfolioHelpers';
 
 function aggregateEntries(arr) {
   if (!arr.length) return null;
@@ -113,9 +113,16 @@ export default function AllProperties() {
         </div>
       </div>
 
-      {/* Time period selector removed - using global selector from TimePeriodContext */}
+      {/* Portfolio KPI Dashboard */}
+      <PortfolioDashboard
+        properties={properties}
+        entries={allEntries}
+        periodType={periodType}
+        selectedMonth={selectedMonth}
+        selectedYear={selectedYear}
+      />
 
-      {/* Stats */}
+      {/* Stats Summary */}
       <div className="grid grid-cols-3 gap-4">
         {[
           { label: 'Passing', value: passing, color: '#4CAF50', icon: TrendingUp },
@@ -176,17 +183,25 @@ export default function AllProperties() {
             <tbody>
               {rows.map(({ property, scorecard }, idx) => {
                 const anyIncomplete = scorecard && [scorecard.gop, scorecard.gopMargin, scorecard.rgi, scorecard.gss].some(k => k?.incomplete);
+                const statusBadge = getStatusBadge(scorecard);
+                const brandColor = getBrandColor(property.parent_brand);
+                
                 return (
                   <tr key={property.id} className="border-b border-border hover:bg-muted/20 transition-colors">
                     <td className="py-3 px-4 text-muted-foreground text-xs font-medium">{idx + 1}</td>
                     <td className="py-3 px-4">
-                      <Link to={`/hotel/${property.id}`} className="hover:underline">
-                        <div className="font-semibold text-foreground text-sm">{property.name}</div>
-                        <div className="text-xs text-muted-foreground">{property.city}, {property.state}</div>
-                      </Link>
+                      <div className="flex items-center gap-3">
+                        <div className="w-1 h-10 rounded-full" style={{ backgroundColor: brandColor }} />
+                        <Link to={`/hotel/${property.id}`} className="hover:underline">
+                          <div className="font-semibold text-foreground text-sm">{property.name}</div>
+                          <div className="text-xs text-muted-foreground">{property.city}, {property.state}</div>
+                        </Link>
+                      </div>
                     </td>
                     <td className="py-3 px-4 text-center">
-                      <span className="text-xs bg-muted px-2 py-1 rounded-full font-medium">{property.parent_brand || '—'}</span>
+                      <span className="text-xs px-2 py-1 rounded-full font-medium" style={{ backgroundColor: `${brandColor}18`, color: brandColor }}>
+                        {property.parent_brand || '—'}
+                      </span>
                     </td>
                     <td className="py-3 px-4 text-center text-xs text-muted-foreground">{property.gm_name || '—'}</td>
                     <td className="py-3 px-4 text-center">
@@ -209,18 +224,12 @@ export default function AllProperties() {
                       ) : <span className="text-muted-foreground text-xs">—</span>}
                     </td>
                     <td className="py-3 px-4 text-center">
-                      {!scorecard ? (
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-muted text-muted-foreground">NO DATA</span>
-                      ) : anyIncomplete ? (
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-muted text-muted-foreground">INCOMPLETE</span>
-                      ) : (
-                        <span
-                          className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold text-white"
-                          style={{ backgroundColor: scorecard.total.pass ? '#4CAF50' : '#ef4444' }}
-                        >
-                          {scorecard.total.pass ? 'PASS' : 'FAIL'}
-                        </span>
-                      )}
+                      <span
+                        className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold"
+                        style={{ backgroundColor: statusBadge.bgColor, color: statusBadge.color }}
+                      >
+                        {statusBadge.label}
+                      </span>
                     </td>
                   </tr>
                 );
