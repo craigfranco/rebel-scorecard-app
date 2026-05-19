@@ -1,6 +1,5 @@
 import React from 'react';
 import { useTimePeriod } from '@/lib/TimePeriodContext';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { MONTHS } from '@/lib/aggregation';
 
@@ -22,7 +21,6 @@ export default function TimePeriodSelector() {
   };
 
   const handleQuarterSelect = (quarter) => {
-    // Set to first month of the quarter
     const firstMonth = (quarter - 1) * 3 + 1;
     setSelectedMonth(firstMonth);
     setPeriodType('quarter');
@@ -31,33 +29,21 @@ export default function TimePeriodSelector() {
   return (
     <div className="sticky top-0 z-50 bg-card border-b border-border shadow-sm">
       <div className="max-w-7xl mx-auto px-4 lg:px-8 py-3 space-y-3">
-        {/* Header with year */}
-        <div className="flex items-center justify-between">
+        {/* Row 1: Month Pills */}
+        <div className="space-y-1.5">
           <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-            {CURRENT_YEAR}
+            Month
           </span>
-          <Tabs value={periodType} onValueChange={setPeriodType} className="w-auto">
-            <TabsList className="bg-muted/50 h-8">
-              <TabsTrigger value="month" className="text-xs h-6">Month</TabsTrigger>
-              <TabsTrigger value="quarter" className="text-xs h-6">Quarter</TabsTrigger>
-              <TabsTrigger value="qtd" className="text-xs h-6">QTD</TabsTrigger>
-              <TabsTrigger value="ytd" className="text-xs h-6">YTD</TabsTrigger>
-            </TabsList>
-          </Tabs>
-        </div>
-
-        {/* Month Pills - scrollable horizontally */}
-        {periodType === 'month' && (
-          <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent">
+          <div className="flex flex-wrap gap-2">
             {availableMonths.map(({ month, year }) => (
               <Button
                 key={`${year}-${month}`}
                 variant={selectedMonth === month && year === selectedYear ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => handleMonthSelect(month)}
-                className={`flex-shrink-0 text-xs font-medium min-w-[60px] ${
+                className={`text-xs font-medium min-w-[52px] px-3 ${
                   selectedMonth === month && year === selectedYear 
-                    ? 'bg-primary text-primary-foreground' 
+                    ? 'bg-primary text-primary-foreground border-primary' 
                     : 'bg-transparent hover:bg-muted'
                 }`}
                 style={
@@ -70,20 +56,23 @@ export default function TimePeriodSelector() {
               </Button>
             ))}
           </div>
-        )}
+        </div>
 
-        {/* Quarter Pills + QTD/YTD */}
-        {periodType === 'quarter' && (
-          <div className="flex gap-2 overflow-x-auto pb-1">
+        {/* Row 2: Period Pills (Quarters, QTD, YTD) */}
+        <div className="space-y-1.5">
+          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+            Period
+          </span>
+          <div className="flex flex-wrap gap-2">
             {availableQuarters.map((quarter) => (
               <Button
                 key={`q${quarter}`}
                 variant={periodType === 'quarter' && selectedMonth === (quarter - 1) * 3 + 1 ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => handleQuarterSelect(quarter)}
-                className={`flex-shrink-0 text-xs font-medium min-w-[60px] ${
+                className={`text-xs font-medium min-w-[52px] px-3 ${
                   periodType === 'quarter' && selectedMonth === (quarter - 1) * 3 + 1
-                    ? 'bg-primary text-primary-foreground' 
+                    ? 'bg-primary text-primary-foreground border-primary' 
                     : 'bg-transparent hover:bg-muted'
                 }`}
                 style={
@@ -99,9 +88,9 @@ export default function TimePeriodSelector() {
               variant={periodType === 'qtd' ? 'default' : 'outline'}
               size="sm"
               onClick={() => setPeriodType('qtd')}
-              className={`flex-shrink-0 text-xs font-medium min-w-[60px] ${
+              className={`text-xs font-medium min-w-[52px] px-3 ${
                 periodType === 'qtd'
-                  ? 'bg-primary text-primary-foreground' 
+                  ? 'bg-primary text-primary-foreground border-primary' 
                   : 'bg-transparent hover:bg-muted'
               }`}
               style={periodType === 'qtd' ? { backgroundColor: '#2d4b5e' } : {}}
@@ -112,9 +101,9 @@ export default function TimePeriodSelector() {
               variant={periodType === 'ytd' ? 'default' : 'outline'}
               size="sm"
               onClick={() => setPeriodType('ytd')}
-              className={`flex-shrink-0 text-xs font-medium min-w-[60px] ${
+              className={`text-xs font-medium min-w-[52px] px-3 ${
                 periodType === 'ytd'
-                  ? 'bg-primary text-primary-foreground' 
+                  ? 'bg-primary text-primary-foreground border-primary' 
                   : 'bg-transparent hover:bg-muted'
               }`}
               style={periodType === 'ytd' ? { backgroundColor: '#2d4b5e' } : {}}
@@ -122,17 +111,17 @@ export default function TimePeriodSelector() {
               YTD
             </Button>
           </div>
-        )}
+        </div>
 
-        {/* QTD View */}
+        {/* QTD Indicator */}
         {periodType === 'qtd' && (
-          <div className="flex gap-2 items-center">
-            <span className="text-sm font-medium text-muted-foreground">QTD:</span>
+          <div className="flex gap-2 items-center pt-1">
+            <span className="text-xs font-medium text-muted-foreground">QTD includes:</span>
             <div className="flex gap-1">
               {availableMonths
                 .filter(({ month }) => month <= ((Math.ceil(selectedMonth / 3) - 1) * 3 + 1) && month <= selectedMonth)
                 .map(({ month }) => (
-                  <span key={month} className="text-xs font-medium px-2 py-1 bg-muted rounded">
+                  <span key={month} className="text-xs font-medium px-2 py-0.5 bg-muted rounded">
                     {MONTHS[month - 1]}
                   </span>
                 ))}
@@ -140,15 +129,15 @@ export default function TimePeriodSelector() {
           </div>
         )}
 
-        {/* YTD View */}
+        {/* YTD Indicator */}
         {periodType === 'ytd' && (
-          <div className="flex gap-2 items-center">
-            <span className="text-sm font-medium text-muted-foreground">YTD:</span>
+          <div className="flex gap-2 items-center pt-1">
+            <span className="text-xs font-medium text-muted-foreground">YTD includes:</span>
             <div className="flex gap-1 flex-wrap">
               {availableMonths
                 .filter(({ year }) => year === selectedYear)
                 .map(({ month }) => (
-                  <span key={month} className="text-xs font-medium px-2 py-1 bg-muted rounded">
+                  <span key={month} className="text-xs font-medium px-2 py-0.5 bg-muted rounded">
                     {MONTHS[month - 1]}
                   </span>
                 ))}
