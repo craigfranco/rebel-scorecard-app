@@ -126,12 +126,18 @@ export function TimePeriodProvider({ children }) {
     ).filter(m => m <= CURRENT_MONTH);
   }, [currentQuarter, selectedMonth]);
   
-  // Get YTD months (from Jan selectedYear through selectedMonth)
+  // Get YTD months (from Jan 2026 or Jan selectedYear through selectedMonth)
+  // YTD always starts from January of the selected year, never references prior years
   const ytdMonths = useMemo(() => {
-    // For YTD, we want months from Jan of selectedYear to selectedMonth
-    // Since YTD is within a single year, just return 1 through selectedMonth
-    return Array.from({ length: selectedMonth || CURRENT_MONTH }, (_, i) => i + 1);
-  }, [selectedMonth]);
+    // YTD within selectedYear: months from January through selectedMonth
+    // This ensures YTD never includes data before January 2026
+    const startYear = selectedYear || CURRENT_YEAR;
+    const endMonth = selectedMonth || CURRENT_MONTH;
+    
+    // If we're in 2026, YTD starts from January 2026 (app start)
+    // If we're in a later year, YTD starts from January of that year
+    return Array.from({ length: endMonth }, (_, i) => i + 1);
+  }, [selectedMonth, selectedYear]);
 
   const getPeriodLabel = () => {
     if (!selectedMonth) return '';
