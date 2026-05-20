@@ -32,6 +32,14 @@
       "type": "number",
       "description": "GSS improvement target"
     },
+    "lead_type": {
+      "type": "string",
+      "description": "Lead type classification"
+    },
+    "department": {
+      "type": "string",
+      "description": "Department classification"
+    },
     "is_active": {
       "type": "boolean",
       "default": true

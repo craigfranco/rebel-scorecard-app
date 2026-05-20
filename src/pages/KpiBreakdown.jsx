@@ -10,7 +10,7 @@ import { aggregateEntries } from '../lib/aggregation';
 import { useTimePeriod } from '@/lib/TimePeriodContext';
 import PropertyFilters from '@/components/filters/PropertyFilters';
 
-const EMPTY_FILTERS = { brands: [], subBrands: [], cities: [], states: [], gms: [] };
+const EMPTY_FILTERS = { brand: '', subBrand: '', city: '', state: '', leadType: '', department: '' };
 
 const KPI_TABS = [
   { key: 'gop', label: 'Budgeted GOP', max: 35 },
@@ -75,11 +75,12 @@ export default function KpiBreakdown() {
         // For red zone kicker, exclude Independent properties
         if (activeKpi === 'redzone' && p.parent_brand === 'Independent') return false;
         // Apply user filters
-        if (filters.brands.length && !filters.brands.includes(p.parent_brand)) return false;
-        if (filters.subBrands.length && !filters.subBrands.includes(p.sub_brand)) return false;
-        if (filters.cities.length && !filters.cities.includes(p.city)) return false;
-        if (filters.states.length && !filters.states.includes(p.state)) return false;
-        if (filters.gms.length && !filters.gms.includes(p.gm_name)) return false;
+        if (filters.brand && p.parent_brand !== filters.brand) return false;
+        if (filters.subBrand && p.sub_brand !== filters.subBrand) return false;
+        if (filters.city && p.city !== filters.city) return false;
+        if (filters.state && p.state !== filters.state) return false;
+        if (filters.leadType && p.lead_type !== filters.leadType) return false;
+        if (filters.department && p.department !== filters.department) return false;
         return true;
       })
       .map(p => {
@@ -173,18 +174,18 @@ export default function KpiBreakdown() {
 
   return (
     <div className="p-4 lg:p-8 space-y-6 max-w-7xl mx-auto">
-      {/* Header */}
-      <div className="rounded-2xl text-white p-6 shadow-lg" style={{ background: 'linear-gradient(135deg, #2d4b5e 0%, #1e3547 100%)' }}>
-        <h1 className="text-2xl font-bold">KPI Breakdown</h1>
-        <p className="text-white/70 text-sm mt-1">Performance across all {properties.length} hotels for each individual KPI — {periodLabel}</p>
-      </div>
-
-      {/* Filters */}
+      {/* Filters — top of page */}
       <PropertyFilters
         properties={properties}
         filters={filters}
         onChange={setFilters}
       />
+
+      {/* Header */}
+      <div className="rounded-2xl text-white p-6 shadow-lg" style={{ background: 'linear-gradient(135deg, #2d4b5e 0%, #1e3547 100%)' }}>
+        <h1 className="text-2xl font-bold">KPI Breakdown</h1>
+        <p className="text-white/70 text-sm mt-1">Performance across all {properties.length} hotels for each individual KPI — {periodLabel}</p>
+      </div>
 
       {/* KPI Tabs */}
       <Tabs value={activeKpi} onValueChange={setActiveKpi}>
