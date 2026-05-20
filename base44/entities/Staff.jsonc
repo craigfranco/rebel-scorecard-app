@@ -6,6 +6,10 @@
       "type": "string",
       "description": "Staff member name"
     },
+    "role": {
+      "type": "string",
+      "description": "Staff role (e.g. General Manager, Corporate Finance)"
+    },
     "property_id": {
       "type": "string",
       "description": "Reference to Property"

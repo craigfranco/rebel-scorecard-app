@@ -1,0 +1,40 @@
+{
+  "name": "SyncLog",
+  "type": "object",
+  "properties": {
+    "synced_at": {
+      "type": "string",
+      "description": "ISO timestamp of last successful sync"
+    },
+    "source": {
+      "type": "string",
+      "description": "Source app or trigger (e.g. 'deployment_upload', 'manual')"
+    },
+    "properties_upserted": {
+      "type": "integer"
+    },
+    "staff_upserted": {
+      "type": "integer"
+    },
+    "properties_deactivated": {
+      "type": "integer"
+    },
+    "staff_deactivated": {
+      "type": "integer"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "success",
+        "error"
+      ]
+    },
+    "error_message": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "synced_at",
+    "status"
+  ]
+}

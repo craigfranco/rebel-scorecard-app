@@ -6,6 +6,10 @@
       "type": "string",
       "description": "Hotel name"
     },
+    "str_id": {
+      "type": "string",
+      "description": "STR/Deployment ID for cross-app matching"
+    },
     "parent_brand": {
       "type": "string",
       "description": "Parent brand (Marriott, Hilton, IHG, Hyatt, Choice, Independent)"
