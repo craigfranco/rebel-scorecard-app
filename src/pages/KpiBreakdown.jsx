@@ -8,9 +8,9 @@ import { ArrowUp, ArrowDown, Minus, ChevronUp, ChevronDown, ChevronsUpDown } fro
 import { calculateScorecard, MONTHS, getQuarterFromMonth } from '../lib/scoring';
 import { aggregateEntries } from '../lib/aggregation';
 import { useTimePeriod } from '@/lib/TimePeriodContext';
-import PropertyFilters from '@/components/filters/PropertyFilters';
+import FilterBar from '@/components/filters/FilterBar';
 
-const EMPTY_FILTERS = { brands: [], subBrands: [], cities: [], states: [], gms: [] };
+const EMPTY_FILTERS = { brand: '', subBrand: '', city: '', state: '', leadType: '', department: '' };
 
 const KPI_TABS = [
   { key: 'gop', label: 'Budgeted GOP', max: 35 },
@@ -75,11 +75,10 @@ export default function KpiBreakdown() {
         // For red zone kicker, exclude Independent properties
         if (activeKpi === 'redzone' && p.parent_brand === 'Independent') return false;
         // Apply user filters
-        if (filters.brands.length && !filters.brands.includes(p.parent_brand)) return false;
-        if (filters.subBrands.length && !filters.subBrands.includes(p.sub_brand)) return false;
-        if (filters.cities.length && !filters.cities.includes(p.city)) return false;
-        if (filters.states.length && !filters.states.includes(p.state)) return false;
-        if (filters.gms.length && !filters.gms.includes(p.gm_name)) return false;
+        if (filters.brand && p.parent_brand !== filters.brand) return false;
+        if (filters.subBrand && p.sub_brand !== filters.subBrand) return false;
+        if (filters.city && p.city !== filters.city) return false;
+        if (filters.state && p.state !== filters.state) return false;
         return true;
       })
       .map(p => {
@@ -180,7 +179,7 @@ export default function KpiBreakdown() {
       </div>
 
       {/* Filters */}
-      <PropertyFilters
+      <FilterBar
         properties={properties}
         filters={filters}
         onChange={setFilters}

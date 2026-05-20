@@ -8,11 +8,9 @@ import { Link } from 'react-router-dom';
 import { useTimePeriod } from '@/lib/TimePeriodContext';
 import PortfolioDashboard from '@/components/dashboard/PortfolioDashboard';
 import { getBrandColor, getStatusBadge, formatPercentage } from '@/lib/portfolioHelpers';
-import PropertyFilters from '@/components/filters/PropertyFilters';
+import FilterBar from '@/components/filters/FilterBar';
 
-
-
-const EMPTY_FILTERS = { brands: [], subBrands: [], cities: [], states: [], gms: [] };
+const EMPTY_FILTERS = { brand: '', subBrand: '', city: '', state: '', leadType: '', department: '' };
 
 export default function AllProperties() {
   const { selectedMonth, selectedYear, periodType, getPeriodLabel, getPeriodMonths } = useTimePeriod();
@@ -54,11 +52,10 @@ export default function AllProperties() {
       if (search && !p.name.toLowerCase().includes(search.toLowerCase()) &&
           !(p.city || '').toLowerCase().includes(search.toLowerCase()) &&
           !(p.parent_brand || '').toLowerCase().includes(search.toLowerCase())) return false;
-      if (filters.brands.length && !filters.brands.includes(p.parent_brand)) return false;
-      if (filters.subBrands.length && !filters.subBrands.includes(p.sub_brand)) return false;
-      if (filters.cities.length && !filters.cities.includes(p.city)) return false;
-      if (filters.states.length && !filters.states.includes(p.state)) return false;
-      if (filters.gms.length && !filters.gms.includes(p.gm_name)) return false;
+      if (filters.brand && p.parent_brand !== filters.brand) return false;
+      if (filters.subBrand && p.sub_brand !== filters.subBrand) return false;
+      if (filters.city && p.city !== filters.city) return false;
+      if (filters.state && p.state !== filters.state) return false;
       return true;
     })
     .map(p => {
@@ -108,7 +105,7 @@ export default function AllProperties() {
       </div>
 
       {/* Filters */}
-      <PropertyFilters
+      <FilterBar
         properties={properties}
         filters={filters}
         onChange={setFilters}
