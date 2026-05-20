@@ -37,21 +37,25 @@ export function TimePeriodProvider({ children }) {
         const sortedMonths = Array.from(uniqueMonths).sort();
         setAvailableDataMonths(sortedMonths);
         
-        // Set default to most recent month with data
+        // Set default to most recent month with data (never before Jan 2026)
         if (sortedMonths.length > 0) {
           const mostRecent = sortedMonths[sortedMonths.length - 1];
           const [year, month] = mostRecent.split('-').map(Number);
-          setSelectedMonth(month);
-          setSelectedYear(year);
+          const clampedYear = Math.max(year, APP_START_YEAR);
+          const clampedMonth = (clampedYear === APP_START_YEAR) ? Math.max(month, APP_START_MONTH) : month;
+          setSelectedMonth(clampedMonth);
+          setSelectedYear(clampedYear);
         } else {
-          // No data yet - default to last closed month
-          setSelectedMonth(LAST_CLOSED_MONTH + 1);
+          // No data yet - default to Jan 2026 minimum
+          setSelectedMonth(APP_START_MONTH);
+          setSelectedYear(APP_START_YEAR);
         }
         setIsInitialized(true);
       } catch (error) {
         console.error('Failed to fetch available data:', error);
-        // Fallback to last closed month
-        setSelectedMonth(LAST_CLOSED_MONTH + 1);
+        // Fallback to Jan 2026 minimum
+        setSelectedMonth(APP_START_MONTH);
+        setSelectedYear(APP_START_YEAR);
         setIsInitialized(true);
       }
     };

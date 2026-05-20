@@ -23,10 +23,29 @@ export default function TimePeriodSelector() {
   const getAvailableMonths = () => {
     const quarterStart = (currentQuarter - 1) * 3 + 1;
     const quarterMonths = [quarterStart, quarterStart + 1, quarterStart + 2];
-    return quarterMonths.filter(m => m <= LAST_CLOSED_MONTH);
+    return quarterMonths.filter(m => {
+      if (m > LAST_CLOSED_MONTH) return false;
+      // Enforce Jan 2026 minimum
+      if (selectedYear === 2026 && m < 1) return false;
+      return true;
+    });
+  };
+
+  const isAtMinimum = () => {
+    if (periodType === 'month' || periodType === 'qtd') {
+      return selectedYear === 2026 && selectedMonth <= 1;
+    }
+    if (periodType === 'quarter') {
+      return selectedYear === 2026 && currentQuarter <= 1;
+    }
+    if (periodType === 'ytd') {
+      return selectedYear <= 2026;
+    }
+    return false;
   };
 
   const handlePrevious = () => {
+    if (isAtMinimum()) return;
     if (periodType === 'month') {
       if (selectedMonth > 1) {
         setSelectedMonth(selectedMonth - 1);
@@ -89,6 +108,7 @@ export default function TimePeriodSelector() {
               variant="outline"
               size="icon"
               onClick={handlePrevious}
+              disabled={isAtMinimum()}
               className="h-8 w-8"
             >
               <ChevronLeft className="w-4 h-4" />
