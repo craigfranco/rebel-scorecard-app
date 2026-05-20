@@ -6,21 +6,18 @@ Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
 
-    // Allow both authenticated users and the shared secret (for webhook calls)
-    let authorized = false;
     const body = req.method === 'POST' ? await req.json().catch(() => ({})) : {};
+
+    // Allow webhook calls via shared secret OR authenticated users
     const secret = body.secret || new URL(req.url).searchParams.get('secret');
     const expectedSecret = Deno.env.get('REBEL_SYNC_SECRET');
+    const secretMatch = expectedSecret && secret === expectedSecret;
 
-    if (secret && expectedSecret && secret === expectedSecret) {
-      authorized = true;
-    } else {
+    if (!secretMatch) {
       const user = await base44.auth.me().catch(() => null);
-      if (user) authorized = true;
-    }
-
-    if (!authorized) {
-      return Response.json({ error: 'Unauthorized' }, { status: 401 });
+      if (!user) {
+        return Response.json({ error: 'Unauthorized' }, { status: 401 });
+      }
     }
 
     // Fetch all Deployment records from the Dashboard app via Base44 cross-app API
