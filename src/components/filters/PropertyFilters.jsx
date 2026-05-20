@@ -16,12 +16,35 @@ export default function PropertyFilters({ properties, filters, onChange }) {
     return [...new Set(vals)].sort();
   };
 
+  // Sub Brand options cascade: only show sub-brands belonging to selected brands (if any brands are selected)
+  const subBrandOptions = (() => {
+    const source = filters.brands.length > 0
+      ? properties.filter(p => filters.brands.includes(p.parent_brand))
+      : properties;
+    const vals = source.map(p => p.sub_brand).filter(Boolean);
+    return [...new Set(vals)].sort();
+  })();
+
+  // When brand selection changes, remove any selected sub-brands that no longer belong
   const toggle = (key, value) => {
     const current = filters[key];
     const next = current.includes(value)
       ? current.filter(v => v !== value)
       : [...current, value];
-    onChange({ ...filters, [key]: next });
+
+    const newFilters = { ...filters, [key]: next };
+
+    // Cascade: when brands change, drop any selected sub-brands not in the new brand set
+    if (key === 'brands') {
+      if (next.length > 0) {
+        const validSubBrands = new Set(
+          properties.filter(p => next.includes(p.parent_brand)).map(p => p.sub_brand).filter(Boolean)
+        );
+        newFilters.subBrands = filters.subBrands.filter(sb => validSubBrands.has(sb));
+      }
+    }
+
+    onChange(newFilters);
   };
 
   const clearAll = () => {
@@ -44,7 +67,7 @@ export default function PropertyFilters({ properties, filters, onChange }) {
         />
         <MultiSelect
           label="Sub Brand"
-          options={unique('sub_brand')}
+          options={subBrandOptions}
           selected={filters.subBrands}
           onToggle={(v) => toggle('subBrands', v)}
         />
