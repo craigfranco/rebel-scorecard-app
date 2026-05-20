@@ -17,6 +17,7 @@ import Documents from '@/pages/Documents.jsx';
 import HotelDetail from '@/pages/HotelDetail';
 import Payouts from '@/pages/Payouts';
 import JobClassifications from '@/pages/JobClassifications';
+import EmbeddedApp from '@/pages/EmbeddedApp';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -58,6 +59,7 @@ const AuthenticatedApp = () => {
         <Route path="/payouts" element={<Payouts />} />
         <Route path="/job-classifications" element={<JobClassifications />} />
         <Route path="/hotel/:id" element={<HotelDetail />} />
+        <Route path="/embedded-app" element={<EmbeddedApp />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>
