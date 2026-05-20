@@ -1,7 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
-import { useExternalProperties } from '@/lib/useExternalProperties';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useNavigate } from 'react-router-dom';
@@ -9,9 +8,9 @@ import { ArrowUp, ArrowDown, Minus, ChevronUp, ChevronDown, ChevronsUpDown } fro
 import { calculateScorecard, MONTHS, getQuarterFromMonth } from '../lib/scoring';
 import { aggregateEntries } from '../lib/aggregation';
 import { useTimePeriod } from '@/lib/TimePeriodContext';
-import FilterBar from '@/components/filters/FilterBar';
+import PropertyFilters from '@/components/filters/PropertyFilters';
 
-const EMPTY_FILTERS = { brand: '', subBrand: '', city: '', state: '', leadType: '', department: '' };
+const EMPTY_FILTERS = { brands: [], subBrands: [], cities: [], states: [], gms: [] };
 
 const KPI_TABS = [
   { key: 'gop', label: 'Budgeted GOP', max: 35 },
@@ -42,7 +41,10 @@ export default function KpiBreakdown() {
   const [sortDir, setSortDir] = useState('desc');
   const [filters, setFilters] = useState(EMPTY_FILTERS);
 
-  const { data: properties = [] } = useExternalProperties();
+  const { data: properties = [] } = useQuery({
+    queryKey: ['properties'],
+    queryFn: () => base44.entities.Property.list('name', 100),
+  });
 
   const { data: allEntries = [] } = useQuery({
     queryKey: ['all-entries', selectedYear],
@@ -73,10 +75,11 @@ export default function KpiBreakdown() {
         // For red zone kicker, exclude Independent properties
         if (activeKpi === 'redzone' && p.parent_brand === 'Independent') return false;
         // Apply user filters
-        if (filters.brand && p.parent_brand !== filters.brand) return false;
-        if (filters.subBrand && p.sub_brand !== filters.subBrand) return false;
-        if (filters.city && p.city !== filters.city) return false;
-        if (filters.state && p.state !== filters.state) return false;
+        if (filters.brands.length && !filters.brands.includes(p.parent_brand)) return false;
+        if (filters.subBrands.length && !filters.subBrands.includes(p.sub_brand)) return false;
+        if (filters.cities.length && !filters.cities.includes(p.city)) return false;
+        if (filters.states.length && !filters.states.includes(p.state)) return false;
+        if (filters.gms.length && !filters.gms.includes(p.gm_name)) return false;
         return true;
       })
       .map(p => {
@@ -177,7 +180,7 @@ export default function KpiBreakdown() {
       </div>
 
       {/* Filters */}
-      <FilterBar
+      <PropertyFilters
         properties={properties}
         filters={filters}
         onChange={setFilters}

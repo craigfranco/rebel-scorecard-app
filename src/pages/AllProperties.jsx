@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
-import { useExternalProperties } from '@/lib/useExternalProperties';
 import { Search, TrendingUp, TrendingDown, Minus, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { calculateScorecard, MONTHS, getQuarterFromMonth, aggregateEntries } from '../lib/scoring';
@@ -9,9 +8,11 @@ import { Link } from 'react-router-dom';
 import { useTimePeriod } from '@/lib/TimePeriodContext';
 import PortfolioDashboard from '@/components/dashboard/PortfolioDashboard';
 import { getBrandColor, getStatusBadge, formatPercentage } from '@/lib/portfolioHelpers';
-import FilterBar from '@/components/filters/FilterBar';
+import PropertyFilters from '@/components/filters/PropertyFilters';
 
-const EMPTY_FILTERS = { brand: '', subBrand: '', city: '', state: '', leadType: '', department: '' };
+
+
+const EMPTY_FILTERS = { brands: [], subBrands: [], cities: [], states: [], gms: [] };
 
 export default function AllProperties() {
   const { selectedMonth, selectedYear, periodType, getPeriodLabel, getPeriodMonths } = useTimePeriod();
@@ -20,7 +21,10 @@ export default function AllProperties() {
   const [sortDir, setSortDir] = useState('desc');
   const [filters, setFilters] = useState(EMPTY_FILTERS);
 
-  const { data: properties = [] } = useExternalProperties();
+  const { data: properties = [] } = useQuery({
+    queryKey: ['properties'],
+    queryFn: () => base44.entities.Property.list('name', 100),
+  });
 
   const { data: allEntries = [] } = useQuery({
     queryKey: ['all-entries', selectedYear],
@@ -50,10 +54,11 @@ export default function AllProperties() {
       if (search && !p.name.toLowerCase().includes(search.toLowerCase()) &&
           !(p.city || '').toLowerCase().includes(search.toLowerCase()) &&
           !(p.parent_brand || '').toLowerCase().includes(search.toLowerCase())) return false;
-      if (filters.brand && p.parent_brand !== filters.brand) return false;
-      if (filters.subBrand && p.sub_brand !== filters.subBrand) return false;
-      if (filters.city && p.city !== filters.city) return false;
-      if (filters.state && p.state !== filters.state) return false;
+      if (filters.brands.length && !filters.brands.includes(p.parent_brand)) return false;
+      if (filters.subBrands.length && !filters.subBrands.includes(p.sub_brand)) return false;
+      if (filters.cities.length && !filters.cities.includes(p.city)) return false;
+      if (filters.states.length && !filters.states.includes(p.state)) return false;
+      if (filters.gms.length && !filters.gms.includes(p.gm_name)) return false;
       return true;
     })
     .map(p => {
@@ -103,7 +108,7 @@ export default function AllProperties() {
       </div>
 
       {/* Filters */}
-      <FilterBar
+      <PropertyFilters
         properties={properties}
         filters={filters}
         onChange={setFilters}

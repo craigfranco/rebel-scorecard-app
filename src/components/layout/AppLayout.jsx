@@ -122,7 +122,7 @@ export default function AppLayout() {
         {/* Time period selector */}
         <TimePeriodSelector />
 
-        <main className="flex-1 overflow-auto flex flex-col">
+        <main className="flex-1 overflow-auto">
           <Outlet />
         </main>
       </div>

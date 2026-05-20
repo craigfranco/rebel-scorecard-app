@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useExternalProperties } from '@/lib/useExternalProperties';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { User, ChevronRight } from 'lucide-react';
 import ScoreGauge from '@/components/scorecard/ScoreGauge';
@@ -10,6 +9,7 @@ import KickerBadge from '@/components/scorecard/KickerBadge';
 
 import { calculateScorecard, MONTHS, getQuarterFromMonth, aggregateEntries } from '../lib/scoring';
 import { useTimePeriod } from '@/lib/TimePeriodContext';
+import SeedOnMount from '../components/SeedOnMount';
 
 export default function Dashboard() {
   const queryClient = useQueryClient();
@@ -18,7 +18,10 @@ export default function Dashboard() {
   const [selectedPropertyId, setSelectedPropertyId] = useState('');
   const [kpiInputs, setKpiInputs] = useState({ budgeted_gop_actual: '', budgeted_gop_target: '', budgeted_gop_prior: '', gop_margin_actual: '', gop_margin_prior: '', revpar_index_change: '', revpar_index: '', revpar_index_prior: '', gss_actual: '', gss_prior: '' });
 
-  const { data: properties = [] } = useExternalProperties();
+  const { data: properties = [] } = useQuery({
+    queryKey: ['properties'],
+    queryFn: () => base44.entities.Property.list('name', 100),
+  });
 
   const { data: entries = [] } = useQuery({
     queryKey: ['score-entries', selectedPropertyId, selectedYear],
@@ -133,6 +136,7 @@ export default function Dashboard() {
 
   return (
     <div className="p-4 lg:p-8 space-y-6 max-w-7xl mx-auto">
+      <SeedOnMount />
       {/* Header */}
       <div className="rounded-2xl text-white p-6 shadow-lg" style={{ background: 'linear-gradient(135deg, #2d4b5e 0%, #1e3547 100%)' }}>
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">

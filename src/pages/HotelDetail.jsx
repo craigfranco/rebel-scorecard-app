@@ -1,7 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
-import { useExternalProperties } from '@/lib/useExternalProperties';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
@@ -19,8 +18,11 @@ export default function HotelDetail() {
   const [generatingPdf, setGeneratingPdf] = useState(false);
   const printRef = useRef();
 
-  const { data: properties = [] } = useExternalProperties();
-  const property = properties.find(p => p.id === propertyId);
+  const { data: property } = useQuery({
+    queryKey: ['property', propertyId],
+    queryFn: () => base44.entities.Property.list('name', 100).then(ps => ps.find(p => p.id === propertyId)),
+    enabled: !!propertyId,
+  });
 
   const { data: entries = [] } = useQuery({
     queryKey: ['entries', propertyId, selectedYear],
