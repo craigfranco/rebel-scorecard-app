@@ -73,9 +73,13 @@ export default function KpiBreakdown() {
     return properties
       .filter(p => {
         // For red zone kicker, exclude Independent properties
-        if (activeKpi === 'redzone' && p.parent_brand === 'Independent') {
-          return false;
-        }
+        if (activeKpi === 'redzone' && p.parent_brand === 'Independent') return false;
+        // Apply user filters
+        if (filters.brands.length && !filters.brands.includes(p.parent_brand)) return false;
+        if (filters.subBrands.length && !filters.subBrands.includes(p.sub_brand)) return false;
+        if (filters.cities.length && !filters.cities.includes(p.city)) return false;
+        if (filters.states.length && !filters.states.includes(p.state)) return false;
+        if (filters.gms.length && !filters.gms.includes(p.gm_name)) return false;
         return true;
       })
       .map(p => {
@@ -136,7 +140,7 @@ export default function KpiBreakdown() {
 
         return { property: p, entry, score, pass, actual, target };
       });
-  }, [properties, allEntries, activeKpi, periodType, selectedMonth, selectedYear]);
+  }, [properties, allEntries, activeKpi, periodType, selectedMonth, selectedYear, filters]);
 
   const sortedRows = useMemo(() => {
     return [...rows].sort((a, b) => {
@@ -174,6 +178,13 @@ export default function KpiBreakdown() {
         <h1 className="text-2xl font-bold">KPI Breakdown</h1>
         <p className="text-white/70 text-sm mt-1">Performance across all {properties.length} hotels for each individual KPI — {periodLabel}</p>
       </div>
+
+      {/* Filters */}
+      <PropertyFilters
+        properties={properties}
+        filters={filters}
+        onChange={setFilters}
+      />
 
       {/* KPI Tabs */}
       <Tabs value={activeKpi} onValueChange={setActiveKpi}>
