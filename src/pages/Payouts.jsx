@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useExternalProperties } from '@/lib/useExternalProperties';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -52,10 +53,7 @@ export default function Payouts() {
   });
 
   // Fetch data
-  const { data: properties = [] } = useQuery({
-    queryKey: ['properties'],
-    queryFn: () => base44.entities.Property.list('name', 100),
-  });
+  const { data: properties = [] } = useExternalProperties();
 
   const { data: jobClassifications = [] } = useQuery({
     queryKey: ['job-classifications'],

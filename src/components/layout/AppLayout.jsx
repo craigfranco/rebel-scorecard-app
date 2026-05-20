@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation, Outlet } from 'react-router-dom';
-import { LayoutDashboard, BookOpen, Building2, Settings, Menu, PieChart, FolderOpen, DollarSign, ChevronDown, ExternalLink } from 'lucide-react';
+import { LayoutDashboard, BookOpen, Building2, Settings, Menu, PieChart, FolderOpen, DollarSign, ChevronDown } from 'lucide-react';
 import TimePeriodSelector from './TimePeriodSelector';
 
 const NAV_ITEMS = [
@@ -9,7 +9,6 @@ const NAV_ITEMS = [
   { path: '/kpi-breakdown', icon: PieChart, label: 'KPI Breakdown' },
   { path: '/payouts', icon: DollarSign, label: 'Payouts' },
   { path: '/kpi-reference', icon: BookOpen, label: 'KPI Reference' },
-  { path: '/embedded-app', icon: ExternalLink, label: 'STR Scorecard' },
 ];
 
 const ADMIN_ITEMS = [

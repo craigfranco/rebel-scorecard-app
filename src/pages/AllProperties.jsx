@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
+import { useExternalProperties } from '@/lib/useExternalProperties';
 import { Search, TrendingUp, TrendingDown, Minus, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { calculateScorecard, MONTHS, getQuarterFromMonth, aggregateEntries } from '../lib/scoring';
@@ -19,10 +20,7 @@ export default function AllProperties() {
   const [sortDir, setSortDir] = useState('desc');
   const [filters, setFilters] = useState(EMPTY_FILTERS);
 
-  const { data: properties = [] } = useQuery({
-    queryKey: ['properties'],
-    queryFn: () => base44.entities.Property.list('name', 100),
-  });
+  const { data: properties = [] } = useExternalProperties();
 
   const { data: allEntries = [] } = useQuery({
     queryKey: ['all-entries', selectedYear],
