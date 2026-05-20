@@ -8,14 +8,18 @@ import { Link } from 'react-router-dom';
 import { useTimePeriod } from '@/lib/TimePeriodContext';
 import PortfolioDashboard from '@/components/dashboard/PortfolioDashboard';
 import { getBrandColor, getStatusBadge, formatPercentage } from '@/lib/portfolioHelpers';
+import PropertyFilters from '@/components/filters/PropertyFilters';
 
 
+
+const EMPTY_FILTERS = { brands: [], subBrands: [], cities: [], states: [], gms: [] };
 
 export default function AllProperties() {
   const { selectedMonth, selectedYear, periodType, getPeriodLabel, getPeriodMonths } = useTimePeriod();
   const [search, setSearch] = useState('');
   const [sortCol, setSortCol] = useState('score');
   const [sortDir, setSortDir] = useState('desc');
+  const [filters, setFilters] = useState(EMPTY_FILTERS);
 
   const { data: properties = [] } = useQuery({
     queryKey: ['properties'],
@@ -46,9 +50,17 @@ export default function AllProperties() {
   };
 
   const rows = properties
-    .filter(p => p.name.toLowerCase().includes(search.toLowerCase()) ||
-      (p.city || '').toLowerCase().includes(search.toLowerCase()) ||
-      (p.parent_brand || '').toLowerCase().includes(search.toLowerCase()))
+    .filter(p => {
+      if (search && !p.name.toLowerCase().includes(search.toLowerCase()) &&
+          !(p.city || '').toLowerCase().includes(search.toLowerCase()) &&
+          !(p.parent_brand || '').toLowerCase().includes(search.toLowerCase())) return false;
+      if (filters.brands.length && !filters.brands.includes(p.parent_brand)) return false;
+      if (filters.subBrands.length && !filters.subBrands.includes(p.sub_brand)) return false;
+      if (filters.cities.length && !filters.cities.includes(p.city)) return false;
+      if (filters.states.length && !filters.states.includes(p.state)) return false;
+      if (filters.gms.length && !filters.gms.includes(p.gm_name)) return false;
+      return true;
+    })
     .map(p => {
       const entry = getEntryForProperty(p.id);
       const scorecard = entry ? calculateScorecard(entry, p) : null;
@@ -95,9 +107,16 @@ export default function AllProperties() {
         </div>
       </div>
 
-      {/* Portfolio KPI Dashboard */}
-      <PortfolioDashboard
+      {/* Filters */}
+      <PropertyFilters
         properties={properties}
+        filters={filters}
+        onChange={setFilters}
+      />
+
+      {/* Portfolio KPI Dashboard — filtered */}
+      <PortfolioDashboard
+        properties={rows.map(r => r.property)}
         entries={allEntries}
         periodType={periodType}
         selectedMonth={selectedMonth}

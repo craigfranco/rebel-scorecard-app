@@ -8,6 +8,9 @@ import { ArrowUp, ArrowDown, Minus, ChevronUp, ChevronDown, ChevronsUpDown } fro
 import { calculateScorecard, MONTHS, getQuarterFromMonth } from '../lib/scoring';
 import { aggregateEntries } from '../lib/aggregation';
 import { useTimePeriod } from '@/lib/TimePeriodContext';
+import PropertyFilters from '@/components/filters/PropertyFilters';
+
+const EMPTY_FILTERS = { brands: [], subBrands: [], cities: [], states: [], gms: [] };
 
 const KPI_TABS = [
   { key: 'gop', label: 'Budgeted GOP', max: 35 },
@@ -36,6 +39,7 @@ export default function KpiBreakdown() {
   const [activeKpi, setActiveKpi] = useState('gop');
   const [sortCol, setSortCol] = useState('score');
   const [sortDir, setSortDir] = useState('desc');
+  const [filters, setFilters] = useState(EMPTY_FILTERS);
 
   const { data: properties = [] } = useQuery({
     queryKey: ['properties'],
