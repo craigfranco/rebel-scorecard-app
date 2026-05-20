@@ -100,13 +100,13 @@ export default function PortfolioDashboard({ properties, entries, periodType, se
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
       <KpiTile
         title="Total GOP Actual"
-        value={formatCurrency(stats.totalGOPActual, true)}
+        value={formatCurrency(stats.totalGOPActual)}
         subtitle="Period actual"
         Icon={DollarSign}
       />
       <KpiTile
         title="GOP vs Budget"
-        value={formatCurrency(stats.gopVariance, true)}
+        value={formatCurrency(stats.gopVariance)}
         subtitle={formatPercentage(stats.gopVariancePct)}
         delta={formatPercentage(stats.gopVariancePct)}
         deltaType={stats.gopVariance >= 0 ? 'positive' : 'negative'}
