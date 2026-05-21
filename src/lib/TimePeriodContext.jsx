@@ -27,31 +27,31 @@ export function TimePeriodProvider({ children }) {
   useEffect(() => {
     const fetchAvailableData = async () => {
       try {
-        const entries = await base44.entities.ScoreEntry.list('year', 500);
+        // Query ALL ScoreEntry records with no filter — we just need distinct month+year pairs
+        const entries = await base44.entities.ScoreEntry.filter({}, '-year', 2000);
 
-        // Build set of loaded month keys
+        // Build set of loaded month keys from raw data — no property or active filter
         const keys = new Set();
         const years = new Set([APP_START_YEAR]);
         entries.forEach(e => {
           if (e.year && e.month) {
             keys.add(`${e.year}-${e.month}`);
+            if (e.year >= APP_START_YEAR) years.add(e.year);
           }
-          if (e.year >= APP_START_YEAR) years.add(e.year);
         });
         setLoadedMonthKeys(keys);
 
         const sortedYears = Array.from(years).sort((a, b) => a - b);
         setAvailableYears(sortedYears);
 
-        // Default to most recent month that has data loaded AND is not in the future
-        const validEntries = entries
-          .filter(e => e.year >= APP_START_YEAR && e.year && e.month)
-          .filter(e => e.year < CURRENT_YEAR || (e.year === CURRENT_YEAR && e.month <= CURRENT_MONTH))
+        // Default to most recent month+year that has any ScoreEntry data
+        const distinctMonths = Array.from(keys)
+          .map(k => { const [y, m] = k.split('-').map(Number); return { year: y, month: m }; })
           .sort((a, b) => (b.year * 100 + b.month) - (a.year * 100 + a.month));
 
-        if (validEntries.length > 0) {
-          setSelectedYear(validEntries[0].year);
-          setSelectedMonth(validEntries[0].month);
+        if (distinctMonths.length > 0) {
+          setSelectedYear(distinctMonths[0].year);
+          setSelectedMonth(distinctMonths[0].month);
         } else {
           setSelectedYear(CURRENT_YEAR);
           setSelectedMonth(CURRENT_MONTH > 1 ? CURRENT_MONTH - 1 : 1);
