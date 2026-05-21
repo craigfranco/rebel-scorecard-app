@@ -13,15 +13,15 @@ export function getGssStandard(parentBrand) {
   return GSS_STANDARDS[parentBrand] || GSS_STANDARDS['Independent'];
 }
 
-export function calcGOPScore(actual, prior) {
-  if (actual == null || prior == null) return { score: 0, pct: 0, pass: false, incomplete: true };
-  if (prior === 0) return { score: 0, pct: 0, pass: false, incomplete: true };
-  // Calculate growth percentage: (actual - prior) / prior * 100
-  const growthPct = ((actual - prior) / Math.abs(prior)) * 100;
-  const pass = growthPct >= 0.5;
+export function calcGOPScore(actual, target) {
+  if (actual == null || target == null) return { score: 0, pct: 0, pass: false, incomplete: true };
+  if (target === 0) return { score: 0, pct: 0, pass: false, incomplete: true };
+  // Budget achievement: (actual / target) × 100
+  const achievementPct = (actual / target) * 100;
+  const pass = achievementPct >= 100;
   // All-or-nothing: 35 pts if pass, 0 if fail
   const score = pass ? 35 : 0;
-  return { score, pct: Math.round(growthPct * 100) / 100, pass, incomplete: false };
+  return { score, pct: Math.round(achievementPct * 100) / 100, pass, incomplete: false };
 }
 
 export function calcGOPMarginScore(actual, prior) {

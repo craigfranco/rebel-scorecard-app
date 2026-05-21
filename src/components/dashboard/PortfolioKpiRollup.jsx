@@ -141,6 +141,7 @@ export default function PortfolioKpiRollup({ properties, allEntries, periodType,
       gopPrior,
       gopYOY: (gopActual != null && gopPrior !== 0) ? ((gopActual - gopPrior) / Math.abs(gopPrior)) * 100 : null,
       gopVsBudget: (gopActual != null && gopBudget !== 0) ? ((gopActual - gopBudget) / Math.abs(gopBudget)) * 100 : null,
+      gopAchievement: (gopActual != null && gopBudget !== 0) ? (gopActual / gopBudget) * 100 : null,
       tyMargin, lyMargin, budgetMargin,
       marginYOY: tyMargin != null && lyMargin != null ? tyMargin - lyMargin : null,
       marginVsBudget: tyMargin != null && budgetMargin != null ? tyMargin - budgetMargin : null,
@@ -157,21 +158,23 @@ export default function PortfolioKpiRollup({ properties, allEntries, periodType,
       {/* GOP Performance */}
       <KpiCard title="GOP Performance">
         <div>
-          <div className="text-2xl font-black text-foreground">{fmt$(s.gopActual)}</div>
-          <div className="text-xs text-muted-foreground">TY Actual</div>
+          <div className="text-2xl font-black" style={{ color: s.gopAchievement == null ? undefined : s.gopAchievement >= 100 ? '#4CAF50' : '#ef4444' }}>
+            {s.gopAchievement != null ? s.gopAchievement.toFixed(1) + '%' : '—'}
+          </div>
+          <div className="text-xs text-muted-foreground">Budget Achievement</div>
         </div>
         <div className="flex gap-4">
-          <MetricRow label="Budget" value={fmt$(s.gopBudget)} />
-          <MetricRow label="Prior Year" value={fmt$(s.gopPrior)} />
+          <MetricRow label="Actual GOP" value={fmt$(s.gopActual)} />
+          <MetricRow label="Budget GOP" value={fmt$(s.gopBudget)} />
         </div>
         <div className="flex gap-4 pt-1 border-t border-border">
           <div className="flex flex-col">
-            <span className="text-[10px] text-muted-foreground uppercase tracking-wide">YOY</span>
-            <Delta value={s.gopYOY} suffix="%" />
-          </div>
-          <div className="flex flex-col">
             <span className="text-[10px] text-muted-foreground uppercase tracking-wide">vs Budget</span>
             <Delta value={s.gopVsBudget} suffix="%" />
+          </div>
+          <div className="flex flex-col">
+            <span className="text-[10px] text-muted-foreground uppercase tracking-wide">YOY</span>
+            <Delta value={s.gopYOY} suffix="%" />
           </div>
         </div>
       </KpiCard>

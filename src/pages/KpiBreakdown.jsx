@@ -111,8 +111,12 @@ export default function KpiBreakdown() {
           kpiData = sc.gop;
           score = sc.gop.score;
           pass = sc.gop.pass;
-          actual = entry.budgeted_gop_actual != null ? `$${(entry.budgeted_gop_actual / 1000).toFixed(1)}K` : '—';
+          // Achievement % = actual / target × 100
+          actual = (entry.budgeted_gop_actual != null && entry.budgeted_gop_target != null && entry.budgeted_gop_target !== 0)
+            ? `${((entry.budgeted_gop_actual / entry.budgeted_gop_target) * 100).toFixed(1)}%`
+            : '—';
           target = entry.budgeted_gop_target != null ? `$${(entry.budgeted_gop_target / 1000).toFixed(1)}K` : '—';
+          entry._gop_actual_dollars = entry.budgeted_gop_actual;
           entry._gop_variance = (entry.budgeted_gop_actual != null && entry.budgeted_gop_target != null)
             ? entry.budgeted_gop_actual - entry.budgeted_gop_target
             : null;
@@ -244,16 +248,19 @@ export default function KpiBreakdown() {
                   <div className="flex items-center justify-center gap-1">GM <SortIcon col="gm" /></div>
                 </th>
                 <th className="py-3 px-4 text-center font-semibold">
-                  {activeKpi === 'rgi' ? 'RevPAR Index' : activeKpi === 'gopMargin' ? 'Actual %' : 'Actual'}
+                  {activeKpi === 'rgi' ? 'RevPAR Index' : activeKpi === 'gopMargin' ? 'Actual %' : activeKpi === 'gop' ? 'Achievement' : 'Actual'}
                 </th>
                 {activeKpi === 'rgi' && (
                   <th className="py-3 px-4 text-center font-semibold">RGI % Change YOY</th>
                 )}
                 {activeKpi === 'gop' && (
-                  <th className="py-3 px-4 text-center font-semibold">Budget</th>
+                  <th className="py-3 px-4 text-center font-semibold">Actual $</th>
                 )}
                 {activeKpi === 'gop' && (
-                  <th className="py-3 px-4 text-center font-semibold">vs. Budget</th>
+                  <th className="py-3 px-4 text-center font-semibold">Budget $</th>
+                )}
+                {activeKpi === 'gop' && (
+                  <th className="py-3 px-4 text-center font-semibold">$ vs Budget</th>
                 )}
                 {activeKpi === 'gopMargin' && (
                   <th className="py-3 px-4 text-center font-semibold">Last Year %</th>
@@ -300,8 +307,12 @@ export default function KpiBreakdown() {
                       <div className="text-xs text-muted-foreground">{property.city}, {property.state}</div>
                     </td>
                     <td className="py-3 px-4 text-center text-xs text-muted-foreground">{property.gm_name || '—'}</td>
-                    <td className="py-3 px-4 text-center font-medium text-sm">
-                      {entry ? actual : '—'}
+                    <td className="py-3 px-4 text-center font-bold text-sm">
+                      {entry ? (
+                        activeKpi === 'gop' && actual !== '—' ? (
+                          <span style={{ color: parseFloat(actual) >= 100 ? '#4CAF50' : '#ef4444' }}>{actual}</span>
+                        ) : actual
+                      ) : '—'}
                     </td>
                     {activeKpi === 'rgi' && (
                       <td className="py-3 px-4 text-center text-sm font-bold">
@@ -310,6 +321,11 @@ export default function KpiBreakdown() {
                             {entry.revpar_index_change >= 0 ? '+' : ''}{entry.revpar_index_change.toFixed(2)}%
                           </span>
                         ) : '—'}
+                      </td>
+                    )}
+                    {activeKpi === 'gop' && (
+                      <td className="py-3 px-4 text-center text-sm text-muted-foreground">
+                        {entry && entry._gop_actual_dollars != null ? `$${(entry._gop_actual_dollars / 1000).toFixed(1)}K` : '—'}
                       </td>
                     )}
                     {activeKpi === 'gop' && (
