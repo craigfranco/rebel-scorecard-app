@@ -35,7 +35,7 @@ export default function AllProperties() {
 
   const { data: properties = [] } = useQuery({
     queryKey: ['properties'],
-    queryFn: () => base44.entities.Property.list('name', 100),
+    queryFn: () => base44.entities.Property.filter({ is_active: true }, 'name', 100),
   });
 
   const { data: allEntries = [] } = useQuery({

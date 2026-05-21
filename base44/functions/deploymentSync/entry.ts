@@ -58,12 +58,12 @@ Deno.serve(async (req) => {
     const seenStrIds = new Set();
     const seenStaffKeys = new Set();
 
-    // Build lookups
+    // Build lookups — normalize names to lowercase for case-insensitive matching
     const propByStrId = {};
-    const propByName = {};
+    const propByNameLower = {};
     existingProperties.forEach(p => {
       if (p.str_id) propByStrId[p.str_id] = p;
-      propByName[p.name] = p;
+      propByNameLower[p.name.toLowerCase()] = p;
     });
 
     // --- Upsert Properties ---
@@ -82,16 +82,18 @@ Deno.serve(async (req) => {
       };
       if (!payload.name) continue;
 
-      let existing = (payload.str_id && propByStrId[payload.str_id]) || propByName[payload.name];
+      // Match by str_id first, then case-insensitive name
+      let existing = (payload.str_id && propByStrId[payload.str_id])
+        || propByNameLower[payload.name.toLowerCase()];
 
       if (existing) {
         await base44.asServiceRole.entities.Property.update(existing.id, payload);
         const updated = { ...existing, ...payload, id: existing.id };
-        propByName[payload.name] = updated;
+        propByNameLower[payload.name.toLowerCase()] = updated;
         if (payload.str_id) propByStrId[payload.str_id] = updated;
       } else {
         const created = await base44.asServiceRole.entities.Property.create(payload);
-        propByName[payload.name] = created;
+        propByNameLower[payload.name.toLowerCase()] = created;
         if (payload.str_id) propByStrId[payload.str_id] = created;
       }
       propertiesUpserted++;
@@ -110,7 +112,7 @@ Deno.serve(async (req) => {
     for (const rec of incomingStaff) {
       const propertyName = rec.property_name || rec.hotel_name;
       const property = (rec.property_str_id && propByStrId[rec.property_str_id])
-        || (propertyName && propByName[propertyName]);
+        || (propertyName && propByNameLower[propertyName.toLowerCase()]);
       if (!property || !rec.name) continue;
 
       const payload = {
