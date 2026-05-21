@@ -74,7 +74,11 @@ export default function Dashboard() {
       measure: 'Budgeted GOP',
       weight: '35%',
       target: activeEntry.budgeted_gop_target != null ? `Budget: $${(activeEntry.budgeted_gop_target / 1000).toFixed(0)}K` : 'Budget',
-      actual: activeEntry.budgeted_gop_actual != null ? `$${(activeEntry.budgeted_gop_actual / 1000).toFixed(0)}K` : '—',
+      actual: (() => {
+        const a = activeEntry.budgeted_gop_actual;
+        const b = activeEntry.budgeted_gop_target;
+        return (a != null && b != null && b !== 0) ? `${(a / b * 100).toFixed(1)}% of Budget` : '—';
+      })(),
       ytdActual: (() => {
         const a = activeEntry.budgeted_gop_actual;
         const b = activeEntry.budgeted_gop_target;
