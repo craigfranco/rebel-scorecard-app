@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Search, TrendingUp, TrendingDown, Minus, ChevronUp, ChevronDown, ChevronsUpDown, RefreshCw } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { Search, TrendingUp, TrendingDown, Minus, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { calculateScorecard, MONTHS, getQuarterFromMonth, aggregateEntries } from '../lib/scoring';
 import { Link } from 'react-router-dom';
@@ -9,7 +9,6 @@ import { useTimePeriod } from '@/lib/TimePeriodContext';
 import PortfolioKpiRollup from '@/components/dashboard/PortfolioKpiRollup';
 import { getBrandColor, getStatusBadge, formatPercentage } from '@/lib/portfolioHelpers';
 import PropertyFilters from '@/components/filters/PropertyFilters';
-import { deploymentSync } from '@/functions/deploymentSync';
 import { getLeadTypes } from '@/functions/getLeadTypes';
 
 
@@ -18,13 +17,10 @@ const EMPTY_FILTERS = { brand: '', subBrand: '', city: '', state: '', leadRole: 
 
 export default function AllProperties() {
   const { selectedMonth, selectedYear, periodType, getPeriodLabel, getPeriodMonths } = useTimePeriod();
-  const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
   const [sortCol, setSortCol] = useState('score');
   const [sortDir, setSortDir] = useState('desc');
   const [filters, setFilters] = useState(EMPTY_FILTERS);
-  const [syncing, setSyncing] = useState(false);
-  const [syncError, setSyncError] = useState(null);
   const [fieldToPersonStrIds, setFieldToPersonStrIds] = useState({});
 
   React.useEffect(() => {
@@ -42,27 +38,6 @@ export default function AllProperties() {
     queryKey: ['all-entries', selectedYear],
     queryFn: () => base44.entities.ScoreEntry.filter({ year: selectedYear }),
   });
-
-  const { data: syncLogs = [] } = useQuery({
-    queryKey: ['sync-logs'],
-    queryFn: () => base44.entities.SyncLog.list('-synced_at', 1),
-  });
-
-  const lastSync = syncLogs[0] || null;
-
-  const handleSyncNow = async () => {
-    setSyncing(true);
-    setSyncError(null);
-    try {
-      await deploymentSync({ source: 'manual' });
-      await queryClient.invalidateQueries({ queryKey: ['properties'] });
-      await queryClient.invalidateQueries({ queryKey: ['sync-logs'] });
-    } catch (err) {
-      setSyncError(err.message || 'Sync failed');
-    } finally {
-      setSyncing(false);
-    }
-  };
 
   const getEntryForProperty = (propertyId) => {
     const propEntries = allEntries.filter(e => e.property_id === propertyId);
@@ -139,30 +114,8 @@ export default function AllProperties() {
     <div className="p-4 lg:p-8 space-y-6 max-w-7xl mx-auto">
       {/* Header */}
       <div className="rounded-2xl text-white p-6 shadow-lg" style={{ background: 'linear-gradient(135deg, #2d4b5e 0%, #1e3547 100%)' }}>
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <div>
-            <h1 className="text-2xl font-bold">All Properties</h1>
-            <p className="text-white/70 text-sm mt-1">Portfolio-wide scorecard — {periodLabel}</p>
-          </div>
-          <div className="flex flex-col sm:items-end gap-2">
-            <button
-              onClick={handleSyncNow}
-              disabled={syncing}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-white/15 hover:bg-white/25 text-white transition-colors disabled:opacity-60"
-            >
-              <RefreshCw className={`w-4 h-4 ${syncing ? 'animate-spin' : ''}`} />
-              {syncing ? 'Syncing…' : 'Sync Now'}
-            </button>
-            <div className="text-white/60 text-xs text-right">
-              {lastSync ? (
-                lastSync.status === 'success'
-                  ? `Last synced: ${new Date(lastSync.synced_at).toLocaleString()}`
-                  : `Last sync failed: ${new Date(lastSync.synced_at).toLocaleString()}`
-              ) : 'Never synced'}
-            </div>
-            {syncError && <div className="text-red-300 text-xs">{syncError}</div>}
-          </div>
-        </div>
+        <h1 className="text-2xl font-bold">All Properties</h1>
+        <p className="text-white/70 text-sm mt-1">Portfolio-wide scorecard — {periodLabel}</p>
       </div>
 
       {/* Portfolio KPI Rollup — filtered */}
