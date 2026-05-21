@@ -14,7 +14,7 @@ const CURRENT_MONTH = now.getMonth() + 1; // 1-12
 export function TimePeriodProvider({ children }) {
   const [selectedMonth, setSelectedMonth] = useState(null);
   const [selectedYear, setSelectedYear] = useState(CURRENT_YEAR);
-  // 'month' or 'quarter'
+  // 'month', 'quarter', or 'ytd'
   const [periodType, setPeriodType] = useState('month');
   const [availableYears, setAvailableYears] = useState([CURRENT_YEAR]);
   const [isInitialized, setIsInitialized] = useState(false);
@@ -67,15 +67,32 @@ export function TimePeriodProvider({ children }) {
   const currentQuarter = getQuarterFromMonth(selectedMonth || CURRENT_MONTH);
   const quarterMonths = getQuarterMonths(currentQuarter);
 
+  // Last fully completed month (current month - 1, or 12 if Jan)
+  const lastCompletedMonth = CURRENT_MONTH > 1 ? CURRENT_MONTH - 1 : 12;
+  // YTD end month: for current year = last completed month; for past years = 12
+  const ytdEndMonth = selectedYear < CURRENT_YEAR ? 12 : lastCompletedMonth;
+
   const getPeriodLabel = () => {
     if (!selectedMonth) return '';
     if (periodType === 'month') return `${MONTHS[selectedMonth - 1]} ${selectedYear}`;
-    if (periodType === 'quarter') return `Q${currentQuarter} ${selectedYear}`;
+    if (periodType === 'quarter') {
+      const q = getQuarterFromMonth(selectedMonth);
+      const lastMonthOfQ = q * 3;
+      const isComplete = selectedYear < CURRENT_YEAR || lastMonthOfQ < CURRENT_MONTH;
+      return isComplete ? `Q${q} ${selectedYear}` : `Q${q}TD ${selectedYear}`;
+    }
+    if (periodType === 'ytd') {
+      return `YTD Jan–${MONTHS[ytdEndMonth - 1]} ${selectedYear}`;
+    }
     return `${MONTHS[selectedMonth - 1]} ${selectedYear}`;
   };
 
   const getPeriodMonths = () => {
     if (periodType === 'quarter') return quarterMonths;
+    if (periodType === 'ytd') {
+      // All months from Jan through ytdEndMonth
+      return Array.from({ length: ytdEndMonth }, (_, i) => i + 1);
+    }
     return [selectedMonth];
   };
 
@@ -96,6 +113,8 @@ export function TimePeriodProvider({ children }) {
     APP_START_YEAR,
     APP_START_MONTH,
     isInitialized,
+    ytdEndMonth,
+    lastCompletedMonth,
     // legacy compat
     LAST_CLOSED_MONTH: CURRENT_MONTH,
   };

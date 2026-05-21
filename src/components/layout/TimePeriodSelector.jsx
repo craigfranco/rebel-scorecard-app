@@ -3,6 +3,13 @@ import { useTimePeriod } from '@/lib/TimePeriodContext';
 
 const MONTH_LABELS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
+const QUARTER_MONTHS = {
+  1: [1, 2, 3],
+  2: [4, 5, 6],
+  3: [7, 8, 9],
+  4: [10, 11, 12],
+};
+
 export default function TimePeriodSelector() {
   const {
     selectedMonth,
@@ -14,25 +21,34 @@ export default function TimePeriodSelector() {
     availableYears,
     CURRENT_YEAR,
     CURRENT_MONTH,
+    ytdEndMonth,
   } = useTimePeriod();
 
-  // A month is "future" if it hasn't started yet this year (or is beyond current month)
   const isMonthFuture = (month) => {
     if (selectedYear < CURRENT_YEAR) return false;
     if (selectedYear > CURRENT_YEAR) return true;
     return month > CURRENT_MONTH;
   };
 
-  // A quarter is "future" if all its months are in the future
-  const isQuarterFuture = (q) => {
+  // Quarter state: 'complete' | 'inprogress' | 'future'
+  const getQuarterState = (q) => {
     const firstMonth = (q - 1) * 3 + 1;
-    return isMonthFuture(firstMonth);
+    const lastMonth = q * 3;
+    if (selectedYear < CURRENT_YEAR) return 'complete';
+    if (selectedYear > CURRENT_YEAR) return 'future';
+    if (firstMonth > CURRENT_MONTH) return 'future';
+    if (lastMonth < CURRENT_MONTH) return 'complete';
+    return 'inprogress';
+  };
+
+  // Which months of this quarter actually have data (i.e., not future)
+  const getQuarterAvailableMonths = (q) => {
+    return QUARTER_MONTHS[q].filter(m => !isMonthFuture(m));
   };
 
   const handleYearChange = (year) => {
     const y = parseInt(year, 10);
     setSelectedYear(y);
-    // If selected month is now future for the new year, clamp it
     if (y === CURRENT_YEAR && selectedMonth > CURRENT_MONTH) {
       setSelectedMonth(CURRENT_MONTH);
     }
@@ -45,15 +61,28 @@ export default function TimePeriodSelector() {
   };
 
   const handleQuarterClick = (q) => {
-    if (isQuarterFuture(q)) return;
-    // Set selectedMonth to the last month of the quarter (or CURRENT_MONTH if Q is in progress)
+    const state = getQuarterState(q);
+    if (state === 'future') return;
     const lastMonthOfQ = q * 3;
     const clampedMonth = selectedYear === CURRENT_YEAR
-      ? Math.min(lastMonthOfQ, CURRENT_MONTH)
+      ? Math.min(lastMonthOfQ, CURRENT_MONTH - 1 > 0 ? CURRENT_MONTH - 1 : CURRENT_MONTH)
       : lastMonthOfQ;
     setSelectedMonth(clampedMonth);
     setPeriodType('quarter');
   };
+
+  const handleYtdClick = () => {
+    // Set selectedMonth to ytdEndMonth so quarter derivations still work
+    setSelectedMonth(ytdEndMonth);
+    setPeriodType('ytd');
+  };
+
+  const activeQuarter = selectedMonth ? Math.ceil(selectedMonth / 3) : 0;
+
+  // YTD sub-label: "Jan – {lastMonth} {year}"
+  const ytdSubLabel = ytdEndMonth > 0
+    ? `Jan – ${MONTH_LABELS[ytdEndMonth - 1]} ${selectedYear}`
+    : `${selectedYear}`;
 
   return (
     <div className="sticky top-0 z-50 bg-white border-b border-border shadow-sm">
@@ -85,9 +114,16 @@ export default function TimePeriodSelector() {
               Monthly
             </button>
             <button
-              onClick={() => setPeriodType('quarter')}
+              onClick={() => {
+                // If switching to quarterly, pick active quarter
+                const q = selectedMonth ? Math.ceil(selectedMonth / 3) : 1;
+                const state = getQuarterState(q);
+                if (state !== 'future') {
+                  setPeriodType('quarter');
+                }
+              }}
               className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
-                periodType === 'quarter'
+                periodType === 'quarter' || periodType === 'ytd'
                   ? 'bg-white text-gray-900 shadow-sm'
                   : 'text-gray-500 hover:text-gray-700'
               }`}
@@ -99,7 +135,7 @@ export default function TimePeriodSelector() {
           {/* Divider */}
           <div className="h-6 w-px bg-gray-200" />
 
-          {/* Month buttons (Monthly view) */}
+          {/* Month buttons */}
           {periodType === 'month' && (
             <div className="flex items-center gap-1 flex-wrap">
               {MONTH_LABELS.map((label, i) => {
@@ -126,31 +162,57 @@ export default function TimePeriodSelector() {
             </div>
           )}
 
-          {/* Quarter buttons (Quarterly view) */}
-          {periodType === 'quarter' && (
-            <div className="flex items-center gap-1">
+          {/* Quarter + YTD buttons */}
+          {(periodType === 'quarter' || periodType === 'ytd') && (
+            <div className="flex items-center gap-1.5">
               {[1, 2, 3, 4].map(q => {
-                const future = isQuarterFuture(q);
-                // Active quarter = the quarter that contains selectedMonth
-                const qOfSelected = selectedMonth ? Math.ceil(selectedMonth / 3) : 0;
-                const active = qOfSelected === q;
+                const state = getQuarterState(q);
+                const isFuture = state === 'future';
+                const isActive = periodType === 'quarter' && activeQuarter === q;
+                const label = state === 'inprogress' ? `Q${q}TD` : `Q${q}`;
+                const availableMonths = getQuarterAvailableMonths(q);
+                const subLabel = availableMonths.map(m => MONTH_LABELS[m - 1]).join(' · ');
+
                 return (
                   <button
                     key={q}
                     onClick={() => handleQuarterClick(q)}
-                    disabled={future}
-                    className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                      active
+                    disabled={isFuture}
+                    title={isFuture ? '' : subLabel}
+                    className={`flex flex-col items-center px-3 py-1 rounded-lg transition-all min-w-[52px] ${
+                      isActive
                         ? 'bg-primary text-white shadow-sm'
-                        : future
+                        : isFuture
                         ? 'text-gray-300 cursor-not-allowed'
                         : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
                     }`}
                   >
-                    Q{q}
+                    <span className="text-xs font-semibold leading-tight">{label}</span>
+                    <span className={`text-[9px] leading-tight mt-0.5 ${
+                      isActive ? 'text-white/80' : isFuture ? 'text-gray-300' : 'text-gray-400'
+                    }`}>
+                      {isFuture ? '—' : subLabel}
+                    </span>
                   </button>
                 );
               })}
+
+              {/* YTD button */}
+              <button
+                onClick={handleYtdClick}
+                className={`flex flex-col items-center px-3 py-1 rounded-lg transition-all min-w-[52px] ${
+                  periodType === 'ytd'
+                    ? 'bg-primary text-white shadow-sm'
+                    : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                }`}
+              >
+                <span className="text-xs font-semibold leading-tight">YTD</span>
+                <span className={`text-[9px] leading-tight mt-0.5 ${
+                  periodType === 'ytd' ? 'text-white/80' : 'text-gray-400'
+                }`}>
+                  {ytdSubLabel}
+                </span>
+              </button>
             </div>
           )}
         </div>
