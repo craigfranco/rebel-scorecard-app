@@ -1,8 +1,7 @@
 import React from 'react';
 import { useTimePeriod } from '@/lib/TimePeriodContext';
-import { MONTHS, getQuarterFromMonth } from '@/lib/aggregation';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+
+const MONTH_LABELS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 export default function TimePeriodSelector() {
   const {
@@ -12,179 +11,148 @@ export default function TimePeriodSelector() {
     setSelectedYear,
     periodType,
     setPeriodType,
-    getPeriodLabel,
-    LAST_CLOSED_MONTH,
+    availableYears,
     CURRENT_YEAR,
+    CURRENT_MONTH,
   } = useTimePeriod();
 
-  const currentQuarter = getQuarterFromMonth(selectedMonth);
-
-  // Get available months based on current quarter context
-  const getAvailableMonths = () => {
-    const quarterStart = (currentQuarter - 1) * 3 + 1;
-    const quarterMonths = [quarterStart, quarterStart + 1, quarterStart + 2];
-    return quarterMonths.filter(m => {
-      if (m > LAST_CLOSED_MONTH) return false;
-      // Enforce Jan 2026 minimum
-      if (selectedYear === 2026 && m < 1) return false;
-      return true;
-    });
+  // A month is "future" if it hasn't started yet this year (or is beyond current month)
+  const isMonthFuture = (month) => {
+    if (selectedYear < CURRENT_YEAR) return false;
+    if (selectedYear > CURRENT_YEAR) return true;
+    return month > CURRENT_MONTH;
   };
 
-  const isAtMinimum = () => {
-    if (periodType === 'month' || periodType === 'qtd') {
-      return selectedYear === 2026 && selectedMonth <= 1;
-    }
-    if (periodType === 'quarter') {
-      return selectedYear === 2026 && currentQuarter <= 1;
-    }
-    if (periodType === 'ytd') {
-      return selectedYear <= 2026;
-    }
-    return false;
+  // A quarter is "future" if all its months are in the future
+  const isQuarterFuture = (q) => {
+    const firstMonth = (q - 1) * 3 + 1;
+    return isMonthFuture(firstMonth);
   };
 
-  const handlePrevious = () => {
-    if (isAtMinimum()) return;
-    if (periodType === 'month') {
-      if (selectedMonth > 1) {
-        setSelectedMonth(selectedMonth - 1);
-      } else {
-        setSelectedMonth(12);
-        setSelectedYear(selectedYear - 1);
-      }
-    } else if (periodType === 'quarter') {
-      if (currentQuarter > 1) {
-        const prevQuarterStart = (currentQuarter - 2) * 3 + 1;
-        setSelectedMonth(Math.min(prevQuarterStart + 1, LAST_CLOSED_MONTH));
-      } else {
-        setSelectedYear(selectedYear - 1);
-        setSelectedMonth(10); // Q4 of previous year
-      }
-    } else if (periodType === 'qtd') {
-      if (selectedMonth > 1) {
-        setSelectedMonth(selectedMonth - 1);
-      } else {
-        setSelectedMonth(12);
-        setSelectedYear(selectedYear - 1);
-      }
-    } else {
-      // YTD - just change year
-      setSelectedYear(selectedYear - 1);
+  const handleYearChange = (year) => {
+    const y = parseInt(year, 10);
+    setSelectedYear(y);
+    // If selected month is now future for the new year, clamp it
+    if (y === CURRENT_YEAR && selectedMonth > CURRENT_MONTH) {
+      setSelectedMonth(CURRENT_MONTH);
     }
   };
 
-  const handleNext = () => {
-    if (periodType === 'month') {
-      if (selectedMonth < LAST_CLOSED_MONTH) {
-        setSelectedMonth(selectedMonth + 1);
-      }
-    } else if (periodType === 'quarter') {
-      const nextQuarterStart = currentQuarter * 3 + 1;
-      if (nextQuarterStart <= LAST_CLOSED_MONTH) {
-        setSelectedMonth(Math.min(nextQuarterStart + 1, LAST_CLOSED_MONTH));
-      }
-    } else if (periodType === 'qtd') {
-      if (selectedMonth < LAST_CLOSED_MONTH) {
-        setSelectedMonth(selectedMonth + 1);
-      }
-    } else {
-      // YTD
-      if (selectedYear < CURRENT_YEAR) {
-        setSelectedYear(selectedYear + 1);
-      }
-    }
+  const handleMonthClick = (month) => {
+    if (isMonthFuture(month)) return;
+    setSelectedMonth(month);
+    setPeriodType('month');
   };
 
-  const availableMonths = getAvailableMonths();
+  const handleQuarterClick = (q) => {
+    if (isQuarterFuture(q)) return;
+    // Set selectedMonth to the last month of the quarter (or CURRENT_MONTH if Q is in progress)
+    const lastMonthOfQ = q * 3;
+    const clampedMonth = selectedYear === CURRENT_YEAR
+      ? Math.min(lastMonthOfQ, CURRENT_MONTH)
+      : lastMonthOfQ;
+    setSelectedMonth(clampedMonth);
+    setPeriodType('quarter');
+  };
 
   return (
-    <div className="sticky top-0 z-50 bg-background border-b border-border shadow-sm">
-      <div className="max-w-7xl mx-auto px-4 lg:px-8 py-3">
-        <div className="flex items-center justify-between gap-4">
-          {/* Navigation arrows */}
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={handlePrevious}
-              disabled={isAtMinimum()}
-              className="h-8 w-8"
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </Button>
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={handleNext}
-              className="h-8 w-8"
-              disabled={selectedMonth >= LAST_CLOSED_MONTH && periodType !== 'ytd'}
-            >
-              <ChevronRight className="w-4 h-4" />
-            </Button>
-          </div>
+    <div className="sticky top-0 z-50 bg-white border-b border-border shadow-sm">
+      <div className="max-w-7xl mx-auto px-4 lg:px-8 py-2.5">
+        <div className="flex flex-wrap items-center gap-3">
 
-          {/* Period type pills */}
-          <div className="flex items-center gap-1 bg-muted/50 rounded-lg p-1">
-            {/* Month pills */}
-            {availableMonths.map((month) => (
-              <button
-                key={month}
-                onClick={() => {
-                  setSelectedMonth(month);
-                  setPeriodType('month');
-                }}
-                className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
-                  periodType === 'month' && selectedMonth === month
-                    ? 'bg-white text-foreground shadow-sm'
-                    : 'text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                {MONTHS[month - 1].slice(0, 3)}
-              </button>
+          {/* Year Dropdown */}
+          <select
+            value={selectedYear}
+            onChange={e => handleYearChange(e.target.value)}
+            className="h-8 pl-3 pr-7 text-sm font-semibold bg-white border border-gray-200 rounded-lg shadow-sm text-gray-800 cursor-pointer hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors appearance-none"
+            style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2'%3E%3Cpath d='M19 9l-7 7-7-7'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 6px center' }}
+          >
+            {availableYears.map(y => (
+              <option key={y} value={y}>{y}</option>
             ))}
+          </select>
 
-            {/* Quarter pill */}
+          {/* Monthly / Quarterly toggle */}
+          <div className="flex items-center bg-gray-100 rounded-lg p-0.5">
+            <button
+              onClick={() => setPeriodType('month')}
+              className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
+                periodType === 'month'
+                  ? 'bg-white text-gray-900 shadow-sm'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              Monthly
+            </button>
             <button
               onClick={() => setPeriodType('quarter')}
-              className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
+              className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
                 periodType === 'quarter'
-                  ? 'bg-white text-foreground shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground'
+                  ? 'bg-white text-gray-900 shadow-sm'
+                  : 'text-gray-500 hover:text-gray-700'
               }`}
             >
-              Q{currentQuarter}
-            </button>
-
-            {/* QTD pill */}
-            <button
-              onClick={() => setPeriodType('qtd')}
-              className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
-                periodType === 'qtd'
-                  ? 'bg-white text-foreground shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              QTD
-            </button>
-
-            {/* YTD pill */}
-            <button
-              onClick={() => setPeriodType('ytd')}
-              className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
-                periodType === 'ytd'
-                  ? 'bg-white text-foreground shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              YTD
+              Quarterly
             </button>
           </div>
 
-          {/* Period label */}
-          <div className="text-sm font-semibold text-foreground min-w-[120px] text-center">
-            {getPeriodLabel()}
-          </div>
+          {/* Divider */}
+          <div className="h-6 w-px bg-gray-200" />
+
+          {/* Month buttons (Monthly view) */}
+          {periodType === 'month' && (
+            <div className="flex items-center gap-1 flex-wrap">
+              {MONTH_LABELS.map((label, i) => {
+                const month = i + 1;
+                const future = isMonthFuture(month);
+                const active = selectedMonth === month;
+                return (
+                  <button
+                    key={month}
+                    onClick={() => handleMonthClick(month)}
+                    disabled={future}
+                    className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                      active
+                        ? 'bg-primary text-white shadow-sm'
+                        : future
+                        ? 'text-gray-300 cursor-not-allowed'
+                        : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                    }`}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Quarter buttons (Quarterly view) */}
+          {periodType === 'quarter' && (
+            <div className="flex items-center gap-1">
+              {[1, 2, 3, 4].map(q => {
+                const future = isQuarterFuture(q);
+                // Active quarter = the quarter that contains selectedMonth
+                const qOfSelected = selectedMonth ? Math.ceil(selectedMonth / 3) : 0;
+                const active = qOfSelected === q;
+                return (
+                  <button
+                    key={q}
+                    onClick={() => handleQuarterClick(q)}
+                    disabled={future}
+                    className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                      active
+                        ? 'bg-primary text-white shadow-sm'
+                        : future
+                        ? 'text-gray-300 cursor-not-allowed'
+                        : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                    }`}
+                  >
+                    Q{q}
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
       </div>
     </div>

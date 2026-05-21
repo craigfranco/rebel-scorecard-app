@@ -218,7 +218,7 @@ export default function Dashboard() {
             <div className="lg:col-span-3 bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
               <div className="px-6 py-4 border-b border-border">
                 <h2 className="font-bold text-foreground">
-                  KPI Scorecard — {periodType === 'month' ? MONTHS[selectedMonth - 1] : periodType === 'quarter' ? `Q${getQuarterFromMonth(selectedMonth)}` : periodType === 'qtd' ? `Q${getQuarterFromMonth(selectedMonth)} QTD` : 'YTD'} {selectedYear}
+                  KPI Scorecard — {periodType === 'quarter' ? `Q${getQuarterFromMonth(selectedMonth)}` : MONTHS[selectedMonth - 1]} {selectedYear}
                 </h2>
                 <p className="text-xs text-muted-foreground mt-0.5">{selectedProperty.name} · {selectedProperty.parent_brand}</p>
               </div>
