@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useLocation, Outlet } from 'react-router-dom';
 import { LayoutDashboard, BookOpen, Building2, Settings, Menu, PieChart, FolderOpen, DollarSign, ChevronDown, ClipboardList } from 'lucide-react';
-import TimePeriodSelector from './TimePeriodSelector';
+import TimePeriodSelector from '@/components/layout/TimePeriodSelector';
 
 const NAV_ITEMS = [
   { path: '/', icon: LayoutDashboard, label: 'Dashboard' },
