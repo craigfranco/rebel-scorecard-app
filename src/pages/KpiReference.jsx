@@ -6,9 +6,9 @@ const KPI_ROWS = [
     measure: 'Budgeted GOP',
     weight: '35%',
     pts: '0–35',
-    target: 'YOY growth vs Prior Year GOP',
-    scoring: 'Growth-based scoring: 0.5% = 1 pt (minimum), scales linearly to 10%+ = 35 pts (capped). Pass at 0.5%+ YOY growth.',
-    pass: 'GOP Actual / GOP PY ≥ 0.5%',
+    target: '≥ 100% of Budgeted GOP',
+    scoring: 'Budget achievement scoring: 100% of budget = full points (35 pts). Below 100% = prorated score. Pass at 100%+ of budget.',
+    pass: 'GOP Actual / GOP Budget ≥ 100%',
   },
   {
     measure: 'GOP Margin Improvement',
