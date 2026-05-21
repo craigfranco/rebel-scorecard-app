@@ -41,11 +41,11 @@ export default function KpiBreakdown() {
   const [sortCol, setSortCol] = useState('score');
   const [sortDir, setSortDir] = useState('desc');
   const [filters, setFilters] = useState(EMPTY_FILTERS);
-  const [strIdToLead, setStrIdToLead] = useState({});
+  const [strIdToLeads, setStrIdToLeads] = useState({});
 
   useEffect(() => {
     getLeadTypes({}).then(res => {
-      if (res?.data?.strIdToLead) setStrIdToLead(res.data.strIdToLead);
+      if (res?.data?.strIdToLeads) setStrIdToLeads(res.data.strIdToLeads);
     }).catch(() => {});
   }, []);
 
@@ -87,7 +87,7 @@ export default function KpiBreakdown() {
         if (filters.subBrand && p.sub_brand !== filters.subBrand) return false;
         if (filters.city && p.city !== filters.city) return false;
         if (filters.state && p.state !== filters.state) return false;
-        if (filters.leadType && strIdToLead[p.str_id] !== filters.leadType) return false;
+        if (filters.leadType && !(strIdToLeads[p.str_id] || []).includes(filters.leadType)) return false;
         return true;
       })
       .map(p => {
@@ -148,7 +148,7 @@ export default function KpiBreakdown() {
 
         return { property: p, entry, score, pass, actual, target };
       });
-  }, [properties, allEntries, activeKpi, periodType, selectedMonth, selectedYear, filters, strIdToLead]);
+  }, [properties, allEntries, activeKpi, periodType, selectedMonth, selectedYear, filters, strIdToLeads]);
 
   const sortedRows = useMemo(() => {
     return [...rows].sort((a, b) => {
@@ -186,6 +186,7 @@ export default function KpiBreakdown() {
         properties={properties}
         filters={filters}
         onChange={setFilters}
+        strIdToLeads={strIdToLeads}
       />
 
       {/* Header */}

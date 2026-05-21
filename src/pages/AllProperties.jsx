@@ -25,11 +25,11 @@ export default function AllProperties() {
   const [filters, setFilters] = useState(EMPTY_FILTERS);
   const [syncing, setSyncing] = useState(false);
   const [syncError, setSyncError] = useState(null);
-  const [strIdToLead, setStrIdToLead] = useState({});
+  const [strIdToLeads, setStrIdToLeads] = useState({});
 
   React.useEffect(() => {
     getLeadTypes({}).then(res => {
-      if (res?.data?.strIdToLead) setStrIdToLead(res.data.strIdToLead);
+      if (res?.data?.strIdToLeads) setStrIdToLeads(res.data.strIdToLeads);
     }).catch(() => {});
   }, []);
 
@@ -91,7 +91,7 @@ export default function AllProperties() {
       if (filters.subBrand && p.sub_brand !== filters.subBrand) return false;
       if (filters.city && p.city !== filters.city) return false;
       if (filters.state && p.state !== filters.state) return false;
-      if (filters.leadType && strIdToLead[p.str_id] !== filters.leadType) return false;
+      if (filters.leadType && !(strIdToLeads[p.str_id] || []).includes(filters.leadType)) return false;
       return true;
     })
     .map(p => {
@@ -135,6 +135,7 @@ export default function AllProperties() {
         properties={properties}
         filters={filters}
         onChange={setFilters}
+        strIdToLeads={strIdToLeads}
       />
 
       {/* Header */}
