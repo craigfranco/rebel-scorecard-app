@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { Link, useLocation, Outlet } from 'react-router-dom';
-import { LayoutDashboard, BookOpen, Building2, Settings, Menu, PieChart, FolderOpen, DollarSign, ChevronDown } from 'lucide-react';
+import { LayoutDashboard, BookOpen, Building2, Settings, Menu, PieChart, FolderOpen, DollarSign, ChevronDown, ClipboardList } from 'lucide-react';
 import TimePeriodSelector from './TimePeriodSelector';
 
 const NAV_ITEMS = [
   { path: '/', icon: LayoutDashboard, label: 'Dashboard' },
+  { path: '/hotel-scorecard', icon: ClipboardList, label: 'Hotel Performance Scorecard' },
   { path: '/properties', icon: Building2, label: 'All Properties' },
   { path: '/kpi-breakdown', icon: PieChart, label: 'KPI Breakdown' },
   { path: '/payouts', icon: DollarSign, label: 'Payouts' },

@@ -15,6 +15,7 @@ import SeedOnMount from '@/components/SeedOnMount';
 import KpiBreakdown from '@/pages/KpiBreakdown';
 import Documents from '@/pages/Documents.jsx';
 import HotelDetail from '@/pages/HotelDetail';
+import HotelScorecard from '@/pages/HotelScorecard';
 import Payouts from '@/pages/Payouts';
 import JobClassifications from '@/pages/JobClassifications';
 
@@ -57,6 +58,7 @@ const AuthenticatedApp = () => {
         <Route path="/documents" element={<Documents />} />
         <Route path="/payouts" element={<Payouts />} />
         <Route path="/job-classifications" element={<JobClassifications />} />
+        <Route path="/hotel-scorecard" element={<HotelScorecard />} />
         <Route path="/hotel/:id" element={<HotelDetail />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
