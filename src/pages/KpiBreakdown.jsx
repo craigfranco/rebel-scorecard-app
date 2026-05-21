@@ -1,16 +1,17 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useNavigate } from 'react-router-dom';
+import { getLeadTypes } from '@/functions/getLeadTypes';
 import { ArrowUp, ArrowDown, Minus, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
 import { calculateScorecard, MONTHS, getQuarterFromMonth } from '../lib/scoring';
 import { aggregateEntries } from '../lib/aggregation';
 import { useTimePeriod } from '@/lib/TimePeriodContext';
 import PropertyFilters from '@/components/filters/PropertyFilters';
 
-const EMPTY_FILTERS = { brand: '', subBrand: '', city: '', state: '', leadType: '', department: '' };
+const EMPTY_FILTERS = { brand: '', subBrand: '', city: '', state: '', leadType: '' };
 
 const KPI_TABS = [
   { key: 'gop', label: 'Budgeted GOP', max: 35 },
@@ -40,6 +41,13 @@ export default function KpiBreakdown() {
   const [sortCol, setSortCol] = useState('score');
   const [sortDir, setSortDir] = useState('desc');
   const [filters, setFilters] = useState(EMPTY_FILTERS);
+  const [strIdToLead, setStrIdToLead] = useState({});
+
+  useEffect(() => {
+    getLeadTypes({}).then(res => {
+      if (res?.data?.strIdToLead) setStrIdToLead(res.data.strIdToLead);
+    }).catch(() => {});
+  }, []);
 
   const { data: properties = [] } = useQuery({
     queryKey: ['properties'],
@@ -79,8 +87,7 @@ export default function KpiBreakdown() {
         if (filters.subBrand && p.sub_brand !== filters.subBrand) return false;
         if (filters.city && p.city !== filters.city) return false;
         if (filters.state && p.state !== filters.state) return false;
-        if (filters.leadType && p.lead_type !== filters.leadType) return false;
-        if (filters.department && p.department !== filters.department) return false;
+        if (filters.leadType && strIdToLead[p.str_id] !== filters.leadType) return false;
         return true;
       })
       .map(p => {
@@ -141,7 +148,7 @@ export default function KpiBreakdown() {
 
         return { property: p, entry, score, pass, actual, target };
       });
-  }, [properties, allEntries, activeKpi, periodType, selectedMonth, selectedYear, filters]);
+  }, [properties, allEntries, activeKpi, periodType, selectedMonth, selectedYear, filters, strIdToLead]);
 
   const sortedRows = useMemo(() => {
     return [...rows].sort((a, b) => {

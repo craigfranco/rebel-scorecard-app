@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Search, TrendingUp, TrendingDown, Minus, ChevronUp, ChevronDown, ChevronsUpDown, RefreshCw } from 'lucide-react';
@@ -10,10 +10,11 @@ import PortfolioKpiRollup from '@/components/dashboard/PortfolioKpiRollup';
 import { getBrandColor, getStatusBadge, formatPercentage } from '@/lib/portfolioHelpers';
 import PropertyFilters from '@/components/filters/PropertyFilters';
 import { deploymentSync } from '@/functions/deploymentSync';
+import { getLeadTypes } from '@/functions/getLeadTypes';
 
 
 
-const EMPTY_FILTERS = { brand: '', subBrand: '', city: '', state: '', leadType: '', department: '' };
+const EMPTY_FILTERS = { brand: '', subBrand: '', city: '', state: '', leadType: '' };
 
 export default function AllProperties() {
   const { selectedMonth, selectedYear, periodType, getPeriodLabel, getPeriodMonths } = useTimePeriod();
@@ -24,6 +25,13 @@ export default function AllProperties() {
   const [filters, setFilters] = useState(EMPTY_FILTERS);
   const [syncing, setSyncing] = useState(false);
   const [syncError, setSyncError] = useState(null);
+  const [strIdToLead, setStrIdToLead] = useState({});
+
+  React.useEffect(() => {
+    getLeadTypes({}).then(res => {
+      if (res?.data?.strIdToLead) setStrIdToLead(res.data.strIdToLead);
+    }).catch(() => {});
+  }, []);
 
   const { data: properties = [] } = useQuery({
     queryKey: ['properties'],
@@ -83,8 +91,7 @@ export default function AllProperties() {
       if (filters.subBrand && p.sub_brand !== filters.subBrand) return false;
       if (filters.city && p.city !== filters.city) return false;
       if (filters.state && p.state !== filters.state) return false;
-      if (filters.leadType && p.lead_type !== filters.leadType) return false;
-      if (filters.department && p.department !== filters.department) return false;
+      if (filters.leadType && strIdToLead[p.str_id] !== filters.leadType) return false;
       return true;
     })
     .map(p => {
