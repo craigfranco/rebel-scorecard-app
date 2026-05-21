@@ -1,252 +1,176 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
+import { ChevronRight } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { User, ChevronRight } from 'lucide-react';
-import ScoreGauge from '@/components/scorecard/ScoreGauge';
-import KpiRow from '@/components/scorecard/KpiRow';
-import KickerBadge from '@/components/scorecard/KickerBadge';
-import SeedOnMount from '../components/SeedOnMount';
 
-import { calculateScorecard, MONTHS, getQuarterFromMonth, aggregateEntries } from '../lib/scoring';
+import { calculateScorecard, aggregateEntries } from '../lib/scoring';
 import { useTimePeriod } from '@/lib/TimePeriodContext';
+import PropertyFilters from '@/components/filters/PropertyFilters';
+import HotelScorecardRow from '@/components/scorecard/HotelScorecardRow';
+
+const EMPTY_FILTERS = { brand: '', subBrand: '', city: '', state: '', leadRole: '', leadPerson: '' };
+
+const SORT_OPTIONS = [
+  { value: 'score_desc', label: 'Total Score ↓' },
+  { value: 'score_asc', label: 'Total Score ↑' },
+  { value: 'name_asc', label: 'Hotel Name' },
+  { value: 'brand_asc', label: 'Brand' },
+  { value: 'rgi_desc', label: 'RPI Score ↓' },
+  { value: 'gop_desc', label: 'GOP Score ↓' },
+];
 
 export default function HotelScorecard() {
-  const { selectedMonth, selectedYear, periodType } = useTimePeriod();
-
-  const [selectedPropertyId, setSelectedPropertyId] = useState('');
+  const { selectedMonth, selectedYear, periodType, getPeriodLabel, getPeriodMonths } = useTimePeriod();
+  const [sortBy, setSortBy] = useState('score_desc');
+  const [filters, setFilters] = useState(EMPTY_FILTERS);
 
   const { data: properties = [] } = useQuery({
     queryKey: ['properties'],
     queryFn: () => base44.entities.Property.filter({ is_active: true }, 'name', 100),
   });
 
-  const { data: entries = [] } = useQuery({
-    queryKey: ['score-entries', selectedPropertyId, selectedYear],
-    queryFn: () =>
-      selectedPropertyId
-        ? base44.entities.ScoreEntry.filter({ property_id: selectedPropertyId, year: selectedYear })
-        : Promise.resolve([]),
-    enabled: !!selectedPropertyId,
+  const { data: allEntries = [] } = useQuery({
+    queryKey: ['all-entries', selectedYear],
+    queryFn: () => base44.entities.ScoreEntry.filter({ year: selectedYear }),
   });
 
-  const selectedProperty = properties.find(p => p.id === selectedPropertyId);
-  const activeEntry = aggregateEntries(entries, periodType, selectedMonth, selectedYear) || {};
-  const scorecard = selectedProperty ? calculateScorecard(activeEntry, selectedProperty) : null;
+  // Also fetch prior year entries for trend
+  const { data: priorEntries = [] } = useQuery({
+    queryKey: ['all-entries', selectedYear - 1],
+    queryFn: () => base44.entities.ScoreEntry.filter({ year: selectedYear - 1 }),
+  });
 
-  useEffect(() => {
-    if (properties.length && !selectedPropertyId) {
-      setSelectedPropertyId(properties[0].id);
+  const getEntry = (propertyId, entries = allEntries) => {
+    const propEntries = entries.filter(e => e.property_id === propertyId);
+    if (!propEntries.length) return null;
+    const periodMonths = getPeriodMonths();
+    const periodEntries = propEntries.filter(e =>
+      periodMonths.includes(e.month) && e.year === selectedYear
+    );
+    if (!periodEntries.length) return null;
+    if (periodType === 'month') return periodEntries[0] || null;
+    return aggregateEntries(periodEntries, periodType, selectedMonth, selectedYear);
+  };
+
+  // For trend: compare current period score to previous month's score
+  const getTrend = (propertyId, currentScore) => {
+    if (currentScore == null) return 'flat';
+    const prevMonth = selectedMonth === 1 ? 12 : selectedMonth - 1;
+    const prevYear = selectedMonth === 1 ? selectedYear - 1 : selectedYear;
+    const prevEntries = selectedMonth === 1 ? priorEntries : allEntries;
+    const prevPropEntries = prevEntries.filter(e => e.property_id === propertyId && e.month === prevMonth && e.year === prevYear);
+    if (!prevPropEntries.length) return 'flat';
+    const prop = properties.find(p => p.id === propertyId);
+    if (!prop) return 'flat';
+    const prevSc = calculateScorecard(prevPropEntries[0], prop);
+    if (prevSc.total.total == null) return 'flat';
+    if (currentScore > prevSc.total.total + 0.5) return 'up';
+    if (currentScore < prevSc.total.total - 0.5) return 'down';
+    return 'flat';
+  };
+
+  const rows = useMemo(() => {
+    return properties
+      .filter(p => {
+        if (filters.brand && p.parent_brand !== filters.brand) return false;
+        if (filters.subBrand && p.sub_brand !== filters.subBrand) return false;
+        if (filters.city && p.city !== filters.city) return false;
+        if (filters.state && p.state !== filters.state) return false;
+        return true;
+      })
+      .map(p => {
+        const entry = getEntry(p.id);
+        const scorecard = entry ? calculateScorecard(entry, p) : null;
+        const anyIncomplete = scorecard && [scorecard.gop, scorecard.gopMargin, scorecard.rgi, scorecard.gss].some(k => k?.incomplete);
+        const totalScore = scorecard && !anyIncomplete ? scorecard.total.total : null;
+        return { property: p, entry, scorecard, totalScore };
+      });
+  }, [properties, allEntries, periodType, selectedMonth, selectedYear, filters]);
+
+  const sorted = useMemo(() => {
+    const copy = [...rows];
+    switch (sortBy) {
+      case 'score_desc': copy.sort((a, b) => (b.totalScore ?? -1) - (a.totalScore ?? -1)); break;
+      case 'score_asc': copy.sort((a, b) => (a.totalScore ?? -1) - (b.totalScore ?? -1)); break;
+      case 'name_asc': copy.sort((a, b) => a.property.name.localeCompare(b.property.name)); break;
+      case 'brand_asc': copy.sort((a, b) => (a.property.parent_brand || '').localeCompare(b.property.parent_brand || '')); break;
+      case 'rgi_desc': copy.sort((a, b) => (b.scorecard?.rgi?.score ?? -1) - (a.scorecard?.rgi?.score ?? -1)); break;
+      case 'gop_desc': copy.sort((a, b) => (b.scorecard?.gop?.score ?? -1) - (a.scorecard?.gop?.score ?? -1)); break;
     }
-  }, [properties]);
+    return copy;
+  }, [rows, sortBy]);
 
-  const kpiRows = scorecard ? [
-    {
-      measure: 'Budgeted GOP',
-      weight: '35%',
-      target: activeEntry.budgeted_gop_target != null ? `Budget: $${(activeEntry.budgeted_gop_target / 1000).toFixed(0)}K` : 'Budget',
-      actual: (() => {
-        const a = activeEntry.budgeted_gop_actual;
-        const b = activeEntry.budgeted_gop_target;
-        return (a != null && b != null && b !== 0) ? `${(a / b * 100).toFixed(1)}% of Budget` : '—';
-      })(),
-      ytdActual: (() => {
-        const a = activeEntry.budgeted_gop_actual;
-        const b = activeEntry.budgeted_gop_target;
-        if (a != null && b != null && b !== 0) {
-          const variance = a - b;
-          return `${variance >= 0 ? '+' : ''}$${(variance / 1000).toFixed(0)}K vs Budget`;
-        }
-        return '—';
-      })(),
-      score: scorecard.gop.score,
-      maxScore: 35,
-      pass: scorecard.gop.pass,
-      incomplete: scorecard.gop.incomplete,
-    },
-    {
-      measure: 'GOP Margin Improvement',
-      weight: '35%',
-      target: activeEntry.gop_margin_budget != null ? `Budget: ${activeEntry.gop_margin_budget}%` : '+0.1% vs Budget',
-      actual: activeEntry.gop_margin_actual != null ? `${activeEntry.gop_margin_actual}%` : '—',
-      ytdActual: (() => {
-        const a = activeEntry.gop_margin_actual;
-        const b = activeEntry.gop_margin_budget;
-        if (a != null && b != null) {
-          const v = (a - b).toFixed(1);
-          return `${v >= 0 ? '+' : ''}${v}% vs Budget`;
-        }
-        if (activeEntry.gop_margin_prior != null) return `PY: ${activeEntry.gop_margin_prior}%`;
-        return '—';
-      })(),
-      score: scorecard.gopMargin.score,
-      maxScore: 35,
-      pass: scorecard.gopMargin.pass,
-      incomplete: scorecard.gopMargin.incomplete,
-    },
-    {
-      measure: 'RevPAR Index % Change (STR RGI)',
-      weight: '15%',
-      target: '0.1%-2.0% partial / 2.1%+ full',
-      actual: activeEntry.revpar_index != null ? `Index: ${activeEntry.revpar_index.toFixed(1)}` : '—',
-      ytdActual: activeEntry.revpar_index_change != null
-        ? `${activeEntry.revpar_index_change >= 0 ? '+' : ''}${activeEntry.revpar_index_change.toFixed(2)}%`
-        : '—',
-      score: scorecard.rgi.score,
-      maxScore: 15,
-      pass: scorecard.rgi.pass,
-      incomplete: scorecard.rgi.incomplete,
-    },
-    {
-      measure: `GSS — ${scorecard.gssStd.label}`,
-      weight: '15%',
-      target: `+${scorecard.gssStd.target} YOY`,
-      actual: activeEntry.gss_actual != null ? `${activeEntry.gss_actual} /${scorecard.gssStd.scale}` : '—',
-      ytdActual: activeEntry.gss_prior != null ? `PY: ${activeEntry.gss_prior} /${scorecard.gssStd.scale}` : '—',
-      score: scorecard.gss.score,
-      maxScore: 15,
-      pass: scorecard.gss.pass,
-      incomplete: scorecard.gss.incomplete,
-    },
-  ] : [];
+  const periodLabel = getPeriodLabel();
 
   return (
     <div className="p-4 lg:p-8 space-y-6 max-w-7xl mx-auto">
-      <SeedOnMount />
-
       {/* Header */}
       <div className="rounded-2xl text-white p-6 shadow-lg" style={{ background: 'linear-gradient(135deg, #2d4b5e 0%, #1e3547 100%)' }}>
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2 text-white/60 text-xs mb-1">
-              <span>Balanced Scorecard</span>
-              <ChevronRight className="w-3 h-3" />
-              <span>Hotel Performance Scorecard</span>
-            </div>
-            <h1 className="text-2xl font-bold">Hotel Performance Scorecard</h1>
-            <p className="text-white/60 text-xs mt-0.5">Detailed per-hotel KPI scorecard — GOP, margin, RGI, and GSS</p>
-            {selectedProperty && (
-              <div className="flex items-center gap-2 mt-2 flex-wrap">
-                <span className="text-white/70 text-sm">{selectedProperty.name}</span>
-                <span className="text-white/40">·</span>
-                <span className="text-white/70 text-sm">{selectedProperty.city}, {selectedProperty.state}</span>
-                {selectedProperty.parent_brand && (
-                  <>
-                    <span className="text-white/40">·</span>
-                    <span className="text-white/60 text-sm">
-                      {selectedProperty.parent_brand}{selectedProperty.sub_brand ? ` — ${selectedProperty.sub_brand}` : ''}
-                    </span>
-                  </>
-                )}
-                {selectedProperty.gm_name && (
-                  <>
-                    <span className="text-white/40">·</span>
-                    <User className="w-3.5 h-3.5 text-white/60" />
-                    <span className="text-white/70 text-sm">GM: {selectedProperty.gm_name}</span>
-                  </>
-                )}
-              </div>
-            )}
-          </div>
+        <div className="flex items-center gap-2 text-white/60 text-xs mb-1">
+          <span>Balanced Scorecard</span>
+          <ChevronRight className="w-3 h-3" />
+          <span>Hotel Performance Scorecard</span>
+        </div>
+        <h1 className="text-2xl font-bold">Hotel Performance Scorecard</h1>
+        <p className="text-white/60 text-xs mt-0.5">All properties — {periodLabel}</p>
+      </div>
 
-          <Select value={selectedPropertyId} onValueChange={setSelectedPropertyId}>
-            <SelectTrigger className="w-full sm:w-72 bg-white/10 border-white/20 text-white">
-              <SelectValue placeholder="Select property..." />
+      {/* Controls */}
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-medium text-muted-foreground">Sort by:</span>
+          <Select value={sortBy} onValueChange={setSortBy}>
+            <SelectTrigger className="w-48 h-9">
+              <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {properties.map(p => (
-                <SelectItem key={p.id} value={p.id}>
-                  <div>
-                    <div className="font-medium text-sm">{p.name}</div>
-                    <div className="text-xs text-muted-foreground">{p.city}, {p.state}</div>
-                  </div>
-                </SelectItem>
+              {SORT_OPTIONS.map(o => (
+                <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
               ))}
             </SelectContent>
           </Select>
         </div>
+        <PropertyFilters properties={properties} filters={filters} onChange={setFilters} />
       </div>
 
-      {!selectedProperty ? (
-        <div className="bg-card rounded-2xl border border-border p-16 text-center shadow-sm">
-          <div className="w-16 h-16 rounded-2xl bg-muted flex items-center justify-center mx-auto mb-4">
-            <svg className="w-8 h-8 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-            </svg>
-          </div>
-          <h3 className="font-semibold text-lg mb-1">Select a Property</h3>
-          <p className="text-muted-foreground text-sm">Choose a hotel from the dropdown to view its scorecard.</p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          {/* Gauge */}
-          <div className="bg-card rounded-2xl border border-border p-6 shadow-sm flex flex-col items-center justify-center gap-4">
-            <h2 className="font-bold text-sm text-muted-foreground uppercase tracking-wide">Overall Score</h2>
-            {scorecard && <ScoreGauge score={scorecard.total.total} pass={scorecard.total.pass} />}
-            <div className="w-full space-y-2">
-              <KickerBadge type="forecast" hit={activeEntry.forecast_kicker || false} forecastValue={activeEntry.forecast_primary_forecast} />
-              <KickerBadge type="redzone" hit={activeEntry.red_zone_kicker || false} />
-            </div>
-          </div>
+      {/* Column header hint */}
+      <div className="hidden md:grid grid-cols-[2rem_1fr_auto_auto_auto_auto] gap-4 px-4 text-xs text-muted-foreground font-semibold uppercase tracking-wider">
+        <div>#</div>
+        <div>Hotel</div>
+        <div className="w-40 text-center">KPI Status</div>
+        <div className="w-28 text-center">Forecast</div>
+        <div className="w-24 text-right">Score</div>
+        <div className="w-5" />
+      </div>
 
-          {/* KPI Table */}
-          <div className="lg:col-span-3 bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
-            <div className="px-6 py-4 border-b border-border">
-              <h2 className="font-bold text-foreground">
-                KPI Scorecard — {periodType === 'quarter' ? `Q${getQuarterFromMonth(selectedMonth)}` : MONTHS[selectedMonth - 1]} {selectedYear}
-              </h2>
-              <p className="text-xs text-muted-foreground mt-0.5">{selectedProperty.name} · {selectedProperty.parent_brand}</p>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="bg-muted/50 text-muted-foreground text-xs uppercase tracking-wide">
-                    <th className="py-3 px-4 text-left font-semibold">Measure</th>
-                    <th className="py-3 px-4 text-center font-semibold">Weight</th>
-                    <th className="py-3 px-4 text-center font-semibold">Target</th>
-                    <th className="py-3 px-4 text-center font-semibold">Actual</th>
-                    <th className="py-3 px-4 text-center font-semibold">Variance</th>
-                    <th className="py-3 px-4 text-center font-semibold">Score</th>
-                    <th className="py-3 px-4 text-center font-semibold">Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {kpiRows.map((row, i) => (
-                    <KpiRow key={i} {...row} />
-                  ))}
-                </tbody>
-                {scorecard && (() => {
-                  const anyIncomplete = kpiRows.some(r => r.incomplete);
-                  return (
-                    <tfoot>
-                      <tr style={{ backgroundColor: '#2d4b5e' }}>
-                        <td colSpan={5} className="py-3 px-4 font-bold text-white text-sm">Total Score</td>
-                        <td className="py-3 px-4 text-center font-black text-white text-lg">
-                          {anyIncomplete ? '—' : scorecard.total.total}
-                        </td>
-                        <td className="py-3 px-4 text-center">
-                          {anyIncomplete ? (
-                            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-white/20 text-white">
-                              INCOMPLETE
-                            </span>
-                          ) : (
-                            <span
-                              className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold text-white"
-                              style={{ backgroundColor: scorecard.total.pass ? '#4CAF50' : '#ef4444' }}
-                            >
-                              {scorecard.total.pass ? '✓ PASS' : '✗ FAIL'}
-                            </span>
-                          )}
-                        </td>
-                      </tr>
-                    </tfoot>
-                  );
-                })()}
-              </table>
-            </div>
+      {/* Hotel rows */}
+      <div className="space-y-2">
+        {sorted.map(({ property, entry, scorecard, totalScore }, idx) => (
+          <HotelScorecardRow
+            key={property.id}
+            property={property}
+            entry={entry}
+            scorecard={scorecard}
+            trend={getTrend(property.id, totalScore)}
+            rank={idx + 1}
+            totalCount={sorted.length}
+          />
+        ))}
+        {sorted.length === 0 && (
+          <div className="bg-card rounded-2xl border border-border p-12 text-center text-muted-foreground">
+            No properties match the current filters.
           </div>
-        </div>
-      )}
+        )}
+      </div>
+
+      {/* Legend */}
+      <div className="flex flex-wrap gap-4 text-xs text-muted-foreground pt-2">
+        <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-yellow-400 inline-block" /> Top 3 performers</span>
+        <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-red-400 inline-block" /> Bottom 3 performers</span>
+        <span className="flex items-center gap-1.5">↑ <span>Score improved vs prior month</span></span>
+        <span className="flex items-center gap-1.5">↓ <span>Score declined vs prior month</span></span>
+      </div>
     </div>
   );
 }
