@@ -1,12 +1,13 @@
 import React from 'react';
 
 const BRAND_COLORS = {
-  Marriott: '#e11d48',
-  Hilton: '#2563eb',
-  IHG: '#16a34a',
-  Hyatt: '#ca8a04',
-  Choice: '#9333ea',
-  Independent: '#64748b',
+  Marriott: '#CC2031',
+  Hilton: '#00205B',
+  IHG: '#003087',
+  Hyatt: '#4B3832',
+  'Choice Hotels': '#F7941D',
+  Choice: '#F7941D',
+  Independent: '#4B5563',
 };
 
 export function getBrandColor(brand) {

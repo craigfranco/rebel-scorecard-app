@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { User, ChevronRight } from 'lucide-react';
 import ScoreGauge from '@/components/scorecard/ScoreGauge';
@@ -11,18 +11,35 @@ import { calculateScorecard, MONTHS, getQuarterFromMonth, aggregateEntries } fro
 import { useTimePeriod } from '@/lib/TimePeriodContext';
 import SeedOnMount from '../components/SeedOnMount';
 
+import ExecutiveSummaryBar from '@/components/dashboard/ExecutiveSummaryBar';
+import AttentionNeeded from '@/components/dashboard/AttentionNeeded';
+import PerformanceHeatMap from '@/components/dashboard/PerformanceHeatMap';
+import DataCompletenessIndicator from '@/components/dashboard/DataCompletenessIndicator';
+import ForecastKickerTracker from '@/components/dashboard/ForecastKickerTracker';
+
 export default function Dashboard() {
-  const queryClient = useQueryClient();
-  const { selectedMonth, selectedYear, periodType } = useTimePeriod();
+  const { selectedMonth, selectedYear, periodType, getPeriodMonths } = useTimePeriod();
 
   const [selectedPropertyId, setSelectedPropertyId] = useState('');
-  const [kpiInputs, setKpiInputs] = useState({ budgeted_gop_actual: '', budgeted_gop_target: '', budgeted_gop_prior: '', gop_margin_actual: '', gop_margin_prior: '', revpar_index_change: '', revpar_index: '', revpar_index_prior: '', gss_actual: '', gss_prior: '' });
+  const [kpiInputs, setKpiInputs] = useState({
+    budgeted_gop_actual: '', budgeted_gop_target: '', budgeted_gop_prior: '',
+    gop_margin_actual: '', gop_margin_prior: '',
+    revpar_index_change: '', revpar_index: '', revpar_index_prior: '',
+    gss_actual: '', gss_prior: '',
+  });
 
   const { data: properties = [] } = useQuery({
     queryKey: ['properties'],
     queryFn: () => base44.entities.Property.filter({ is_active: true }, 'name', 100),
   });
 
+  // All entries for the current year (for portfolio panels)
+  const { data: allEntries = [] } = useQuery({
+    queryKey: ['all-entries', selectedYear],
+    queryFn: () => base44.entities.ScoreEntry.filter({ year: selectedYear }),
+  });
+
+  // Entries for the selected property
   const { data: entries = [] } = useQuery({
     queryKey: ['score-entries', selectedPropertyId, selectedYear],
     queryFn: () =>
@@ -32,25 +49,19 @@ export default function Dashboard() {
     enabled: !!selectedPropertyId,
   });
 
-
-
   const selectedProperty = properties.find(p => p.id === selectedPropertyId);
 
-  // Get entry for selected period using global aggregation
   const activeEntry = aggregateEntries(entries, periodType, selectedMonth, selectedYear) || {};
-  const scorecard = selectedProperty
-    ? calculateScorecard(activeEntry, selectedProperty)
-    : null;
+  const scorecard = selectedProperty ? calculateScorecard(activeEntry, selectedProperty) : null;
 
-  // Sync kpi inputs from entry
   useEffect(() => {
     if (activeEntry) {
       setKpiInputs({
         budgeted_gop_actual: activeEntry.budgeted_gop_actual != null ? String(activeEntry.budgeted_gop_actual) : '',
         budgeted_gop_target: activeEntry.budgeted_gop_target != null ? String(activeEntry.budgeted_gop_target) : '',
         budgeted_gop_prior:  activeEntry.budgeted_gop_prior  != null ? String(activeEntry.budgeted_gop_prior)  : '',
-        gop_margin_actual:   activeEntry.gop_margin_actual  != null ? String(activeEntry.gop_margin_actual)  : '',
-        gop_margin_prior:    activeEntry.gop_margin_prior   != null ? String(activeEntry.gop_margin_prior)   : '',
+        gop_margin_actual:   activeEntry.gop_margin_actual   != null ? String(activeEntry.gop_margin_actual)   : '',
+        gop_margin_prior:    activeEntry.gop_margin_prior    != null ? String(activeEntry.gop_margin_prior)    : '',
         revpar_index_change: activeEntry.revpar_index_change != null ? String(activeEntry.revpar_index_change) : '',
         revpar_index:        activeEntry.revpar_index        != null ? String(activeEntry.revpar_index)        : '',
         revpar_index_prior:  activeEntry.revpar_index_prior  != null ? String(activeEntry.revpar_index_prior)  : '',
@@ -60,9 +71,6 @@ export default function Dashboard() {
     }
   }, [selectedPropertyId, selectedMonth, selectedYear, entries.length]);
 
-  const parseNum = (v) => v === '' || v == null ? null : parseFloat(v);
-
-  // Auto-select first property
   useEffect(() => {
     if (properties.length && !selectedPropertyId) {
       setSelectedPropertyId(properties[0].id);
@@ -138,9 +146,12 @@ export default function Dashboard() {
     },
   ] : [];
 
+  const portfolioProps = { properties, allEntries, getPeriodMonths, selectedYear, periodType, selectedMonth };
+
   return (
     <div className="p-4 lg:p-8 space-y-6 max-w-7xl mx-auto">
       <SeedOnMount />
+
       {/* Header */}
       <div className="rounded-2xl text-white p-6 shadow-lg" style={{ background: 'linear-gradient(135deg, #2d4b5e 0%, #1e3547 100%)' }}>
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
@@ -152,30 +163,50 @@ export default function Dashboard() {
             </div>
             <h1 className="text-2xl font-bold">Hotel Performance Scorecard</h1>
             <p className="text-white/60 text-xs mt-0.5">Track GOP, margin, RGI, and GSS performance across your portfolio</p>
-            {selectedProperty && (
-              <div className="flex items-center gap-2 mt-2 flex-wrap">
-                <span className="text-white/70 text-sm">{selectedProperty.name}</span>
-                <span className="text-white/40">·</span>
-                <span className="text-white/70 text-sm">{selectedProperty.city}, {selectedProperty.state}</span>
-                {selectedProperty.parent_brand && (
-                  <>
-                    <span className="text-white/40">·</span>
-                    <span className="text-white/60 text-sm">{selectedProperty.parent_brand}{selectedProperty.sub_brand ? ` — ${selectedProperty.sub_brand}` : ''}</span>
-                  </>
-                )}
-                {selectedProperty.gm_name && (
-                  <>
-                    <span className="text-white/40">·</span>
-                    <User className="w-3.5 h-3.5 text-white/60" />
-                    <span className="text-white/70 text-sm">GM: {selectedProperty.gm_name}</span>
-                  </>
-                )}
+          </div>
+        </div>
+      </div>
+
+      {/* ── PORTFOLIO PANELS ── */}
+      <ExecutiveSummaryBar {...portfolioProps} />
+
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        <AttentionNeeded {...portfolioProps} />
+        <ForecastKickerTracker {...portfolioProps} />
+      </div>
+
+      <PerformanceHeatMap {...portfolioProps} />
+
+      <DataCompletenessIndicator {...portfolioProps} />
+
+      {/* ── DIVIDER ── */}
+      <div className="flex items-center gap-4">
+        <div className="flex-1 h-px bg-border" />
+        <span className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">Property Drilldown</span>
+        <div className="flex-1 h-px bg-border" />
+      </div>
+
+      {/* Property selector */}
+      <div className="bg-card rounded-2xl border border-border p-5 shadow-sm">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+          <div className="flex-1">
+            {selectedProperty ? (
+              <div className="flex items-center gap-3 flex-wrap">
+                <div>
+                  <div className="font-semibold text-foreground">{selectedProperty.name}</div>
+                  <div className="text-xs text-muted-foreground">
+                    {selectedProperty.city}, {selectedProperty.state}
+                    {selectedProperty.parent_brand && ` · ${selectedProperty.parent_brand}${selectedProperty.sub_brand ? ` — ${selectedProperty.sub_brand}` : ''}`}
+                    {selectedProperty.gm_name && ` · GM: ${selectedProperty.gm_name}`}
+                  </div>
+                </div>
               </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">Select a property to view its individual scorecard</p>
             )}
           </div>
-
           <Select value={selectedPropertyId} onValueChange={setSelectedPropertyId}>
-            <SelectTrigger className="w-full sm:w-72 bg-white/10 border-white/20 text-white">
+            <SelectTrigger className="w-full sm:w-72">
               <SelectValue placeholder="Select property..." />
             </SelectTrigger>
             <SelectContent>
@@ -192,92 +223,75 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {!selectedProperty ? (
-        <div className="bg-card rounded-2xl border border-border p-16 text-center shadow-sm">
-          <div className="w-16 h-16 rounded-2xl bg-muted flex items-center justify-center mx-auto mb-4">
-            <svg className="w-8 h-8 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-            </svg>
+      {selectedProperty && (
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          {/* Gauge */}
+          <div className="bg-card rounded-2xl border border-border p-6 shadow-sm flex flex-col items-center justify-center gap-4">
+            <h2 className="font-bold text-sm text-muted-foreground uppercase tracking-wide">Overall Score</h2>
+            {scorecard && <ScoreGauge score={scorecard.total.total} pass={scorecard.total.pass} />}
+            <div className="w-full space-y-2">
+              <KickerBadge type="forecast" hit={activeEntry.forecast_kicker || false} forecastValue={activeEntry.forecast_primary_forecast} />
+              <KickerBadge type="redzone" hit={activeEntry.red_zone_kicker || false} />
+            </div>
           </div>
-          <h3 className="font-semibold text-lg mb-1">Select a Property</h3>
-          <p className="text-muted-foreground text-sm">Choose a hotel from the dropdown to view its scorecard.</p>
+
+          {/* KPI Table */}
+          <div className="lg:col-span-3 bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
+            <div className="px-6 py-4 border-b border-border">
+              <h2 className="font-bold text-foreground">
+                KPI Scorecard — {periodType === 'quarter' ? `Q${getQuarterFromMonth(selectedMonth)}` : MONTHS[selectedMonth - 1]} {selectedYear}
+              </h2>
+              <p className="text-xs text-muted-foreground mt-0.5">{selectedProperty.name} · {selectedProperty.parent_brand}</p>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="bg-muted/50 text-muted-foreground text-xs uppercase tracking-wide">
+                    <th className="py-3 px-4 text-left font-semibold">Measure</th>
+                    <th className="py-3 px-4 text-center font-semibold">Weight</th>
+                    <th className="py-3 px-4 text-center font-semibold">Target</th>
+                    <th className="py-3 px-4 text-center font-semibold">Actual</th>
+                    <th className="py-3 px-4 text-center font-semibold">Variance</th>
+                    <th className="py-3 px-4 text-center font-semibold">Score</th>
+                    <th className="py-3 px-4 text-center font-semibold">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {kpiRows.map((row, i) => (
+                    <KpiRow key={i} {...row} />
+                  ))}
+                </tbody>
+                {scorecard && (() => {
+                  const anyIncomplete = kpiRows.some(r => r.incomplete);
+                  return (
+                    <tfoot>
+                      <tr style={{ backgroundColor: '#2d4b5e' }}>
+                        <td colSpan={5} className="py-3 px-4 font-bold text-white text-sm">Total Score</td>
+                        <td className="py-3 px-4 text-center font-black text-white text-lg">
+                          {anyIncomplete ? '—' : scorecard.total.total}
+                        </td>
+                        <td className="py-3 px-4 text-center">
+                          {anyIncomplete ? (
+                            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-white/20 text-white">
+                              INCOMPLETE
+                            </span>
+                          ) : (
+                            <span
+                              className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold text-white"
+                              style={{ backgroundColor: scorecard.total.pass ? '#4CAF50' : '#ef4444' }}
+                            >
+                              {scorecard.total.pass ? '✓ PASS' : '✗ FAIL'}
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                    </tfoot>
+                  );
+                })()}
+              </table>
+            </div>
+          </div>
         </div>
-      ) : (
-        <>
-          {/* Score + KPI Table */}
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-            {/* Gauge */}
-            <div className="bg-card rounded-2xl border border-border p-6 shadow-sm flex flex-col items-center justify-center gap-4">
-              <h2 className="font-bold text-sm text-muted-foreground uppercase tracking-wide">Overall Score</h2>
-              {scorecard && (
-                <ScoreGauge score={scorecard.total.total} pass={scorecard.total.pass} />
-              )}
-              <div className="w-full space-y-2">
-                <KickerBadge type="forecast" hit={activeEntry.forecast_kicker || false} forecastValue={activeEntry.forecast_primary_forecast} />
-                <KickerBadge type="redzone" hit={activeEntry.red_zone_kicker || false} />
-              </div>
-            </div>
-
-            {/* KPI Table */}
-            <div className="lg:col-span-3 bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
-              <div className="px-6 py-4 border-b border-border">
-                <h2 className="font-bold text-foreground">
-                  KPI Scorecard — {periodType === 'quarter' ? `Q${getQuarterFromMonth(selectedMonth)}` : MONTHS[selectedMonth - 1]} {selectedYear}
-                </h2>
-                <p className="text-xs text-muted-foreground mt-0.5">{selectedProperty.name} · {selectedProperty.parent_brand}</p>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="bg-muted/50 text-muted-foreground text-xs uppercase tracking-wide">
-                      <th className="py-3 px-4 text-left font-semibold">Measure</th>
-                      <th className="py-3 px-4 text-center font-semibold">Weight</th>
-                      <th className="py-3 px-4 text-center font-semibold">Target</th>
-                      <th className="py-3 px-4 text-center font-semibold">Actual</th>
-                      <th className="py-3 px-4 text-center font-semibold">Variance</th>
-                      <th className="py-3 px-4 text-center font-semibold">Score</th>
-                      <th className="py-3 px-4 text-center font-semibold">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {kpiRows.map((row, i) => (
-                      <KpiRow key={i} {...row} />
-                    ))}
-                  </tbody>
-                  {scorecard && (() => {
-                    const anyIncomplete = kpiRows.some(r => r.incomplete);
-                    return (
-                      <tfoot>
-                        <tr style={{ backgroundColor: '#2d4b5e' }}>
-                          <td colSpan={5} className="py-3 px-4 font-bold text-white text-sm">Total Score</td>
-                          <td className="py-3 px-4 text-center font-black text-white text-lg">
-                            {anyIncomplete ? '—' : scorecard.total.total}
-                          </td>
-                          <td className="py-3 px-4 text-center">
-                            {anyIncomplete ? (
-                              <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-white/20 text-white">
-                                INCOMPLETE
-                              </span>
-                            ) : (
-                              <span
-                                className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold text-white"
-                                style={{ backgroundColor: scorecard.total.pass ? '#4CAF50' : '#ef4444' }}
-                              >
-                                {scorecard.total.pass ? '✓ PASS' : '✗ FAIL'}
-                              </span>
-                            )}
-                          </td>
-                        </tr>
-                      </tfoot>
-                    );
-                  })()}
-                </table>
-              </div>
-            </div>
-          </div>
-
-
-        </>
       )}
     </div>
   );
