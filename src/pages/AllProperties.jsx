@@ -137,13 +137,6 @@ export default function AllProperties() {
 
   return (
     <div className="p-4 lg:p-8 space-y-6 max-w-7xl mx-auto">
-      {/* Filters — top of page */}
-      <PropertyFilters
-        properties={properties}
-        filters={filters}
-        onChange={setFilters}
-      />
-
       {/* Header */}
       <div className="rounded-2xl text-white p-6 shadow-lg" style={{ background: 'linear-gradient(135deg, #2d4b5e 0%, #1e3547 100%)' }}>
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -200,6 +193,13 @@ export default function AllProperties() {
           </div>
         ))}
       </div>
+
+      {/* Filters — above table */}
+      <PropertyFilters
+        properties={properties}
+        filters={filters}
+        onChange={setFilters}
+      />
 
       {/* Search + Table */}
       <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">

@@ -188,13 +188,6 @@ export default function KpiBreakdown() {
 
   return (
     <div className="p-4 lg:p-8 space-y-6 max-w-7xl mx-auto">
-      {/* Filters — top of page */}
-      <PropertyFilters
-        properties={properties}
-        filters={filters}
-        onChange={setFilters}
-      />
-
       {/* Header */}
       <div className="rounded-2xl text-white p-6 shadow-lg" style={{ background: 'linear-gradient(135deg, #2d4b5e 0%, #1e3547 100%)' }}>
         <h1 className="text-2xl font-bold">KPI Breakdown</h1>
@@ -229,6 +222,13 @@ export default function KpiBreakdown() {
           {total > 0 ? Math.round((passing / total) * 100) : 0}%
         </div>
       </div>
+
+      {/* Filters — above table */}
+      <PropertyFilters
+        properties={properties}
+        filters={filters}
+        onChange={setFilters}
+      />
 
       {/* Table */}
       <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
