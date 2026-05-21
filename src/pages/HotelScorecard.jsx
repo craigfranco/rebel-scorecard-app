@@ -12,6 +12,19 @@ import SeedOnMount from '../components/SeedOnMount';
 import { calculateScorecard, MONTHS, getQuarterFromMonth, aggregateEntries } from '../lib/scoring';
 import { useTimePeriod } from '@/lib/TimePeriodContext';
 
+function YoyMetric({ label, value, decimals = 1 }) {
+  if (value == null) return <div className="text-muted-foreground text-xs">—</div>;
+  const pos = value >= 0;
+  return (
+    <div className="flex flex-col">
+      <span className="text-[10px] text-muted-foreground uppercase tracking-wide font-medium">{label}</span>
+      <span className="text-sm font-bold" style={{ color: pos ? '#4CAF50' : '#ef4444' }}>
+        {pos ? '+' : ''}{value.toFixed(decimals)}
+      </span>
+    </div>
+  );
+}
+
 export default function HotelScorecard() {
   const { selectedMonth, selectedYear, periodType } = useTimePeriod();
 
@@ -34,6 +47,21 @@ export default function HotelScorecard() {
   const selectedProperty = properties.find(p => p.id === selectedPropertyId);
   const activeEntry = aggregateEntries(entries, periodType, selectedMonth, selectedYear) || {};
   const scorecard = selectedProperty ? calculateScorecard(activeEntry, selectedProperty) : null;
+  
+  // YOY calculations
+  const yoyGopDollars = (activeEntry.budgeted_gop_actual != null && activeEntry.budgeted_gop_prior != null)
+    ? activeEntry.budgeted_gop_actual - activeEntry.budgeted_gop_prior
+    : null;
+  const yoyGopPct = (activeEntry.budgeted_gop_actual != null && activeEntry.budgeted_gop_prior != null && activeEntry.budgeted_gop_prior !== 0)
+    ? ((activeEntry.budgeted_gop_actual - activeEntry.budgeted_gop_prior) / Math.abs(activeEntry.budgeted_gop_prior)) * 100
+    : null;
+  const yoyMargin = (activeEntry.gop_margin_actual != null && activeEntry.gop_margin_prior != null)
+    ? activeEntry.gop_margin_actual - activeEntry.gop_margin_prior
+    : null;
+  const yoyRpi = activeEntry.revpar_index_change;
+  const yoyGss = (activeEntry.gss_actual != null && activeEntry.gss_prior != null)
+    ? activeEntry.gss_actual - activeEntry.gss_prior
+    : null;
 
   useEffect(() => {
     if (properties.length && !selectedPropertyId) {
@@ -179,8 +207,74 @@ export default function HotelScorecard() {
           <p className="text-muted-foreground text-sm">Choose a hotel from the dropdown to view its scorecard.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          {/* Gauge */}
+        <div className="space-y-6">
+          {/* YOY Summary Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+            <div className="bg-card rounded-2xl border border-border shadow-sm p-5 flex flex-col gap-3">
+              <div className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">GOP Performance YOY</div>
+              <div>
+                <div className="text-2xl font-black" style={{ color: yoyGopDollars == null ? undefined : yoyGopDollars >= 0 ? '#4CAF50' : '#ef4444' }}>
+                  {yoyGopDollars != null ? `${yoyGopDollars >= 0 ? '+' : ''}$${(yoyGopDollars / 1000).toFixed(0)}K` : '—'}
+                </div>
+                <div className="text-xs text-muted-foreground">Dollar Change</div>
+              </div>
+              <div className="flex gap-4 pt-1 border-t border-border">
+                <YoyMetric label="% Change" value={yoyGopPct} decimals={1} />
+              </div>
+            </div>
+
+            <div className="bg-card rounded-2xl border border-border shadow-sm p-5 flex flex-col gap-3">
+              <div className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">GOP Margin YOY</div>
+              <div>
+                <div className="text-2xl font-black" style={{ color: yoyMargin == null ? undefined : yoyMargin >= 0 ? '#4CAF50' : '#ef4444' }}>
+                  {yoyMargin != null ? `${yoyMargin >= 0 ? '+' : ''}${yoyMargin.toFixed(1)} pts` : '—'}
+                </div>
+                <div className="text-xs text-muted-foreground">Point Change</div>
+              </div>
+              <div className="flex gap-4 pt-1 border-t border-border">
+                <div className="flex flex-col">
+                  <span className="text-[10px] text-muted-foreground uppercase tracking-wide">TY vs PY</span>
+                  <span className="text-sm font-bold text-foreground">{activeEntry.gop_margin_actual != null ? activeEntry.gop_margin_actual.toFixed(1) + '%' : '—'} vs {activeEntry.gop_margin_prior != null ? activeEntry.gop_margin_prior.toFixed(1) + '%' : '—'}</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-card rounded-2xl border border-border shadow-sm p-5 flex flex-col gap-3">
+              <div className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">RevPAR Index YOY</div>
+              <div>
+                <div className="text-2xl font-black" style={{ color: yoyRpi == null ? undefined : yoyRpi >= 0 ? '#4CAF50' : '#ef4444' }}>
+                  {yoyRpi != null ? `${yoyRpi >= 0 ? '+' : ''}${yoyRpi.toFixed(2)}%` : '—'}
+                </div>
+                <div className="text-xs text-muted-foreground">% Change</div>
+              </div>
+              <div className="flex gap-4 pt-1 border-t border-border">
+                <div className="flex flex-col">
+                  <span className="text-[10px] text-muted-foreground uppercase tracking-wide">TY Index</span>
+                  <span className="text-sm font-bold text-foreground">{activeEntry.revpar_index != null ? activeEntry.revpar_index.toFixed(1) : '—'}</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-card rounded-2xl border border-border shadow-sm p-5 flex flex-col gap-3">
+              <div className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">GSS Score YOY</div>
+              <div>
+                <div className="text-2xl font-black" style={{ color: yoyGss == null ? undefined : yoyGss >= 0 ? '#4CAF50' : '#ef4444' }}>
+                  {yoyGss != null ? `${yoyGss >= 0 ? '+' : ''}${yoyGss.toFixed(1)}` : '—'}
+                </div>
+                <div className="text-xs text-muted-foreground">Point Change</div>
+              </div>
+              <div className="flex gap-4 pt-1 border-t border-border">
+                <div className="flex flex-col">
+                  <span className="text-[10px] text-muted-foreground uppercase tracking-wide">TY vs PY</span>
+                  <span className="text-sm font-bold text-foreground">{activeEntry.gss_actual != null ? activeEntry.gss_actual.toFixed(1) : '—'} vs {activeEntry.gss_prior != null ? activeEntry.gss_prior.toFixed(1) : '—'}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Scorecard Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+            {/* Gauge */}
           <div className="bg-card rounded-2xl border border-border p-6 shadow-sm flex flex-col items-center justify-center gap-4">
             <h2 className="font-bold text-sm text-muted-foreground uppercase tracking-wide">Overall Score</h2>
             {scorecard && <ScoreGauge score={scorecard.total.total} pass={scorecard.total.pass} />}
@@ -245,6 +339,7 @@ export default function HotelScorecard() {
                 })()}
               </table>
             </div>
+          </div>
           </div>
         </div>
       )}
