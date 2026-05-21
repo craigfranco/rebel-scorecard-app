@@ -6,7 +6,6 @@ import { Input } from '@/components/ui/input';
 import { calculateScorecard, MONTHS, getQuarterFromMonth, aggregateEntries } from '../lib/scoring';
 import { Link } from 'react-router-dom';
 import { useTimePeriod } from '@/lib/TimePeriodContext';
-import PortfolioKpiRollup from '@/components/dashboard/PortfolioKpiRollup';
 import { getBrandColor, getStatusBadge, formatPercentage, formatBrandLabel } from '@/lib/portfolioHelpers';
 import PropertyFilters from '@/components/filters/PropertyFilters';
 import { getLeadTypes } from '@/functions/getLeadTypes';
@@ -117,16 +116,6 @@ export default function AllProperties() {
         <h1 className="text-2xl font-bold">All Properties</h1>
         <p className="text-white/70 text-sm mt-1">Portfolio-wide scorecard — {periodLabel}</p>
       </div>
-
-      {/* Portfolio KPI Rollup — filtered */}
-      <PortfolioKpiRollup
-        properties={rows.map(r => r.property)}
-        allEntries={allEntries}
-        periodType={periodType}
-        selectedMonth={selectedMonth}
-        selectedYear={selectedYear}
-        getPeriodMonths={getPeriodMonths}
-      />
 
       {/* Stats Summary */}
       <div className="grid grid-cols-3 gap-4">
