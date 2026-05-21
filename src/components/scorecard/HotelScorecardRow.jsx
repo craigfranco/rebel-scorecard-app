@@ -319,13 +319,12 @@ export default function HotelScorecardRow({ property, entry, scorecard, trend, r
                       <span className="text-sm text-muted-foreground">Forecast Kicker</span>
                       <PassBadge pass={entry.forecast_kicker || false} incomplete={entry.forecast_kicker == null} />
                     </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-muted-foreground">Red Zone Kicker</span>
-                      {property.parent_brand === 'Independent'
-                        ? <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-400 font-semibold">N/A</span>
-                        : <PassBadge pass={entry.red_zone_kicker || false} incomplete={entry.red_zone_kicker == null} />
-                      }
-                    </div>
+                    {property.parent_brand !== 'Independent' && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-muted-foreground">Red Zone Kicker</span>
+                        <PassBadge pass={entry.red_zone_kicker || false} incomplete={entry.red_zone_kicker == null} />
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
