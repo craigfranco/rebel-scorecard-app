@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Button } from '@/components/ui/button';
 import { Download, ArrowLeft, User, MapPin, Loader2 } from 'lucide-react';
 import { calculateScorecard, MONTHS, getQuarterFromMonth, aggregateEntries } from '../lib/scoring';
+import { formatBrandLabel } from '@/lib/portfolioHelpers';
 import { useToast } from '@/components/ui/use-toast';
 import { useTimePeriod } from '@/lib/TimePeriodContext';
 
@@ -223,8 +224,9 @@ export default function HotelDetail() {
         <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <span className="text-xs bg-white/20 px-2 py-0.5 rounded-full font-medium">{property?.parent_brand || '—'}</span>
-              {property?.sub_brand && <span className="text-xs text-white/60">{property.sub_brand}</span>}
+              <span className="text-xs bg-white/20 px-2 py-0.5 rounded-full font-medium">
+                {formatBrandLabel(property?.parent_brand, property?.sub_brand)}
+              </span>
             </div>
             <h1 className="text-2xl font-bold">{property?.name || 'Loading...'}</h1>
             <div className="flex items-center gap-3 mt-2 text-white/70 text-sm">
@@ -309,12 +311,14 @@ export default function HotelDetail() {
                  </span>
                )}
              </div>
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium text-muted-foreground">Red Zone Kicker:</span>
-              <span className={`text-sm font-bold ${activeEntry.red_zone_kicker ? 'text-green-600' : 'text-red-500'}`}>
-                {activeEntry.red_zone_kicker ? 'HIT ✓' : 'MISS ✗'}
-              </span>
-            </div>
+            {property?.parent_brand !== 'Independent' && (
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium text-muted-foreground">Red Zone Kicker:</span>
+                <span className={`text-sm font-bold ${activeEntry.red_zone_kicker ? 'text-green-600' : 'text-red-500'}`}>
+                  {activeEntry.red_zone_kicker ? 'HIT ✓' : 'MISS ✗'}
+                </span>
+              </div>
+            )}
           </div>
         </div>
       )}

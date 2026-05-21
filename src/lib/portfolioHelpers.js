@@ -14,6 +14,16 @@ export function getBrandColor(brand) {
   return BRAND_COLORS[brand] || BRAND_COLORS.Independent;
 }
 
+// Returns the display label for brand + sub-brand, handling Independent edge cases
+export function formatBrandLabel(parentBrand, subBrand) {
+  const isIndependent = parentBrand === 'Independent';
+  const hasRealSubBrand = subBrand && subBrand !== 'Independent' && subBrand.trim() !== '';
+  if (isIndependent && !hasRealSubBrand) return 'Independent';
+  if (isIndependent && hasRealSubBrand) return `Independent · ${subBrand}`;
+  if (subBrand && subBrand.trim() !== '') return `${parentBrand} — ${subBrand}`;
+  return parentBrand || '';
+}
+
 export function getStatusBadge(scorecard) {
   if (!scorecard) return { label: 'NO DATA', color: '#94a3b8', bgColor: '#e2e8f0' };
   

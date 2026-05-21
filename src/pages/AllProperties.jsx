@@ -7,7 +7,7 @@ import { calculateScorecard, MONTHS, getQuarterFromMonth, aggregateEntries } fro
 import { Link } from 'react-router-dom';
 import { useTimePeriod } from '@/lib/TimePeriodContext';
 import PortfolioKpiRollup from '@/components/dashboard/PortfolioKpiRollup';
-import { getBrandColor, getStatusBadge, formatPercentage } from '@/lib/portfolioHelpers';
+import { getBrandColor, getStatusBadge, formatPercentage, formatBrandLabel } from '@/lib/portfolioHelpers';
 import PropertyFilters from '@/components/filters/PropertyFilters';
 import { getLeadTypes } from '@/functions/getLeadTypes';
 
@@ -213,7 +213,7 @@ export default function AllProperties() {
                     </td>
                     <td className="py-3 px-4 text-center">
                       <span className="text-xs px-2 py-1 rounded-full font-medium" style={{ backgroundColor: `${brandColor}18`, color: brandColor }}>
-                        {property.parent_brand || '—'}
+                        {formatBrandLabel(property.parent_brand, property.sub_brand) || '—'}
                       </span>
                     </td>
                     <td className="py-3 px-4 text-center text-xs text-muted-foreground">{property.gm_name || '—'}</td>

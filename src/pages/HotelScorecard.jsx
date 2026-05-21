@@ -3,6 +3,7 @@ import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { User, ChevronRight } from 'lucide-react';
+import { formatBrandLabel } from '@/lib/portfolioHelpers';
 import ScoreGauge from '@/components/scorecard/ScoreGauge';
 import KpiRow from '@/components/scorecard/KpiRow';
 import KickerBadge from '@/components/scorecard/KickerBadge';
@@ -134,7 +135,7 @@ export default function HotelScorecard() {
                   <>
                     <span className="text-white/40">·</span>
                     <span className="text-white/60 text-sm">
-                      {selectedProperty.parent_brand}{selectedProperty.sub_brand ? ` — ${selectedProperty.sub_brand}` : ''}
+                      {formatBrandLabel(selectedProperty.parent_brand, selectedProperty.sub_brand)}
                     </span>
                   </>
                 )}
@@ -195,7 +196,7 @@ export default function HotelScorecard() {
               <h2 className="font-bold text-foreground">
                 KPI Scorecard — {periodType === 'quarter' ? `Q${getQuarterFromMonth(selectedMonth)}` : MONTHS[selectedMonth - 1]} {selectedYear}
               </h2>
-              <p className="text-xs text-muted-foreground mt-0.5">{selectedProperty.name} · {selectedProperty.parent_brand}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">{selectedProperty.name} · {formatBrandLabel(selectedProperty.parent_brand, selectedProperty.sub_brand)}</p>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
