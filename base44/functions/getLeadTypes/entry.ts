@@ -24,35 +24,28 @@ Deno.serve(async (req) => {
 
     const deployments = await dashboardClient.entities.Deployment.list('name', 500);
 
-    // Collect all unique names across all 12 leadership fields
-    const allNames = new Set();
-    deployments.forEach(d => {
-      LEADERSHIP_FIELDS.forEach(field => {
-        const val = d[field];
-        if (val && !EXCLUDED_VALUES.has(val.trim().toLowerCase())) {
-          allNames.add(val.trim());
-        }
-      });
-    });
-
-    const leadTypes = [...allNames].sort();
-
-    // Build strId -> array of people in any leadership field
-    // For filtering: strId -> Set of all person names on that deployment
+    // strIdToLeads: { str_id: [personName, ...] } — all people on that deployment
     const strIdToLeads = {};
+
+    // fieldToPersonStrIds: { fieldName: { personName: [str_id, ...] } }
+    const fieldToPersonStrIds = {};
+    LEADERSHIP_FIELDS.forEach(f => { fieldToPersonStrIds[f] = {}; });
+
     deployments.forEach(d => {
       if (!d.str_id) return;
       const people = new Set();
       LEADERSHIP_FIELDS.forEach(field => {
-        const val = d[field];
-        if (val && !EXCLUDED_VALUES.has(val.trim().toLowerCase())) {
-          people.add(val.trim());
-        }
+        const raw = d[field];
+        const val = raw ? raw.trim() : '';
+        if (!val || EXCLUDED_VALUES.has(val.toLowerCase())) return;
+        people.add(val);
+        if (!fieldToPersonStrIds[field][val]) fieldToPersonStrIds[field][val] = [];
+        fieldToPersonStrIds[field][val].push(d.str_id);
       });
       strIdToLeads[d.str_id] = [...people];
     });
 
-    return Response.json({ leadTypes, strIdToLeads });
+    return Response.json({ strIdToLeads, fieldToPersonStrIds });
 
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });

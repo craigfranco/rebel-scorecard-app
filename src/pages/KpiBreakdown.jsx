@@ -11,7 +11,7 @@ import { aggregateEntries } from '../lib/aggregation';
 import { useTimePeriod } from '@/lib/TimePeriodContext';
 import PropertyFilters from '@/components/filters/PropertyFilters';
 
-const EMPTY_FILTERS = { brand: '', subBrand: '', city: '', state: '', leadType: '' };
+const EMPTY_FILTERS = { brand: '', subBrand: '', city: '', state: '', leadRole: '', leadPerson: '' };
 
 const KPI_TABS = [
   { key: 'gop', label: 'Budgeted GOP', max: 35 },
@@ -41,11 +41,11 @@ export default function KpiBreakdown() {
   const [sortCol, setSortCol] = useState('score');
   const [sortDir, setSortDir] = useState('desc');
   const [filters, setFilters] = useState(EMPTY_FILTERS);
-  const [strIdToLeads, setStrIdToLeads] = useState({});
+  const [fieldToPersonStrIds, setFieldToPersonStrIds] = useState({});
 
   useEffect(() => {
     getLeadTypes({}).then(res => {
-      if (res?.data?.strIdToLeads) setStrIdToLeads(res.data.strIdToLeads);
+      if (res?.data?.fieldToPersonStrIds) setFieldToPersonStrIds(res.data.fieldToPersonStrIds);
     }).catch(() => {});
   }, []);
 
@@ -87,7 +87,14 @@ export default function KpiBreakdown() {
         if (filters.subBrand && p.sub_brand !== filters.subBrand) return false;
         if (filters.city && p.city !== filters.city) return false;
         if (filters.state && p.state !== filters.state) return false;
-        if (filters.leadType && !(strIdToLeads[p.str_id] || []).includes(filters.leadType)) return false;
+        if (filters.leadRole && filters.leadPerson) {
+          const strIds = (fieldToPersonStrIds[filters.leadRole] || {})[filters.leadPerson] || [];
+          if (!strIds.includes(p.str_id)) return false;
+        } else if (filters.leadRole) {
+          const personMap = fieldToPersonStrIds[filters.leadRole] || {};
+          const allStrIds = new Set(Object.values(personMap).flat());
+          if (!allStrIds.has(p.str_id)) return false;
+        }
         return true;
       })
       .map(p => {
@@ -148,7 +155,7 @@ export default function KpiBreakdown() {
 
         return { property: p, entry, score, pass, actual, target };
       });
-  }, [properties, allEntries, activeKpi, periodType, selectedMonth, selectedYear, filters, strIdToLeads]);
+  }, [properties, allEntries, activeKpi, periodType, selectedMonth, selectedYear, filters, fieldToPersonStrIds]);
 
   const sortedRows = useMemo(() => {
     return [...rows].sort((a, b) => {
@@ -186,7 +193,6 @@ export default function KpiBreakdown() {
         properties={properties}
         filters={filters}
         onChange={setFilters}
-        strIdToLeads={strIdToLeads}
       />
 
       {/* Header */}

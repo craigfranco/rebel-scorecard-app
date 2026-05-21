@@ -14,7 +14,7 @@ import { getLeadTypes } from '@/functions/getLeadTypes';
 
 
 
-const EMPTY_FILTERS = { brand: '', subBrand: '', city: '', state: '', leadType: '' };
+const EMPTY_FILTERS = { brand: '', subBrand: '', city: '', state: '', leadRole: '', leadPerson: '' };
 
 export default function AllProperties() {
   const { selectedMonth, selectedYear, periodType, getPeriodLabel, getPeriodMonths } = useTimePeriod();
@@ -25,11 +25,11 @@ export default function AllProperties() {
   const [filters, setFilters] = useState(EMPTY_FILTERS);
   const [syncing, setSyncing] = useState(false);
   const [syncError, setSyncError] = useState(null);
-  const [strIdToLeads, setStrIdToLeads] = useState({});
+  const [fieldToPersonStrIds, setFieldToPersonStrIds] = useState({});
 
   React.useEffect(() => {
     getLeadTypes({}).then(res => {
-      if (res?.data?.strIdToLeads) setStrIdToLeads(res.data.strIdToLeads);
+      if (res?.data?.fieldToPersonStrIds) setFieldToPersonStrIds(res.data.fieldToPersonStrIds);
     }).catch(() => {});
   }, []);
 
@@ -91,7 +91,14 @@ export default function AllProperties() {
       if (filters.subBrand && p.sub_brand !== filters.subBrand) return false;
       if (filters.city && p.city !== filters.city) return false;
       if (filters.state && p.state !== filters.state) return false;
-      if (filters.leadType && !(strIdToLeads[p.str_id] || []).includes(filters.leadType)) return false;
+      if (filters.leadRole && filters.leadPerson) {
+        const strIds = (fieldToPersonStrIds[filters.leadRole] || {})[filters.leadPerson] || [];
+        if (!strIds.includes(p.str_id)) return false;
+      } else if (filters.leadRole) {
+        const personMap = fieldToPersonStrIds[filters.leadRole] || {};
+        const allStrIds = new Set(Object.values(personMap).flat());
+        if (!allStrIds.has(p.str_id)) return false;
+      }
       return true;
     })
     .map(p => {
@@ -135,7 +142,6 @@ export default function AllProperties() {
         properties={properties}
         filters={filters}
         onChange={setFilters}
-        strIdToLeads={strIdToLeads}
       />
 
       {/* Header */}
