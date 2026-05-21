@@ -37,12 +37,12 @@ const KPI_ROWS = [
 ];
 
 const GSS_BRANDS = [
-  { brand: 'Marriott', metric: 'Intent to Return (ITR)', target: '+1.0', color: '#1a1a2e' },
-  { brand: 'Hilton', metric: 'Stay Score', target: '+1.0', color: '#003580' },
-  { brand: 'IHG', metric: 'Overall Experience', target: '+1.0', color: '#c8102e' },
-  { brand: 'Hyatt', metric: 'Performance Tier', target: '+1.0', color: '#7b3f9e' },
-  { brand: 'Choice Hotels', metric: 'Choice Likelihood', target: '+0.3', color: '#e67e22' },
-  { brand: 'Independent', metric: 'Revinate Score', target: '+0.03', color: '#2d4b5e' },
+  { brand: 'Marriott', abbr: 'MA', metric: 'Intent to Return (ITR)', target: '+1.0', color: '#CC2031' },
+  { brand: 'Hilton', abbr: 'HI', metric: 'Stay Score', target: '+1.0', color: '#00205B' },
+  { brand: 'IHG', abbr: 'IH', metric: 'Overall Experience', target: '+1.0', color: '#003087' },
+  { brand: 'Hyatt', abbr: 'HY', metric: 'Performance Tier', target: '+1.0', color: '#4B3832' },
+  { brand: 'Choice Hotels', abbr: 'CH', metric: 'Choice Likelihood', target: '+0.3', color: '#F7941D' },
+  { brand: 'Independent', abbr: 'IN', metric: 'Revinate Score', target: '+0.03', color: '#4B5563' },
 ];
 
 export default function KpiReference() {
@@ -165,10 +165,10 @@ export default function KpiReference() {
           <p className="text-xs text-muted-foreground mt-0.5">Minimum improvement required to pass the GSS (Guest Satisfaction) measure</p>
         </div>
         <div className="p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          {GSS_BRANDS.map(({ brand, metric, target, color }) => (
+          {GSS_BRANDS.map(({ brand, abbr, metric, target, color }) => (
             <div key={brand} className="border border-border rounded-xl p-4 flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white text-xs font-bold shrink-0" style={{ backgroundColor: color }}>
-                {brand.slice(0, 2).toUpperCase()}
+                {abbr}
               </div>
               <div>
                 <div className="font-semibold text-sm text-foreground">{brand}</div>
