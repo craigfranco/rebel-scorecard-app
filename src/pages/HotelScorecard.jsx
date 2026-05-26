@@ -11,6 +11,7 @@ import SeedOnMount from '../components/SeedOnMount';
 
 import { calculateScorecard, MONTHS, getQuarterFromMonth, aggregateEntries } from '../lib/scoring';
 import { useTimePeriod } from '@/lib/TimePeriodContext';
+import { useUserProfile } from '@/lib/UserProfileContext';
 
 function YoyMetric({ label, value, decimals = 1 }) {
   if (value == null) return <div className="text-muted-foreground text-xs">—</div>;
@@ -27,13 +28,16 @@ function YoyMetric({ label, value, decimals = 1 }) {
 
 export default function HotelScorecard() {
   const { selectedMonth, selectedYear, periodType } = useTimePeriod();
+  const { filterPropertiesForUser, assignedProperties, isAdmin, userProfile } = useUserProfile();
 
   const [selectedPropertyId, setSelectedPropertyId] = useState('');
 
-  const { data: properties = [] } = useQuery({
+  const { data: allProperties = [] } = useQuery({
     queryKey: ['properties'],
     queryFn: () => base44.entities.Property.filter({ is_active: true }, 'name', 100),
   });
+
+  const properties = filterPropertiesForUser(allProperties);
 
   const { data: entries = [] } = useQuery({
     queryKey: ['score-entries', selectedPropertyId, selectedYear],
@@ -67,7 +71,7 @@ export default function HotelScorecard() {
     if (properties.length && !selectedPropertyId) {
       setSelectedPropertyId(properties[0].id);
     }
-  }, [properties]);
+  }, [properties, selectedPropertyId]);
 
   const kpiRows = scorecard ? [
     {

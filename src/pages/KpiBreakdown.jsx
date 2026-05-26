@@ -9,6 +9,7 @@ import { ArrowUp, ArrowDown, Minus, ChevronUp, ChevronDown, ChevronsUpDown } fro
 import { calculateScorecard, MONTHS, getQuarterFromMonth } from '../lib/scoring';
 import { aggregateEntries } from '../lib/aggregation';
 import { useTimePeriod } from '@/lib/TimePeriodContext';
+import { useUserProfile } from '@/lib/UserProfileContext';
 import PropertyFilters from '@/components/filters/PropertyFilters';
 
 const EMPTY_FILTERS = { brand: '', subBrand: '', city: '', state: '', leadRole: '', leadPerson: '' };
@@ -49,10 +50,14 @@ export default function KpiBreakdown() {
     }).catch(() => {});
   }, []);
 
-  const { data: properties = [] } = useQuery({
+  const { filterPropertiesForUser } = useUserProfile();
+
+  const { data: rawProperties = [] } = useQuery({
     queryKey: ['properties'],
     queryFn: () => base44.entities.Property.filter({ is_active: true }, 'name', 100),
   });
+
+  const properties = filterPropertiesForUser(rawProperties);
 
   const { data: allEntries = [] } = useQuery({
     queryKey: ['all-entries', selectedYear],

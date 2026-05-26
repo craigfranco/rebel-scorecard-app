@@ -1,0 +1,44 @@
+{
+  "name": "UserProfile",
+  "type": "object",
+  "properties": {
+    "email": {
+      "type": "string",
+      "description": "User's email address (matches Base44 auth email)"
+    },
+    "full_name": {
+      "type": "string",
+      "description": "User's full name"
+    },
+    "role": {
+      "type": "string",
+      "enum": [
+        "admin",
+        "property_user"
+      ],
+      "default": "property_user",
+      "description": "User role \u2014 admin sees all, property_user sees assigned hotels only"
+    },
+    "assigned_properties": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Array of Property IDs this user can access"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true,
+      "description": "Whether this user has access to the app"
+    },
+    "last_login": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Last login timestamp"
+    }
+  },
+  "required": [
+    "email",
+    "role"
+  ]
+}

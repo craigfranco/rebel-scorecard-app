@@ -2,12 +2,14 @@ import { useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQueryClient } from '@tanstack/react-query';
 import { HOTELS, getGssForBrand } from '../lib/hotels';
+import { useAuth } from '@/lib/AuthContext';
 
 /**
  * Silently seeds the 25 real hotels on first app load if no properties exist yet.
  */
 export default function SeedOnMount() {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   const seeded = useRef(false);
 
   useEffect(() => {
@@ -43,6 +45,22 @@ export default function SeedOnMount() {
         await base44.entities.Property.create({ ...hotel, ...gss, is_active: true });
       }
       queryClient.invalidateQueries({ queryKey: ['properties'] });
+
+      // Seed default admin UserProfile for craig.franco@rebelhotelco.com
+      try {
+        const existingProfiles = await base44.entities.UserProfile.filter({ email: 'craig.franco@rebelhotelco.com' });
+        if (existingProfiles.length === 0) {
+          const allProps = await base44.entities.Property.list('name', 200);
+          await base44.entities.UserProfile.create({
+            email: 'craig.franco@rebelhotelco.com',
+            full_name: 'Craig Franco',
+            role: 'admin',
+            assigned_properties: allProps.map(p => p.id),
+            is_active: true,
+          });
+          queryClient.invalidateQueries({ queryKey: ['user-profiles'] });
+        }
+      } catch (e) { /* silent */ }
 
       // Seed job classifications
       const existingJobs = await base44.entities.JobClassification.list('title', 5);

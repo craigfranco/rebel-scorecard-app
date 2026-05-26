@@ -1,27 +1,37 @@
 import React, { useState } from 'react';
 import { Link, useLocation, Outlet } from 'react-router-dom';
-import { LayoutDashboard, BookOpen, Building2, Settings, Menu, PieChart, FolderOpen, DollarSign, ChevronDown, ClipboardList } from 'lucide-react';
+import {
+  LayoutDashboard, BookOpen, Building2, Settings, Menu, PieChart,
+  FolderOpen, DollarSign, ChevronDown, ClipboardList, Shield, LogOut, User,
+} from 'lucide-react';
 import TimePeriodSelector from '@/components/layout/TimePeriodSelector';
-
-const NAV_ITEMS = [
-  { path: '/', icon: LayoutDashboard, label: 'Dashboard' },
-  { path: '/hotel-scorecard', icon: ClipboardList, label: 'Hotel Performance Scorecard' },
-  { path: '/properties', icon: Building2, label: 'All Properties' },
-  { path: '/kpi-breakdown', icon: PieChart, label: 'KPI Breakdown' },
-  { path: '/payouts', icon: DollarSign, label: 'Payouts' },
-  { path: '/kpi-reference', icon: BookOpen, label: 'KPI Reference' },
-];
-
-const ADMIN_ITEMS = [
-  { path: '/documents', icon: FolderOpen, label: 'Documents' },
-  { path: '/settings', icon: Settings, label: 'Settings' },
-];
+import { useUserProfile } from '@/lib/UserProfileContext';
+import { base44 } from '@/api/base44Client';
+import { useAuth } from '@/lib/AuthContext';
 
 export default function AppLayout() {
   const location = useLocation();
+  const { user } = useAuth();
+  const { userProfile, isAdmin } = useUserProfile();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const adminActive = ADMIN_ITEMS.some(i => location.pathname.startsWith(i.path));
-  const [adminOpen, setAdminOpen] = useState(adminActive);
+  const [adminOpen, setAdminOpen] = useState(false);
+
+  const mainNavItems = [
+    ...(isAdmin ? [{ path: '/', icon: LayoutDashboard, label: 'Dashboard' }] : []),
+    { path: '/hotel-scorecard', icon: ClipboardList, label: 'Hotel Performance Scorecard' },
+    ...(isAdmin ? [{ path: '/properties', icon: Building2, label: 'All Properties' }] : []),
+    { path: '/kpi-breakdown', icon: PieChart, label: 'KPI Breakdown' },
+    { path: '/payouts', icon: DollarSign, label: 'Payouts' },
+    { path: '/kpi-reference', icon: BookOpen, label: 'KPI Reference' },
+  ];
+
+  const adminItems = [
+    { path: '/documents', icon: FolderOpen, label: 'Documents' },
+    { path: '/settings', icon: Settings, label: 'Settings' },
+    ...(isAdmin ? [{ path: '/admin', icon: Shield, label: 'Admin Panel' }] : []),
+  ];
+
+  const adminActive = adminItems.some(i => location.pathname.startsWith(i.path));
 
   return (
     <div className="min-h-screen flex bg-background">
@@ -33,14 +43,18 @@ export default function AppLayout() {
         style={{ backgroundColor: '#2d4b5e' }}
       >
         {/* Logo */}
-         <div className="px-6 py-5 border-b border-white/10 text-center">
-            <img src="https://media.base44.com/images/public/69d3e20c8254476c324dc91c/2c3078463_2f08ffa4b_RBIfw1.png" alt="REBEL" className="w-48 h-auto mx-auto mb-2 brightness-0 invert" />
-            <p className="text-white text-xs font-semibold">Balanced Scorecard</p>
-          </div>
+        <div className="px-6 py-5 border-b border-white/10 text-center">
+          <img
+            src="https://media.base44.com/images/public/69d3e20c8254476c324dc91c/2c3078463_2f08ffa4b_RBIfw1.png"
+            alt="REBEL"
+            className="w-48 h-auto mx-auto mb-2 brightness-0 invert"
+          />
+          <p className="text-white text-xs font-semibold">Balanced Scorecard</p>
+        </div>
 
         {/* Nav */}
         <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-          {NAV_ITEMS.map(({ path, icon: Icon, label }) => {
+          {mainNavItems.map(({ path, icon: Icon, label }) => {
             const active = path === '/' ? location.pathname === '/' : location.pathname.startsWith(path);
             return (
               <Link
@@ -48,9 +62,7 @@ export default function AppLayout() {
                 to={path}
                 onClick={() => setMobileOpen(false)}
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
-                  active
-                    ? 'bg-white/20 text-white shadow-sm'
-                    : 'text-white/65 hover:text-white hover:bg-white/10'
+                  active ? 'bg-white/20 text-white shadow-sm' : 'text-white/65 hover:text-white hover:bg-white/10'
                 }`}
               >
                 <Icon className="w-4 h-4 shrink-0" />
@@ -72,7 +84,7 @@ export default function AppLayout() {
             </button>
             {adminOpen && (
               <div className="mt-1 space-y-1">
-                {ADMIN_ITEMS.map(({ path, icon: Icon, label }) => {
+                {adminItems.map(({ path, icon: Icon, label }) => {
                   const active = location.pathname.startsWith(path);
                   return (
                     <Link
@@ -80,9 +92,7 @@ export default function AppLayout() {
                       to={path}
                       onClick={() => setMobileOpen(false)}
                       className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
-                        active
-                          ? 'bg-white/20 text-white shadow-sm'
-                          : 'text-white/65 hover:text-white hover:bg-white/10'
+                        active ? 'bg-white/20 text-white shadow-sm' : 'text-white/65 hover:text-white hover:bg-white/10'
                       }`}
                     >
                       <Icon className="w-4 h-4 shrink-0" />
@@ -95,11 +105,32 @@ export default function AppLayout() {
           </div>
         </nav>
 
-        <div className="px-6 py-4 border-t border-white/10 flex items-start gap-2">
-          <img src="https://media.base44.com/images/public/69d3e20c8254476c324dc91c/821dc32af_d1eb1b4f2_RBLMark-RH_Blue.png" alt="Rebel Hotel Company" className="w-9 h-9 brightness-0 invert shrink-0 mt-0.5" />
-          <div className="flex flex-col">
-            <span className="text-white text-xs font-normal">Powered by</span>
-            <span className="text-white text-xs font-semibold">Rebel Hotel Company</span>
+        {/* User info in sidebar footer */}
+        <div className="px-4 py-4 border-t border-white/10">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center shrink-0">
+              <User className="w-4 h-4 text-white" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-1.5">
+                <span className="text-white text-xs font-semibold truncate">
+                  {userProfile?.full_name || user?.full_name || 'User'}
+                </span>
+                {isAdmin && (
+                  <span className="shrink-0 inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-yellow-400/20 text-yellow-300 border border-yellow-400/30">
+                    Admin
+                  </span>
+                )}
+              </div>
+              <div className="text-white/50 text-[10px] truncate">{userProfile?.email || user?.email}</div>
+            </div>
+            <button
+              onClick={() => base44.auth.logout()}
+              className="p-1.5 rounded-lg hover:bg-white/10 text-white/50 hover:text-white transition-colors shrink-0"
+              title="Sign Out"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+            </button>
           </div>
         </div>
       </aside>
