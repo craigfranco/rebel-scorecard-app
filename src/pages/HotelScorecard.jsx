@@ -211,15 +211,38 @@ export default function HotelScorecard() {
           {/* YOY Summary Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
             <div className="bg-card rounded-2xl border border-border shadow-sm p-5 flex flex-col gap-3">
-              <div className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">GOP Performance YOY</div>
+              <div className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">GOP vs Budget</div>
               <div>
-                <div className="text-2xl font-black" style={{ color: yoyGopDollars == null ? undefined : yoyGopDollars >= 0 ? '#4CAF50' : '#ef4444' }}>
-                  {yoyGopDollars != null ? `${yoyGopDollars >= 0 ? '+' : ''}$${(yoyGopDollars / 1000).toFixed(0)}K` : '—'}
-                </div>
-                <div className="text-xs text-muted-foreground">Dollar Change</div>
-              </div>
-              <div className="flex gap-4 pt-1 border-t border-border">
-                <YoyMetric label="% Change" value={yoyGopPct} decimals={1} />
+                {(() => {
+                  const variance = activeEntry.budgeted_gop_actual != null && activeEntry.budgeted_gop_target != null
+                    ? activeEntry.budgeted_gop_actual - activeEntry.budgeted_gop_target
+                    : null;
+                  const pct = variance != null && activeEntry.budgeted_gop_target !== 0
+                    ? (activeEntry.budgeted_gop_actual / activeEntry.budgeted_gop_target) * 100
+                    : null;
+                  return (
+                    <>
+                      <div className="text-2xl font-black" style={{ color: variance == null ? undefined : variance >= 0 ? '#4CAF50' : '#ef4444' }}>
+                        {variance != null ? `${variance >= 0 ? '+' : ''}$${(variance / 1000).toFixed(0)}K` : '—'}
+                      </div>
+                      <div className="text-xs text-muted-foreground">vs Budget</div>
+                      <div className="flex gap-4 pt-1 border-t border-border mt-2">
+                        <div className="flex flex-col">
+                          <span className="text-[10px] text-muted-foreground uppercase tracking-wide">Achievement</span>
+                          <span className="text-sm font-bold" style={{ color: pct == null ? undefined : pct >= 100 ? '#4CAF50' : '#ef4444' }}>
+                            {pct != null ? `${pct.toFixed(1)}%` : '—'}
+                          </span>
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-[10px] text-muted-foreground uppercase tracking-wide">Actual</span>
+                          <span className="text-sm font-bold text-foreground">
+                            {activeEntry.budgeted_gop_actual != null ? `$${(activeEntry.budgeted_gop_actual / 1000).toFixed(0)}K` : '—'}
+                          </span>
+                        </div>
+                      </div>
+                    </>
+                  );
+                })()}
               </div>
             </div>
 
