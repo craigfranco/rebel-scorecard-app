@@ -247,7 +247,7 @@ export default function HotelScorecard() {
             </div>
 
             <div className="bg-card rounded-2xl border border-border shadow-sm p-5 flex flex-col gap-3">
-              <div className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">GOP Margin YOY</div>
+              <div className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">GOP Margin Improvement</div>
               <div>
                 <div className="text-2xl font-black" style={{ color: yoyMargin == null ? undefined : yoyMargin >= 0 ? '#4CAF50' : '#ef4444' }}>
                   {yoyMargin != null ? `${yoyMargin >= 0 ? '+' : ''}${yoyMargin.toFixed(1)} pts` : '—'}
