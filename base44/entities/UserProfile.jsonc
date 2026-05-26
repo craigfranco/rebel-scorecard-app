@@ -31,6 +31,21 @@
       "default": true,
       "description": "Whether this user has access to the app"
     },
+    "invite_status": {
+      "type": "string",
+      "enum": [
+        "not_invited",
+        "invited",
+        "active"
+      ],
+      "default": "not_invited",
+      "description": "Invite lifecycle: not_invited \u2192 invited \u2192 active"
+    },
+    "invite_sent_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Timestamp when invite email was last sent"
+    },
     "last_login": {
       "type": "string",
       "format": "date-time",

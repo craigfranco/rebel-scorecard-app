@@ -1,15 +1,34 @@
 import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ChevronRight, Plus, Search, Edit2, UserX, UserCheck, X, Check, Users, Building2 } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
+import { ChevronRight, Plus, Search, Edit2, UserX, UserCheck, X, Users, Building2, Send } from 'lucide-react';
 import UserFormModal from '@/components/admin/UserFormModal';
+
+function InviteStatusBadge({ status }) {
+  const map = {
+    active:      { label: 'Active',      bg: 'bg-green-50',  text: 'text-green-700',  border: 'border-green-200' },
+    invited:     { label: 'Invited',     bg: 'bg-yellow-50', text: 'text-yellow-700', border: 'border-yellow-200' },
+    not_invited: { label: 'Not Invited', bg: 'bg-muted',     text: 'text-muted-foreground', border: 'border-border' },
+  };
+  const s = map[status] || map['not_invited'];
+  return (
+    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold border ${s.bg} ${s.text} ${s.border}`}>
+      {s.label}
+    </span>
+  );
+}
+
+function fmtDate(iso) {
+  if (!iso) return '—';
+  return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
 
 export default function AdminPanel() {
   const qc = useQueryClient();
   const [search, setSearch] = useState('');
   const [editingUser, setEditingUser] = useState(null);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [resendingId, setResendingId] = useState(null);
 
   const { data: profiles = [] } = useQuery({
     queryKey: ['user-profiles'],
@@ -32,7 +51,40 @@ export default function AdminPanel() {
     p.email?.toLowerCase().includes(search.toLowerCase())
   );
 
-  const getPropertyName = (id) => properties.find(p => p.id === id)?.name || id;
+  const handleResendInvite = async (profile) => {
+    setResendingId(profile.id);
+    const now = new Date().toISOString();
+    await base44.entities.UserProfile.update(profile.id, {
+      invite_status: 'invited',
+      invite_sent_at: now,
+    });
+
+    const assignedNames = (profile.assigned_properties || [])
+      .map(id => properties.find(p => p.id === id)?.name)
+      .filter(Boolean);
+    const hotelsList = assignedNames.length
+      ? `You have been assigned to: ${assignedNames.join(', ')}.`
+      : 'Your access covers all properties.';
+    const appUrl = window.location.origin;
+
+    await base44.integrations.Core.SendEmail({
+      to: profile.email,
+      subject: "You've been invited to the REBEL Hotel Scorecard",
+      body: `Hi ${profile.full_name || profile.email},
+
+You've been given access to the REBEL Hotel Performance Scorecard.
+
+${hotelsList}
+
+To get started, click the link below to set up your password and log in:
+${appUrl}
+
+— The REBEL Hotel Co. Team`,
+    });
+
+    qc.invalidateQueries({ queryKey: ['user-profiles'] });
+    setResendingId(null);
+  };
 
   return (
     <div className="p-4 lg:p-8 space-y-8 max-w-7xl mx-auto">
@@ -47,7 +99,7 @@ export default function AdminPanel() {
         <p className="text-white/60 text-xs mt-0.5">Manage users, roles, and property assignments</p>
       </div>
 
-      {/* Section A — User Management */}
+      {/* User Management */}
       <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
         <div className="px-6 py-4 border-b border-border flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-2">
@@ -75,6 +127,7 @@ export default function AdminPanel() {
             </button>
           </div>
         </div>
+
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
@@ -82,21 +135,21 @@ export default function AdminPanel() {
                 <th className="py-3 px-4 text-left font-semibold">Name</th>
                 <th className="py-3 px-4 text-left font-semibold">Email</th>
                 <th className="py-3 px-4 text-center font-semibold">Role</th>
-                <th className="py-3 px-4 text-center font-semibold"># Hotels</th>
-                <th className="py-3 px-4 text-center font-semibold">Active</th>
+                <th className="py-3 px-4 text-center font-semibold">Hotels</th>
+                <th className="py-3 px-4 text-center font-semibold">Status</th>
+                <th className="py-3 px-4 text-center font-semibold">Invite Sent</th>
+                <th className="py-3 px-4 text-center font-semibold">Last Login</th>
                 <th className="py-3 px-4 text-center font-semibold">Actions</th>
               </tr>
             </thead>
             <tbody>
               {filtered.map(profile => (
                 <tr key={profile.id} className="border-b border-border hover:bg-muted/20">
-                  <td className="py-3 px-4 font-medium">{profile.full_name || '—'}</td>
+                  <td className="py-3 px-4 font-medium whitespace-nowrap">{profile.full_name || '—'}</td>
                   <td className="py-3 px-4 text-muted-foreground text-xs">{profile.email}</td>
                   <td className="py-3 px-4 text-center">
                     <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold ${
-                      profile.role === 'admin'
-                        ? 'bg-primary/10 text-primary'
-                        : 'bg-muted text-muted-foreground'
+                      profile.role === 'admin' ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'
                     }`}>
                       {profile.role === 'admin' ? 'Admin' : 'Property User'}
                     </span>
@@ -109,12 +162,18 @@ export default function AdminPanel() {
                   </td>
                   <td className="py-3 px-4 text-center">
                     {profile.is_active
-                      ? <Check className="w-4 h-4 text-green-500 mx-auto" />
-                      : <X className="w-4 h-4 text-red-400 mx-auto" />
+                      ? <InviteStatusBadge status={profile.invite_status || 'not_invited'} />
+                      : <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold border bg-red-50 text-red-600 border-red-200">Deactivated</span>
                     }
                   </td>
+                  <td className="py-3 px-4 text-center text-xs text-muted-foreground whitespace-nowrap">
+                    {fmtDate(profile.invite_sent_at)}
+                  </td>
+                  <td className="py-3 px-4 text-center text-xs text-muted-foreground whitespace-nowrap">
+                    {fmtDate(profile.last_login)}
+                  </td>
                   <td className="py-3 px-4">
-                    <div className="flex items-center justify-center gap-2">
+                    <div className="flex items-center justify-center gap-1.5">
                       <button
                         onClick={() => setEditingUser(profile)}
                         className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground"
@@ -122,6 +181,16 @@ export default function AdminPanel() {
                       >
                         <Edit2 className="w-3.5 h-3.5" />
                       </button>
+                      {profile.invite_status !== 'active' && profile.is_active && (
+                        <button
+                          onClick={() => handleResendInvite(profile)}
+                          disabled={resendingId === profile.id}
+                          className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-primary disabled:opacity-50"
+                          title="Resend Invite"
+                        >
+                          <Send className="w-3.5 h-3.5" />
+                        </button>
+                      )}
                       <button
                         onClick={() => toggleActive.mutate({ id: profile.id, is_active: !profile.is_active })}
                         className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground"
@@ -138,7 +207,7 @@ export default function AdminPanel() {
               ))}
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="py-10 text-center text-muted-foreground text-sm">No users found</td>
+                  <td colSpan={8} className="py-10 text-center text-muted-foreground text-sm">No users found</td>
                 </tr>
               )}
             </tbody>
@@ -146,7 +215,7 @@ export default function AdminPanel() {
         </div>
       </div>
 
-      {/* Section B — Property Assignments */}
+      {/* Property Assignments */}
       <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
         <div className="px-6 py-4 border-b border-border flex items-center gap-2">
           <Building2 className="w-5 h-5 text-primary" />
@@ -154,9 +223,6 @@ export default function AdminPanel() {
         </div>
         <div className="p-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
           {properties.map(prop => {
-            const assignedUsers = profiles.filter(p =>
-              p.role === 'admin' || (p.assigned_properties || []).includes(prop.id)
-            );
             const directUsers = profiles.filter(p =>
               p.role !== 'admin' && (p.assigned_properties || []).includes(prop.id)
             );
@@ -195,7 +261,6 @@ export default function AdminPanel() {
                     ))
                   )}
                 </div>
-                {/* Quick-assign dropdown */}
                 <QuickAssign
                   propertyId={prop.id}
                   profiles={profiles.filter(p => p.role !== 'admin' && !(p.assigned_properties || []).includes(prop.id))}

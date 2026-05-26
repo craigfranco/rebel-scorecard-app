@@ -40,9 +40,13 @@ export const UserProfileProvider = ({ children }) => {
         if (!profile.is_active) {
           setProfileError('inactive');
         } else {
-          // Update last_login
-          await base44.entities.UserProfile.update(profile.id, { last_login: new Date().toISOString() });
-          setUserProfile({ ...profile, last_login: new Date().toISOString() });
+          // Update last_login and mark active on first real login
+          const updates = { last_login: new Date().toISOString() };
+          if (profile.invite_status !== 'active') {
+            updates.invite_status = 'active';
+          }
+          await base44.entities.UserProfile.update(profile.id, updates);
+          setUserProfile({ ...profile, ...updates });
         }
       }
     } catch (e) {

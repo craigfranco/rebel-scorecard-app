@@ -1,6 +1,33 @@
 import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
-import { X } from 'lucide-react';
+import { X, Mail, Send } from 'lucide-react';
+
+async function sendInviteEmail(profile, properties) {
+  const assignedNames = (profile.assigned_properties || [])
+    .map(id => properties.find(p => p.id === id)?.name)
+    .filter(Boolean);
+
+  const hotelsList = assignedNames.length
+    ? `You have been assigned to: ${assignedNames.join(', ')}.`
+    : 'Your access covers all properties.';
+
+  const appUrl = window.location.origin;
+
+  await base44.integrations.Core.SendEmail({
+    to: profile.email,
+    subject: "You've been invited to the REBEL Hotel Scorecard",
+    body: `Hi ${profile.full_name || profile.email},
+
+You've been given access to the REBEL Hotel Performance Scorecard.
+
+${hotelsList}
+
+To get started, click the link below to set up your password and log in:
+${appUrl}
+
+— The REBEL Hotel Co. Team`,
+  });
+}
 
 export default function UserFormModal({ profile, properties, onClose, onSaved }) {
   const isEdit = !!profile;
@@ -22,14 +49,32 @@ export default function UserFormModal({ profile, properties, onClose, onSaved })
     }));
   };
 
-  const handleSave = async () => {
+  const handleSave = async (sendInvite = false) => {
     if (!form.email) return;
     setSaving(true);
-    if (isEdit) {
-      await base44.entities.UserProfile.update(profile.id, form);
-    } else {
-      await base44.entities.UserProfile.create(form);
+
+    const now = new Date().toISOString();
+    const data = { ...form };
+
+    if (sendInvite) {
+      data.invite_status = 'invited';
+      data.invite_sent_at = now;
+    } else if (!isEdit) {
+      data.invite_status = 'not_invited';
     }
+
+    let savedProfile;
+    if (isEdit) {
+      savedProfile = await base44.entities.UserProfile.update(profile.id, data);
+    } else {
+      savedProfile = await base44.entities.UserProfile.create(data);
+    }
+
+    if (sendInvite) {
+      const profileForEmail = { ...form, ...data };
+      await sendInviteEmail(profileForEmail, properties);
+    }
+
     setSaving(false);
     onSaved();
   };
@@ -41,6 +86,7 @@ export default function UserFormModal({ profile, properties, onClose, onSaved })
           <h2 className="font-bold text-lg">{isEdit ? 'Edit User' : 'Add User'}</h2>
           <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-muted"><X className="w-4 h-4" /></button>
         </div>
+
         <div className="px-6 py-5 space-y-4">
           <div>
             <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide block mb-1">Email *</label>
@@ -108,17 +154,28 @@ export default function UserFormModal({ profile, properties, onClose, onSaved })
             </div>
           )}
         </div>
-        <div className="flex justify-end gap-3 px-6 py-4 border-t border-border">
+
+        <div className="flex flex-col sm:flex-row justify-end gap-3 px-6 py-4 border-t border-border">
           <button onClick={onClose} className="px-4 py-2 rounded-lg text-sm font-medium border border-border hover:bg-muted">
             Cancel
           </button>
+          {!isEdit && (
+            <button
+              onClick={() => handleSave(false)}
+              disabled={saving || !form.email}
+              className="flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium border border-border hover:bg-muted disabled:opacity-50"
+            >
+              Save Without Inviting
+            </button>
+          )}
           <button
-            onClick={handleSave}
+            onClick={() => handleSave(true)}
             disabled={saving || !form.email}
-            className="px-4 py-2 rounded-lg text-sm font-medium text-white disabled:opacity-50"
+            className="flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-white disabled:opacity-50"
             style={{ backgroundColor: '#2d4b5e' }}
           >
-            {saving ? 'Saving...' : isEdit ? 'Save Changes' : 'Create User'}
+            <Send className="w-3.5 h-3.5" />
+            {saving ? 'Saving...' : isEdit ? 'Save & Resend Invite' : 'Save & Send Invite'}
           </button>
         </div>
       </div>
