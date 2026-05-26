@@ -1,32 +1,22 @@
 import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
-import { X, Mail, Send } from 'lucide-react';
+import { X, Send, Copy, Check, AlertCircle } from 'lucide-react';
+import { sendInviteEmail } from '@/functions/sendInviteEmail';
 
-async function sendInviteEmail(profile, properties) {
-  const assignedNames = (profile.assigned_properties || [])
+async function doSendInvite(email, full_name, assigned_properties, properties) {
+  const hotel_names = (assigned_properties || [])
     .map(id => properties.find(p => p.id === id)?.name)
     .filter(Boolean);
 
-  const hotelsList = assignedNames.length
-    ? `You have been assigned to: ${assignedNames.join(', ')}.`
-    : 'Your access covers all properties.';
-
-  const appUrl = window.location.origin;
-
-  await base44.integrations.Core.SendEmail({
-    to: profile.email,
-    subject: "You've been invited to the REBEL Hotel Scorecard",
-    body: `Hi ${profile.full_name || profile.email},
-
-You've been given access to the REBEL Hotel Performance Scorecard.
-
-${hotelsList}
-
-To get started, click the link below to set up your password and log in:
-${appUrl}
-
-— The REBEL Hotel Co. Team`,
+  const result = await sendInviteEmail({
+    email,
+    full_name,
+    hotel_names,
+    app_url: window.location.origin,
   });
+
+  if (result?.data?.error) throw new Error(result.data.error);
+  return result;
 }
 
 export default function UserFormModal({ profile, properties, onClose, onSaved }) {
@@ -39,6 +29,8 @@ export default function UserFormModal({ profile, properties, onClose, onSaved })
     is_active: profile?.is_active !== false,
   });
   const [saving, setSaving] = useState(false);
+  const [emailError, setEmailError] = useState(null);
+  const [copiedLink, setCopiedLink] = useState(false);
 
   const toggle = (id) => {
     setForm(f => ({
@@ -49,9 +41,16 @@ export default function UserFormModal({ profile, properties, onClose, onSaved })
     }));
   };
 
+  const handleCopyLink = () => {
+    navigator.clipboard.writeText(window.location.origin);
+    setCopiedLink(true);
+    setTimeout(() => setCopiedLink(false), 2000);
+  };
+
   const handleSave = async (sendInvite = false) => {
     if (!form.email) return;
     setSaving(true);
+    setEmailError(null);
 
     const now = new Date().toISOString();
     const data = { ...form };
@@ -63,20 +62,26 @@ export default function UserFormModal({ profile, properties, onClose, onSaved })
       data.invite_status = 'not_invited';
     }
 
-    let savedProfile;
     if (isEdit) {
-      savedProfile = await base44.entities.UserProfile.update(profile.id, data);
+      await base44.entities.UserProfile.update(profile.id, data);
     } else {
-      savedProfile = await base44.entities.UserProfile.create(data);
+      await base44.entities.UserProfile.create(data);
     }
 
     if (sendInvite) {
-      const profileForEmail = { ...form, ...data };
-      await sendInviteEmail(profileForEmail, properties);
+      try {
+        await doSendInvite(form.email, form.full_name, form.assigned_properties, properties);
+        setSaving(false);
+        onSaved({ emailSent: true, email: form.email });
+      } catch (err) {
+        setSaving(false);
+        setEmailError(err.message || 'Failed to send invite email. Use the copy link below to share manually.');
+      }
+      return;
     }
 
     setSaving(false);
-    onSaved();
+    onSaved({ emailSent: false });
   };
 
   return (
@@ -153,13 +158,44 @@ export default function UserFormModal({ profile, properties, onClose, onSaved })
               <label htmlFor="is_active" className="text-sm font-medium cursor-pointer">Active (can log in)</label>
             </div>
           )}
+
+          {/* Email error + copy link fallback */}
+          {emailError && (
+            <div className="rounded-xl border border-red-200 bg-red-50 p-4 space-y-3">
+              <div className="flex items-start gap-2 text-red-700">
+                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                <div>
+                  <div className="text-sm font-semibold">Email delivery failed</div>
+                  <div className="text-xs mt-0.5">{emailError}</div>
+                </div>
+              </div>
+              <div className="space-y-1">
+                <div className="text-xs font-semibold text-muted-foreground">Share this link manually instead:</div>
+                <div className="flex items-center gap-2">
+                  <code className="flex-1 text-xs bg-background border border-border rounded-lg px-3 py-2 truncate">
+                    {window.location.origin}
+                  </code>
+                  <button
+                    onClick={handleCopyLink}
+                    className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium border border-border hover:bg-muted shrink-0"
+                  >
+                    {copiedLink ? <Check className="w-3.5 h-3.5 text-green-500" /> : <Copy className="w-3.5 h-3.5" />}
+                    {copiedLink ? 'Copied!' : 'Copy'}
+                  </button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  The user profile was saved. They can log in at this URL once their account is set up.
+                </p>
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="flex flex-col sm:flex-row justify-end gap-3 px-6 py-4 border-t border-border">
           <button onClick={onClose} className="px-4 py-2 rounded-lg text-sm font-medium border border-border hover:bg-muted">
-            Cancel
+            {emailError ? 'Close' : 'Cancel'}
           </button>
-          {!isEdit && (
+          {!isEdit && !emailError && (
             <button
               onClick={() => handleSave(false)}
               disabled={saving || !form.email}
@@ -168,15 +204,17 @@ export default function UserFormModal({ profile, properties, onClose, onSaved })
               Save Without Inviting
             </button>
           )}
-          <button
-            onClick={() => handleSave(true)}
-            disabled={saving || !form.email}
-            className="flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-white disabled:opacity-50"
-            style={{ backgroundColor: '#2d4b5e' }}
-          >
-            <Send className="w-3.5 h-3.5" />
-            {saving ? 'Saving...' : isEdit ? 'Save & Resend Invite' : 'Save & Send Invite'}
-          </button>
+          {!emailError && (
+            <button
+              onClick={() => handleSave(true)}
+              disabled={saving || !form.email}
+              className="flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-white disabled:opacity-50"
+              style={{ backgroundColor: '#2d4b5e' }}
+            >
+              <Send className="w-3.5 h-3.5" />
+              {saving ? 'Sending...' : isEdit ? 'Save & Resend Invite' : 'Save & Send Invite'}
+            </button>
+          )}
         </div>
       </div>
     </div>

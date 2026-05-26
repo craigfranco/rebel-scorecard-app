@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ChevronRight, Plus, Search, Edit2, UserX, UserCheck, X, Users, Building2, Send } from 'lucide-react';
+import { ChevronRight, Plus, Search, Edit2, UserX, UserCheck, X, Users, Building2, Send, Copy, Check, AlertCircle } from 'lucide-react';
 import UserFormModal from '@/components/admin/UserFormModal';
+import { sendInviteEmail } from '@/functions/sendInviteEmail';
 
 function InviteStatusBadge({ status }) {
   const map = {
@@ -29,6 +30,13 @@ export default function AdminPanel() {
   const [editingUser, setEditingUser] = useState(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [resendingId, setResendingId] = useState(null);
+  const [toast, setToast] = useState(null); // { type: 'success'|'error', message: string }
+  const [copyState, setCopyState] = useState({}); // { [profileId]: 'copied' }
+
+  const showToast = (type, message) => {
+    setToast({ type, message });
+    setTimeout(() => setToast(null), 4000);
+  };
 
   const { data: profiles = [] } = useQuery({
     queryKey: ['user-profiles'],
@@ -54,40 +62,52 @@ export default function AdminPanel() {
   const handleResendInvite = async (profile) => {
     setResendingId(profile.id);
     const now = new Date().toISOString();
-    await base44.entities.UserProfile.update(profile.id, {
-      invite_status: 'invited',
-      invite_sent_at: now,
-    });
-
-    const assignedNames = (profile.assigned_properties || [])
-      .map(id => properties.find(p => p.id === id)?.name)
-      .filter(Boolean);
-    const hotelsList = assignedNames.length
-      ? `You have been assigned to: ${assignedNames.join(', ')}.`
-      : 'Your access covers all properties.';
-    const appUrl = window.location.origin;
-
-    await base44.integrations.Core.SendEmail({
-      to: profile.email,
-      subject: "You've been invited to the REBEL Hotel Scorecard",
-      body: `Hi ${profile.full_name || profile.email},
-
-You've been given access to the REBEL Hotel Performance Scorecard.
-
-${hotelsList}
-
-To get started, click the link below to set up your password and log in:
-${appUrl}
-
-— The REBEL Hotel Co. Team`,
-    });
-
-    qc.invalidateQueries({ queryKey: ['user-profiles'] });
+    try {
+      await base44.entities.UserProfile.update(profile.id, {
+        invite_status: 'invited',
+        invite_sent_at: now,
+      });
+      const hotel_names = (profile.assigned_properties || [])
+        .map(id => properties.find(p => p.id === id)?.name)
+        .filter(Boolean);
+      const result = await sendInviteEmail({
+        email: profile.email,
+        full_name: profile.full_name,
+        hotel_names,
+        app_url: window.location.origin,
+      });
+      if (result?.data?.error) throw new Error(result.data.error);
+      showToast('success', `Invite sent to ${profile.email}`);
+      qc.invalidateQueries({ queryKey: ['user-profiles'] });
+    } catch (err) {
+      showToast('error', `Failed to send invite: ${err.message}`);
+    }
     setResendingId(null);
+  };
+
+  const handleCopyLink = (profileId) => {
+    navigator.clipboard.writeText(window.location.origin);
+    setCopyState(s => ({ ...s, [profileId]: 'copied' }));
+    setTimeout(() => setCopyState(s => ({ ...s, [profileId]: null })), 2000);
   };
 
   return (
     <div className="p-4 lg:p-8 space-y-8 max-w-7xl mx-auto">
+      {/* Toast */}
+      {toast && (
+        <div className={`fixed top-6 right-6 z-[100] flex items-center gap-3 px-4 py-3 rounded-xl shadow-lg border text-sm font-medium transition-all ${
+          toast.type === 'success'
+            ? 'bg-green-50 border-green-200 text-green-800'
+            : 'bg-red-50 border-red-200 text-red-800'
+        }`}>
+          {toast.type === 'success'
+            ? <Check className="w-4 h-4 text-green-600 shrink-0" />
+            : <AlertCircle className="w-4 h-4 text-red-500 shrink-0" />
+          }
+          {toast.message}
+        </div>
+      )}
+
       {/* Header */}
       <div className="rounded-2xl text-white p-6 shadow-lg" style={{ background: 'linear-gradient(135deg, #2d4b5e 0%, #1e3547 100%)' }}>
         <div className="flex items-center gap-2 text-white/60 text-xs mb-1">
@@ -182,14 +202,29 @@ ${appUrl}
                         <Edit2 className="w-3.5 h-3.5" />
                       </button>
                       {profile.invite_status !== 'active' && profile.is_active && (
-                        <button
-                          onClick={() => handleResendInvite(profile)}
-                          disabled={resendingId === profile.id}
-                          className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-primary disabled:opacity-50"
-                          title="Resend Invite"
-                        >
-                          <Send className="w-3.5 h-3.5" />
-                        </button>
+                        <>
+                          <button
+                            onClick={() => handleResendInvite(profile)}
+                            disabled={resendingId === profile.id}
+                            className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-primary disabled:opacity-50"
+                            title="Resend Invite Email"
+                          >
+                            {resendingId === profile.id
+                              ? <span className="w-3.5 h-3.5 inline-block border-2 border-primary/40 border-t-primary rounded-full animate-spin" />
+                              : <Send className="w-3.5 h-3.5" />
+                            }
+                          </button>
+                          <button
+                            onClick={() => handleCopyLink(profile.id)}
+                            className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground"
+                            title="Copy invite link"
+                          >
+                            {copyState[profile.id] === 'copied'
+                              ? <Check className="w-3.5 h-3.5 text-green-500" />
+                              : <Copy className="w-3.5 h-3.5" />
+                            }
+                          </button>
+                        </>
                       )}
                       <button
                         onClick={() => toggleActive.mutate({ id: profile.id, is_active: !profile.is_active })}
@@ -284,7 +319,13 @@ ${appUrl}
           profile={editingUser}
           properties={properties}
           onClose={() => { setShowAddModal(false); setEditingUser(null); }}
-          onSaved={() => { qc.invalidateQueries({ queryKey: ['user-profiles'] }); setShowAddModal(false); setEditingUser(null); }}
+          onSaved={(result) => {
+            qc.invalidateQueries({ queryKey: ['user-profiles'] });
+            if (result?.emailSent) showToast('success', `Invite sent to ${result.email}`);
+            else showToast('success', 'User saved successfully');
+            setShowAddModal(false);
+            setEditingUser(null);
+          }}
         />
       )}
     </div>
