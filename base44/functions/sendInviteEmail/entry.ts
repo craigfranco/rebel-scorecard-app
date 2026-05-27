@@ -16,6 +16,7 @@ Deno.serve(async (req) => {
     }
 
     // Invite the user to the app via Base44's built-in invite system (creates account + sends email)
+    // Always invite as 'user' role — admin role must be assigned manually
     await base44.users.inviteUser(email, 'user');
 
     return Response.json({ success: true });
