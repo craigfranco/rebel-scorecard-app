@@ -120,6 +120,7 @@ export async function parseFile(file) {
 // Returns { hotel_name: idx, budgeted_gop_actual: idx, ... }
 export function autoDetectMapping(headers, docType) {
   const h = headers.map(x => x.toLowerCase().replace(/[^a-z0-9]/g, ''));
+  console.log('[autoDetectMapping] normalized headers:', h);
 
   const find = (...terms) => {
     for (const t of terms) {
@@ -144,13 +145,15 @@ export function autoDetectMapping(headers, docType) {
     };
   }
   if (docType === 'RGI/STR Report') {
-    return {
+    const result = {
       ...base,
       str_id:              find('strid', 'strnumber', 'strcode', 'propertycode', 'deploymentid', 'str') ?? null,
       revpar_index_change: find('revparindexpctchg', 'revparindexchg', 'revparindexpct', 'revparindexpercent', 'changepct', 'changeyoy', 'pctchg', 'yoy') ?? null,
       revpar_index:        find('revparindex', 'rgiindex', 'indexactual', 'rgi') ?? find('revpar') ?? find('index') ?? null,
       revpar_index_prior:  find('prioryear', 'prior', 'lastyear', 'indexprior') ?? null,
     };
+    console.log('[autoDetectMapping] RGI mapping result:', result, 'from headers:', headers);
+    return result;
   }
   if (docType === 'GSS Report') {
     return {
@@ -177,7 +180,7 @@ export function detectRebelPLLayout(headers) {
 }
 
 export function applyMapping(rows, mapping) {
-  return rows.map(row => {
+  const result = rows.map(row => {
     const get = (idx) => (idx != null && idx < row.length) ? row[idx] : null;
     const num = (val) => {
       if (val === null || val === '' || val === undefined) return null;
@@ -200,5 +203,7 @@ export function applyMapping(rows, mapping) {
       forecast_actual_revenue: num(get(mapping.forecast_actual_revenue)),
       forecast_primary_forecast: num(get(mapping.forecast_primary_forecast)),
       };
-      }).filter(r => (r.str_id && r.str_id.length > 0) || (r.hotel_name && r.hotel_name !== 'Property' && r.hotel_name.length > 1));
+      });
+  console.log('[applyMapping] sample rows (first 3):', result.slice(0, 3).map(r => ({ hotel_name: r.hotel_name, str_id: r.str_id, revpar_index: r.revpar_index, revpar_index_change: r.revpar_index_change })));
+  return result.filter(r => (r.str_id && r.str_id.length > 0) || (r.hotel_name && r.hotel_name !== 'Property' && r.hotel_name.length > 1));
 }
