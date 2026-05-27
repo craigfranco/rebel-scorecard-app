@@ -77,7 +77,7 @@ export default function ImportWizard({ file, properties, onClose, onSuccess }) {
 
   const goToMatching = () => {
     const rows = applyMapping(parsed.rows, mapping);
-    const autoMatches = rows.map(r => bestMatch(r.hotel_name, properties));
+    const autoMatches = rows.map(r => bestMatch(r.hotel_name, properties, r.str_id));
     setMappedRows(rows);
     setMatches(autoMatches);
     setStep('matching');

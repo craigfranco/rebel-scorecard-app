@@ -9,7 +9,15 @@ export function normalizeName(s) {
     .trim();
 }
 
-export function bestMatch(name, properties) {
+export function bestMatch(nameOrStrId, properties, strId = null) {
+  // Try exact str_id match first
+  const sid = strId || (nameOrStrId && String(nameOrStrId).match(/^\d+$/) ? nameOrStrId : null);
+  if (sid) {
+    const byStrId = properties.find(p => p.str_id && String(p.str_id) === String(sid));
+    if (byStrId) return byStrId;
+  }
+
+  const name = nameOrStrId;
   if (!name) return null;
   const needle = normalizeName(name);
   if (!needle) return null;
@@ -138,6 +146,7 @@ export function autoDetectMapping(headers, docType) {
   if (docType === 'RGI/STR Report') {
     return {
       ...base,
+      str_id:              find('strid', 'strnumber', 'propertyid', 'propertycode', 'code', 'id') ?? null,
       revpar_index_change: find('changepct', 'changeyoy', 'change', 'pct') ?? find('revpar', 'rgi') ?? null,
       revpar_index:        find('revparindex', 'rgiindex', 'indexactual', 'current') ?? find('index') ?? null,
       revpar_index_prior:  find('prioryear', 'prior', 'lastyear', 'indexprior') ?? null,
@@ -177,6 +186,7 @@ export function applyMapping(rows, mapping) {
     };
     return {
       hotel_name: get(mapping.hotel_name) != null ? String(get(mapping.hotel_name)).trim() : '',
+      str_id:     get(mapping.str_id) != null ? String(get(mapping.str_id)).trim() : null,
       budgeted_gop_actual: num(get(mapping.budgeted_gop_actual)),
       gop_margin_actual:   num(get(mapping.gop_margin_actual)),
       budgeted_gop_target: num(get(mapping.budgeted_gop_target)),
