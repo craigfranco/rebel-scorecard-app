@@ -15,30 +15,15 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Missing email' }, { status: 400 });
     }
 
-    const hotelsList = hotel_names && hotel_names.length > 0
-      ? `You have been assigned to: ${hotel_names.join(', ')}.`
-      : 'Your access covers all properties.';
-
-    const body = `Hi ${full_name || email},
-
-You've been given access to the REBEL Hotel Performance Scorecard.
-
-${hotelsList}
-
-To get started, click the link below to set up your password and log in:
-${app_url}
-
-— The REBEL Hotel Co. Team`;
-
-    await base44.asServiceRole.integrations.Core.SendEmail({
-      to: email,
-      subject: "You've been invited to the REBEL Hotel Scorecard",
-      body,
-      from_name: 'REBEL Hotel Co.',
-    });
+    // Invite the user to the app via Base44's built-in invite system (creates account + sends email)
+    await base44.users.inviteUser(email, 'user');
 
     return Response.json({ success: true });
   } catch (error) {
+    // If user already exists in the system, that's fine — treat as success
+    if (error.message?.includes('already') || error.message?.includes('exists')) {
+      return Response.json({ success: true });
+    }
     return Response.json({ error: error.message }, { status: 500 });
   }
 });
