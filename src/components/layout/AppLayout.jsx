@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useLocation, Outlet } from 'react-router-dom';
 import {
-  LayoutDashboard, BookOpen, Building2, Settings, Menu, PieChart,
+  LayoutDashboard, BookOpen, Building2, Menu, PieChart,
   FolderOpen, DollarSign, ChevronDown, ClipboardList, Shield, LogOut, User,
 } from 'lucide-react';
 import TimePeriodSelector from '@/components/layout/TimePeriodSelector';
@@ -27,7 +27,6 @@ export default function AppLayout() {
 
   const adminItems = [
     { path: '/documents', icon: FolderOpen, label: 'Documents' },
-    { path: '/settings', icon: Settings, label: 'Settings' },
     ...(isAdmin ? [{ path: '/admin', icon: Shield, label: 'Admin Panel' }] : []),
   ];
 
