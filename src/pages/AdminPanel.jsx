@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ChevronRight, Plus, Search, Edit2, UserX, UserCheck, X, Users, Building2, Send, Copy, Check, AlertCircle } from 'lucide-react';
+import { ChevronRight, Plus, Search, Edit2, UserX, UserCheck, X, Users, Building2, Send, Copy, Check, AlertCircle, Trash2 } from 'lucide-react';
 import UserFormModal from '@/components/admin/UserFormModal';
 import { sendInviteEmail } from '@/functions/sendInviteEmail';
 
@@ -52,6 +52,19 @@ export default function AdminPanel() {
     mutationFn: ({ id, is_active }) => base44.entities.UserProfile.update(id, { is_active }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['user-profiles'] }),
   });
+
+  const deleteUser = useMutation({
+    mutationFn: (id) => base44.entities.UserProfile.delete(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['user-profiles'] });
+      showToast('success', 'User deleted');
+    },
+  });
+
+  const handleDelete = (profile) => {
+    if (!window.confirm(`Delete ${profile.full_name || profile.email}? This cannot be undone.`)) return;
+    deleteUser.mutate(profile.id);
+  };
 
   const filtered = profiles.filter(p =>
     !search ||
@@ -236,6 +249,15 @@ export default function AdminPanel() {
                           : <UserCheck className="w-3.5 h-3.5 text-green-500" />
                         }
                       </button>
+                      {!profile.is_active && (
+                        <button
+                          onClick={() => handleDelete(profile)}
+                          className="p-1.5 rounded-lg hover:bg-red-50 text-red-400 hover:text-red-600"
+                          title="Delete user"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>
