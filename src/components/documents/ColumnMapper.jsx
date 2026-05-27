@@ -12,6 +12,7 @@ const KPI_FIELDS = {
     { key: 'gop_margin_prior',    label: 'Last Year % REV' },
   ],
   'RGI/STR Report': [
+    { key: 'str_id',              label: 'STR Property ID' },
     { key: 'hotel_name',          label: 'Hotel / Property Name', required: true },
     { key: 'revpar_index_change', label: 'RevPAR Index % Change (YOY)', required: true },
     { key: 'revpar_index',        label: 'RevPAR Index (current period)' },
