@@ -23,7 +23,8 @@ export default function UserFormModal({ profile, properties, onClose, onSaved })
   const isEdit = !!profile;
   const [form, setForm] = useState({
     email: profile?.email || '',
-    full_name: profile?.full_name || '',
+    first_name: profile?.full_name?.split(' ')[0] || '',
+    last_name: profile?.full_name?.split(' ').slice(1).join(' ') || '',
     role: profile?.role || 'property_user',
     assigned_properties: profile?.assigned_properties || [],
     is_active: profile?.is_active !== false,
@@ -53,7 +54,8 @@ export default function UserFormModal({ profile, properties, onClose, onSaved })
     setEmailError(null);
 
     const now = new Date().toISOString();
-    const data = { ...form };
+    const full_name = `${form.first_name} ${form.last_name}`.trim();
+    const data = { email: form.email, full_name, role: form.role, assigned_properties: form.assigned_properties };
 
     if (sendInvite) {
       data.invite_status = 'invited';
@@ -63,6 +65,7 @@ export default function UserFormModal({ profile, properties, onClose, onSaved })
     }
 
     if (isEdit) {
+      data.is_active = form.is_active;
       await base44.entities.UserProfile.update(profile.id, data);
     } else {
       await base44.entities.UserProfile.create(data);
@@ -70,7 +73,7 @@ export default function UserFormModal({ profile, properties, onClose, onSaved })
 
     if (sendInvite) {
       try {
-        await doSendInvite(form.email, form.full_name, form.assigned_properties, properties);
+        await doSendInvite(form.email, full_name, form.assigned_properties, properties);
         setSaving(false);
         onSaved({ emailSent: true, email: form.email });
       } catch (err) {
@@ -103,14 +106,25 @@ export default function UserFormModal({ profile, properties, onClose, onSaved })
               placeholder="user@example.com"
             />
           </div>
-          <div>
-            <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide block mb-1">Full Name</label>
-            <input
-              className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-background"
-              value={form.full_name}
-              onChange={e => setForm(f => ({ ...f, full_name: e.target.value }))}
-              placeholder="First Last"
-            />
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide block mb-1">First Name</label>
+              <input
+                className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-background"
+                value={form.first_name}
+                onChange={e => setForm(f => ({ ...f, first_name: e.target.value }))}
+                placeholder="First"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide block mb-1">Last Name</label>
+              <input
+                className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-background"
+                value={form.last_name}
+                onChange={e => setForm(f => ({ ...f, last_name: e.target.value }))}
+                placeholder="Last"
+              />
+            </div>
           </div>
           <div>
             <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide block mb-1">Role</label>
