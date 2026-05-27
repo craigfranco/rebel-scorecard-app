@@ -9,6 +9,7 @@ import { parseFile, autoDetectMapping, applyMapping, bestMatch, detectRebelPLLay
 import ColumnMapper from './ColumnMapper';
 import HotelMatchTable from './HotelMatchTable';
 import { MONTHS, getQuarterFromMonth } from '@/lib/scoring';
+import { useTimePeriod } from '@/lib/TimePeriodContext';
 
 const CURRENT_YEAR = 2026;
 const CURRENT_MONTH = 1;
@@ -28,6 +29,7 @@ const REBEL_PL_MAPPING = {
 export default function ImportWizard({ file, properties, onClose, onSuccess }) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { refreshAvailableData, setSelectedMonth, setSelectedYear } = useTimePeriod();
 
   const [step, setStep] = useState('parsing'); // parsing | pdf_notice | period | mapping | matching | importing | done
   const [error, setError] = useState(null);
@@ -153,6 +155,10 @@ export default function ImportWizard({ file, properties, onClose, onSuccess }) {
     queryClient.invalidateQueries({ queryKey: ['score-entries'] });
     queryClient.invalidateQueries({ queryKey: ['all-entries'] });
     queryClient.invalidateQueries({ queryKey: ['documents'] });
+    // Refresh time period context so newly imported months become selectable
+    await refreshAvailableData();
+    setSelectedYear(periodYear);
+    setSelectedMonth(periodMonth);
     setImportResult({ ok, fail });
     setStep('done');
   };

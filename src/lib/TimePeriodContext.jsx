@@ -24,6 +24,23 @@ export function TimePeriodProvider({ children }) {
   // Returns true if the given month+year has loaded data
   const hasData = (year, month) => loadedMonthKeys.has(`${year}-${month}`);
 
+  const refreshAvailableData = async () => {
+    try {
+      const entries = await base44.entities.ScoreEntry.filter({}, '-year', 2000);
+      const keys = new Set();
+      const years = new Set([APP_START_YEAR]);
+      entries.forEach(e => {
+        if (e.year && e.month) {
+          keys.add(`${e.year}-${e.month}`);
+          if (e.year >= APP_START_YEAR) years.add(e.year);
+        }
+      });
+      setLoadedMonthKeys(keys);
+      const sortedYears = Array.from(years).sort((a, b) => a - b);
+      setAvailableYears(sortedYears);
+    } catch {}
+  };
+
   useEffect(() => {
     const fetchAvailableData = async () => {
       try {
@@ -65,6 +82,8 @@ export function TimePeriodProvider({ children }) {
     };
     fetchAvailableData();
   }, []);
+
+
 
   const currentQuarter = getQuarterFromMonth(selectedMonth || CURRENT_MONTH);
 
@@ -144,6 +163,7 @@ export function TimePeriodProvider({ children }) {
     hasData,
     getQuarterLoadedMonths,
     getQuarterState,
+    refreshAvailableData,
     // legacy compat
     LAST_CLOSED_MONTH: CURRENT_MONTH,
   };
