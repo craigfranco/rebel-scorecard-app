@@ -63,11 +63,13 @@ export const UserProfileProvider = ({ children }) => {
   }, [isLoadingAuth, loadProfile]);
 
   const isAdmin = userProfile?.role === 'admin';
+  const isViewer = userProfile?.role === 'viewer';
   const assignedProperties = userProfile?.assigned_properties || [];
 
   // Filter a list of properties down to only those the user can access
+  // Admins and viewers see all properties; property_users see only assigned ones
   const filterPropertiesForUser = (properties) => {
-    if (isAdmin) return properties;
+    if (isAdmin || isViewer) return properties;
     return properties.filter(p => assignedProperties.includes(p.id));
   };
 
@@ -77,6 +79,7 @@ export const UserProfileProvider = ({ children }) => {
       isLoadingProfile,
       profileError,
       isAdmin,
+      isViewer,
       assignedProperties,
       filterPropertiesForUser,
       reloadProfile: loadProfile,

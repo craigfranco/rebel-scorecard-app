@@ -134,10 +134,11 @@ export default function UserFormModal({ profile, properties, onClose, onSaved })
               onChange={e => setForm(f => ({ ...f, role: e.target.value }))}
             >
               <option value="property_user">Property User</option>
+              <option value="viewer">Viewer (Full Access, No Admin)</option>
               <option value="admin">Admin</option>
             </select>
           </div>
-          {form.role === 'property_user' && (
+          {form.role === 'property_user' && form.role !== 'viewer' && (
             <div>
               <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide block mb-2">
                 Assigned Properties ({form.assigned_properties.length} selected)
