@@ -75,7 +75,10 @@ async function syncScoreEntry(base44, event, data) {
   }
   if (!propertyId && data.str_id) {
     const props = await base44.asServiceRole.entities.Property.filter({ str_id: data.str_id });
-    if (props.length > 0) propertyId = props[0].id;
+    if (props.length > 0) {
+      const active = props.find(p => p.is_active !== false) || props[0];
+      propertyId = active.id;
+    }
   }
   if (!propertyId) throw new Error('Could not resolve property_id for score_entry');
 
