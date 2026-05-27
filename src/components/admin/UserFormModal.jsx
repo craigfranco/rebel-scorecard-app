@@ -209,25 +209,38 @@ export default function UserFormModal({ profile, properties, onClose, onSaved })
           <button onClick={onClose} className="px-4 py-2 rounded-lg text-sm font-medium border border-border hover:bg-muted">
             {emailError ? 'Close' : 'Cancel'}
           </button>
-          {!isEdit && !emailError && (
-            <button
-              onClick={() => handleSave(false)}
-              disabled={saving || !form.email}
-              className="flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium border border-border hover:bg-muted disabled:opacity-50"
-            >
-              Save Without Inviting
-            </button>
-          )}
           {!emailError && (
-            <button
-              onClick={() => handleSave(true)}
-              disabled={saving || !form.email}
-              className="flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-white disabled:opacity-50"
-              style={{ backgroundColor: '#2d4b5e' }}
-            >
-              <Send className="w-3.5 h-3.5" />
-              {saving ? 'Sending...' : isEdit ? 'Save & Resend Invite' : 'Save & Send Invite'}
-            </button>
+            <>
+              {isEdit && (
+                <button
+                  onClick={() => handleSave(true)}
+                  disabled={saving || !form.email}
+                  className="flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium border border-border hover:bg-muted disabled:opacity-50"
+                >
+                  <Send className="w-3.5 h-3.5" />
+                  {saving ? 'Sending...' : 'Save & Resend Invite'}
+                </button>
+              )}
+              <button
+                onClick={() => handleSave(isEdit ? false : false)}
+                disabled={saving || !form.email}
+                className="flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-white disabled:opacity-50"
+                style={{ backgroundColor: '#2d4b5e' }}
+              >
+                {saving ? 'Saving...' : isEdit ? 'Save Changes' : 'Save Without Inviting'}
+              </button>
+              {!isEdit && (
+                <button
+                  onClick={() => handleSave(true)}
+                  disabled={saving || !form.email}
+                  className="flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-white disabled:opacity-50"
+                  style={{ backgroundColor: '#2d4b5e' }}
+                >
+                  <Send className="w-3.5 h-3.5" />
+                  {saving ? 'Sending...' : 'Save & Send Invite'}
+                </button>
+              )}
+            </>
           )}
         </div>
       </div>
