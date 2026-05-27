@@ -147,8 +147,8 @@ export function autoDetectMapping(headers, docType) {
     return {
       ...base,
       str_id:              find('strid', 'strnumber', 'strcode', 'propertycode', 'deploymentid', 'str') ?? null,
-      revpar_index_change: find('changepct', 'changeyoy', 'change', 'pct', 'yoy') ?? null,
-      revpar_index:        find('revparindex', 'rgiindex', 'indexactual', 'revpar', 'rgi', 'index') ?? null,
+      revpar_index_change: find('revparindexpctchg', 'revparindexchg', 'revparindexpct', 'revparindexpercent', 'changepct', 'changeyoy', 'pctchg', 'yoy') ?? null,
+      revpar_index:        find('revparindex', 'rgiindex', 'indexactual', 'rgi') ?? find('revpar') ?? find('index') ?? null,
       revpar_index_prior:  find('prioryear', 'prior', 'lastyear', 'indexprior') ?? null,
     };
   }
