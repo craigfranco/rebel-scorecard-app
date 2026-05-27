@@ -124,8 +124,10 @@ export const AuthProvider = ({ children }) => {
   };
 
   const navigateToLogin = () => {
-    // Use the SDK's redirectToLogin method
-    base44.auth.redirectToLogin(window.location.href);
+    // Use the SDK's redirectToLogin method with signup=true to show signup form by default
+    const url = new URL(window.location.href);
+    url.searchParams.set('signup', 'true');
+    base44.auth.redirectToLogin(url.toString());
   };
 
   return (
