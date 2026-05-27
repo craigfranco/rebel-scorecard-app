@@ -146,7 +146,7 @@ export function autoDetectMapping(headers, docType) {
   if (docType === 'RGI/STR Report') {
     return {
       ...base,
-      str_id:              find('strid', 'strnumber', 'propertyid', 'propertycode', 'code', 'id') ?? null,
+      str_id:              find('strid', 'strnumber', 'strcode', 'propertycode', 'deploymentid') ?? null,
       revpar_index_change: find('changepct', 'changeyoy', 'change', 'pct') ?? find('revpar', 'rgi') ?? null,
       revpar_index:        find('revparindex', 'rgiindex', 'indexactual', 'current') ?? find('index') ?? null,
       revpar_index_prior:  find('prioryear', 'prior', 'lastyear', 'indexprior') ?? null,
@@ -200,5 +200,5 @@ export function applyMapping(rows, mapping) {
       forecast_actual_revenue: num(get(mapping.forecast_actual_revenue)),
       forecast_primary_forecast: num(get(mapping.forecast_primary_forecast)),
       };
-      }).filter(r => r.hotel_name && r.hotel_name !== 'Property' && r.hotel_name.length > 1);
+      }).filter(r => (r.str_id && r.str_id.length > 0) || (r.hotel_name && r.hotel_name !== 'Property' && r.hotel_name.length > 1));
 }
