@@ -146,7 +146,7 @@ export function autoDetectMapping(headers, docType) {
   if (docType === 'RGI/STR Report') {
     return {
       ...base,
-      str_id:              find('strid', 'strnumber', 'strcode', 'propertycode', 'deploymentid') ?? null,
+      str_id:              find('strid', 'strnumber', 'strcode', 'propertycode', 'deploymentid', 'str') ?? null,
       revpar_index_change: find('changepct', 'changeyoy', 'change', 'pct') ?? find('revpar', 'rgi') ?? null,
       revpar_index:        find('revparindex', 'rgiindex', 'indexactual', 'current') ?? find('index') ?? null,
       revpar_index_prior:  find('prioryear', 'prior', 'lastyear', 'indexprior') ?? null,

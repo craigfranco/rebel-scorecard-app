@@ -77,7 +77,12 @@ export default function ImportWizard({ file, properties, onClose, onSuccess }) {
 
   const goToMatching = () => {
     const rows = applyMapping(parsed.rows, mapping);
-    const autoMatches = rows.map(r => bestMatch(r.hotel_name, properties, r.str_id));
+    console.log('[ImportWizard] mapped rows:', rows.map(r => ({ hotel_name: r.hotel_name, str_id: r.str_id })));
+    const autoMatches = rows.map(r => {
+      const match = bestMatch(r.hotel_name, properties, r.str_id);
+      console.log(`[ImportWizard] row "${r.hotel_name}" str_id="${r.str_id}" => matched: ${match?.name ?? 'NONE'}`);
+      return match;
+    });
     setMappedRows(rows);
     setMatches(autoMatches);
     setStep('matching');
