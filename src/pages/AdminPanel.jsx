@@ -183,14 +183,14 @@ export default function AdminPanel() {
                   <td className="py-3 px-4 text-center">
                     <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold ${
                       profile.role === 'admin' ? 'bg-primary/10 text-primary' :
-                      profile.role === 'viewer' ? 'bg-blue-50 text-blue-700' :
+                      profile.role === 'full_view' ? 'bg-blue-50 text-blue-700' :
                       'bg-muted text-muted-foreground'
                     }`}>
-                      {profile.role === 'admin' ? 'Admin' : profile.role === 'viewer' ? 'Viewer' : 'Property User'}
+                      {profile.role === 'admin' ? 'Admin' : profile.role === 'full_view' ? 'Full View' : 'Property User'}
                     </span>
                   </td>
                   <td className="py-3 px-4 text-center">
-                    {profile.role === 'admin' || profile.role === 'viewer'
+                    {profile.role === 'admin' || profile.role === 'full_view'
                       ? <span className="text-xs text-muted-foreground italic">All</span>
                       : <span className="font-semibold">{(profile.assigned_properties || []).length}</span>
                     }
@@ -283,7 +283,7 @@ export default function AdminPanel() {
         <div className="p-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
           {properties.map(prop => {
             const directUsers = profiles.filter(p =>
-              p.role !== 'admin' && p.role !== 'viewer' && (p.assigned_properties || []).includes(prop.id)
+              p.role !== 'admin' && p.role !== 'full_view' && (p.assigned_properties || []).includes(prop.id)
             );
             return (
               <div key={prop.id} className="border border-border rounded-xl p-4 space-y-3">

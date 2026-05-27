@@ -14,11 +14,11 @@
       "type": "string",
       "enum": [
         "admin",
-        "viewer",
+        "full_view",
         "property_user"
       ],
       "default": "property_user",
-      "description": "User role \u2014 admin sees all + admin panel, viewer sees all without admin panel, property_user sees assigned hotels only"
+      "description": "User role \u2014 admin sees all + admin panel, full_view sees all without admin panel, property_user sees assigned hotels only"
     },
     "assigned_properties": {
       "type": "array",
