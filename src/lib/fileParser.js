@@ -3,7 +3,7 @@
 export function normalizeName(s) {
   if (!s) return '';
   return s.toLowerCase()
-    .replace(/\b(hotel|by|and|the|inn|suites|suite|&|at|of|an|a)\b/g, ' ')
+    .replace(/\b(hotel|by|and|the|inn|suites|suite|&|at|of|an|a|center|conference|executive|meeting|express|limited service|select service|full service)\b/g, ' ')
     .replace(/[^a-z0-9 ]/g, '')
     .replace(/\s+/g, ' ')
     .trim();
@@ -39,7 +39,7 @@ export function bestMatch(nameOrStrId, properties, strId = null) {
     const score = matches / Math.max(needleWords.length, hayWords.length);
     if (score > bestScore) { bestScore = score; best = p; }
   }
-  return bestScore >= 0.3 ? best : null;
+  return bestScore >= 0.2 ? best : null;
 }
 
 async function loadXLSX() {
@@ -147,10 +147,10 @@ export function autoDetectMapping(headers, docType) {
   if (docType === 'RGI/STR Report') {
     const result = {
       ...base,
-      str_id:              find('strid', 'strnumber', 'strcode', 'propertycode', 'deploymentid', 'str') ?? null,
-      revpar_index_change: find('revparindexpctchg', 'revparindexchg', 'revparindexpct', 'revparindexpercent', 'changepct', 'changeyoy', 'pctchg', 'yoy') ?? null,
-      revpar_index:        find('revparindex', 'rgiindex', 'indexactual', 'rgi') ?? find('revpar') ?? find('index') ?? null,
-      revpar_index_prior:  find('prioryear', 'prior', 'lastyear', 'indexprior') ?? null,
+      str_id:              find('deploymentid', 'deployment', 'strid', 'strnumber', 'strcode', 'propertyid', 'propertycode', 'propid', 'propcode', 'id') ?? null,
+      revpar_index_change: find('revparindexpctchg', 'revparindexchg', 'revparindexpct', 'revparindexpercent', 'changepct', 'changeyoy', 'pctchg', 'yoy', 'change') ?? null,
+      revpar_index:        find('revparindex', 'rgiindex', 'indexactual', 'rgi', 'revparindexvalue') ?? find('index') ?? find('revpar') ?? null,
+      revpar_index_prior:  find('prioryearindex', 'indexprior', 'prioryear', 'prior', 'lastyear') ?? null,
     };
     console.log('[autoDetectMapping] RGI mapping result:', result, 'from headers:', headers);
     return result;
