@@ -10,11 +10,19 @@ export function normalizeName(s) {
 }
 
 export function bestMatch(nameOrStrId, properties, strId = null) {
-  // Try exact str_id match first
+  // Always filter to active properties only — never match inactive/duplicate records
+  const activeProperties = properties.filter(p => p.is_active !== false);
+
+  // Try exact str_id match first (active only)
   const sid = strId || (nameOrStrId && String(nameOrStrId).match(/^\d+$/) ? nameOrStrId : null);
   if (sid) {
-    const byStrId = properties.find(p => p.str_id && String(p.str_id) === String(sid));
+    const byStrId = activeProperties.find(p => p.str_id && String(p.str_id) === String(sid));
     if (byStrId) return byStrId;
+    // If str_id was provided but no active property matched, skip — don't fall through to name match
+    if (strId) {
+      console.warn(`[bestMatch] str_id="${sid}" matched no active property — skipping row`);
+      return null;
+    }
   }
 
   const name = nameOrStrId;
@@ -22,7 +30,7 @@ export function bestMatch(nameOrStrId, properties, strId = null) {
   const needle = normalizeName(name);
   if (!needle) return null;
   let best = null, bestScore = 0;
-  for (const p of properties) {
+  for (const p of activeProperties) {
     const hay = normalizeName(p.name);
     if (hay === needle) return p;
     // Check containment
