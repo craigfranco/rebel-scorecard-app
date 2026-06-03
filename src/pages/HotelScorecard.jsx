@@ -2,12 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { User, ChevronRight } from 'lucide-react';
+import { User, ChevronRight, Download } from 'lucide-react';
+import { generateScorecardPDF } from '@/components/scorecard/ScorecardPdfExport';
 import { formatBrandLabel } from '@/lib/portfolioHelpers';
 import ScoreGauge from '@/components/scorecard/ScoreGauge';
 import KpiRow from '@/components/scorecard/KpiRow';
 import KickerBadge from '@/components/scorecard/KickerBadge';
-import ScorecardPdfExport from '@/components/scorecard/ScorecardPdfExport';
 import SeedOnMount from '../components/SeedOnMount';
 
 import { calculateScorecard, MONTHS, getQuarterFromMonth, aggregateEntries, hasForecastData, normalizeGssTo100 } from '../lib/scoring';
@@ -73,12 +73,6 @@ export default function HotelScorecard() {
       setSelectedPropertyId(properties[0].id);
     }
   }, [properties, selectedPropertyId]);
-
-  const periodLabel = periodType === 'ytd'
-    ? `YTD ${selectedYear}`
-    : periodType === 'quarter'
-    ? `Q${getQuarterFromMonth(selectedMonth)} ${selectedYear}`
-    : `${MONTHS[selectedMonth - 1]} ${selectedYear}`;
 
   const kpiRows = scorecard ? [
     {
@@ -195,30 +189,31 @@ export default function HotelScorecard() {
             )}
           </div>
 
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-            <Select value={selectedPropertyId} onValueChange={setSelectedPropertyId}>
-              <SelectTrigger className="w-full sm:w-72 bg-white/10 border-white/20 text-white">
-                <SelectValue placeholder="Select property..." />
-              </SelectTrigger>
-              <SelectContent>
-                {properties.map(p => (
-                  <SelectItem key={p.id} value={p.id}>
-                    <div>
-                      <div className="font-medium text-sm">{p.name}</div>
-                      <div className="text-xs text-muted-foreground">{p.city}, {p.state}</div>
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <div className="flex items-center gap-3 flex-wrap">
             {selectedProperty && (
-              <ScorecardPdfExport
-                property={selectedProperty}
-                entry={activeEntry}
-                scorecard={scorecard}
-                periodLabel={periodLabel}
-              />
+              <button
+                onClick={() => generateScorecardPDF(selectedProperty, activeEntry, periodType, selectedMonth, selectedYear)}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/15 hover:bg-white/25 text-white text-sm font-semibold border border-white/20 transition-colors"
+              >
+                <Download className="w-4 h-4" />
+                Download PDF
+              </button>
             )}
+          <Select value={selectedPropertyId} onValueChange={setSelectedPropertyId}>
+            <SelectTrigger className="w-full sm:w-72 bg-white/10 border-white/20 text-white">
+              <SelectValue placeholder="Select property..." />
+            </SelectTrigger>
+            <SelectContent>
+              {properties.map(p => (
+                <SelectItem key={p.id} value={p.id}>
+                  <div>
+                    <div className="font-medium text-sm">{p.name}</div>
+                    <div className="text-xs text-muted-foreground">{p.city}, {p.state}</div>
+                  </div>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           </div>
         </div>
       </div>

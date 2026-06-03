@@ -1,33 +1,109 @@
-import React, { useState } from 'react';
-import { Download } from 'lucide-react';
-import { calculateScorecard, MONTHS, getQuarterFromMonth, hasForecastData, normalizeGssTo100 } from '@/lib/scoring';
+import React from 'react';
+import { jsPDF } from 'jspdf';
+import { calculateScorecard, normalizeGssTo100, hasForecastData, MONTHS, getQuarterFromMonth, aggregateEntries } from '@/lib/scoring';
 import { formatBrandLabel } from '@/lib/portfolioHelpers';
 
+// Brand accent colors
 const BRAND_COLORS = {
-  Marriott: '#C41E3A',
-  Hilton: '#003087',
-  IHG: '#004B8D',
-  Hyatt: '#8B1538',
-  Choice: '#00447C',
-  Independent: '#2d4b5e',
+  Marriott:    [140, 0, 0],
+  Hilton:      [0, 60, 113],
+  IHG:         [0, 100, 60],
+  Hyatt:       [150, 40, 40],
+  Choice:      [0, 80, 160],
+  Independent: [45, 75, 94],
 };
 
-function fmt$(v) { return v != null ? '$' + Math.round(v).toLocaleString('en-US') : '—'; }
-function fmtPct(v, d = 1) { return v != null ? (v >= 0 ? '+' : '') + v.toFixed(d) + '%' : '—'; }
-function fmtPts(v, d = 1) { return v != null ? (v >= 0 ? '+' : '') + v.toFixed(d) + ' pts' : '—'; }
-function fmtIdx(v) { return v != null ? v.toFixed(1) : '—'; }
-function fmtRaw(v, d = 1) { return v != null ? v.toFixed(d) : '—'; }
-
-function getPeriodLabel(periodType, selectedMonth, selectedYear) {
-  if (periodType === 'ytd') return `YTD ${selectedYear}`;
-  if (periodType === 'quarter') return `Q${getQuarterFromMonth(selectedMonth)} ${selectedYear}`;
-  return `${MONTHS[selectedMonth - 1]} ${selectedYear}`;
+function getBrandColor(brand) {
+  return BRAND_COLORS[brand] || BRAND_COLORS.Independent;
 }
 
-function buildHtmlPage(property, entry, scorecard, periodLabel) {
-  const brand = property.parent_brand || 'Independent';
-  const accentColor = BRAND_COLORS[brand] || BRAND_COLORS.Independent;
-  const anyIncomplete = !scorecard || scorecard.gop.incomplete || scorecard.gopMargin.incomplete;
+// Full dollar formatting — no abbreviation, ever
+function fmtDollar(val) {
+  if (val == null) return '—';
+  const abs = Math.abs(Math.round(val));
+  const formatted = '$' + abs.toLocaleString('en-US');
+  return val < 0 ? '-' + formatted : formatted;
+}
+
+function fmtPct(val, decimals = 1) {
+  if (val == null) return '—';
+  return (val >= 0 ? '+' : '') + val.toFixed(decimals) + '%';
+}
+
+function fmtPts(val, decimals = 1) {
+  if (val == null) return '—';
+  return (val >= 0 ? '+' : '') + val.toFixed(decimals) + ' pts';
+}
+
+function fmtNum(val, decimals = 1) {
+  if (val == null) return '—';
+  return val.toFixed(decimals);
+}
+
+function getPeriodLabel(periodType, selectedMonth, selectedYear) {
+  if (periodType === 'month') return `${MONTHS[selectedMonth - 1]} ${selectedYear}`;
+  if (periodType === 'quarter') return `Q${getQuarterFromMonth(selectedMonth)} ${selectedYear} TD`;
+  return `YTD ${selectedYear}`;
+}
+
+export function generateScorecardPDF(property, entry, periodType, selectedMonth, selectedYear) {
+  const doc = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'letter' });
+  const W = doc.internal.pageSize.getWidth();   // 792
+  const H = doc.internal.pageSize.getHeight();  // 612
+
+  const scorecard = calculateScorecard(entry, property);
+  const brand = property?.parent_brand || 'Independent';
+  const accent = getBrandColor(brand);
+  const periodLabel = getPeriodLabel(periodType, selectedMonth, selectedYear);
+  const today = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+
+  // ── Accent bar ──────────────────────────────────────────────────────────────
+  doc.setFillColor(...accent);
+  doc.rect(0, 0, W, 8, 'F');
+
+  // ── Header ──────────────────────────────────────────────────────────────────
+  const headerH = 68;
+  doc.setFillColor(248, 250, 252);
+  doc.rect(0, 8, W, headerH, 'F');
+
+  // Logo / company name
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(16);
+  doc.setTextColor(...accent);
+  doc.text('REBEL Hotel Co.', 28, 30);
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(8);
+  doc.setTextColor(100, 116, 139);
+  doc.text('Balanced Scorecard', 28, 42);
+
+  // Hotel name
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(18);
+  doc.setTextColor(30, 41, 59);
+  doc.text(property?.name || '—', 28, 62);
+
+  // Right side meta
+  const metaX = W - 28;
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(8);
+  doc.setTextColor(100, 116, 139);
+  doc.text(`${formatBrandLabel(property?.parent_brand, property?.sub_brand)}`, metaX, 22, { align: 'right' });
+  doc.text(`GM: ${property?.gm_name || '—'}`, metaX, 34, { align: 'right' });
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(10);
+  doc.setTextColor(...accent);
+  doc.text(periodLabel, metaX, 48, { align: 'right' });
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(8);
+  doc.setTextColor(100, 116, 139);
+  doc.text(`Generated: ${today}`, metaX, 62, { align: 'right' });
+
+  // ── KPI SUMMARY BOXES ───────────────────────────────────────────────────────
+  const boxY = 88;
+  const boxH = 90;
+  const boxGap = 8;
+  const boxW = (W - 56 - boxGap * 3) / 4;
 
   const gopA = entry.budgeted_gop_actual;
   const gopB = entry.budgeted_gop_target;
@@ -37,8 +113,8 @@ function buildHtmlPage(property, entry, scorecard, periodLabel) {
     : null;
 
   const marginTy = entry.gop_margin_actual;
-  const marginLy = entry.gop_margin_prior;
-  const marginVar = (marginTy != null && marginLy != null) ? marginTy - marginLy : null;
+  const marginPy = entry.gop_margin_prior;
+  const marginVar = (marginTy != null && marginPy != null) ? marginTy - marginPy : null;
 
   const rgiTy = entry.revpar_index;
   const rgiChg = entry.revpar_index_change;
@@ -48,290 +124,405 @@ function buildHtmlPage(property, entry, scorecard, periodLabel) {
   const gssPriorNorm = normalizeGssTo100(entry.gss_prior, brand);
   const gssVar = (gssNorm != null && gssPriorNorm != null) ? gssNorm - gssPriorNorm : null;
 
-  const forecastVar = (entry.forecast_actual_revenue != null && entry.forecast_primary_forecast != null)
-    ? entry.forecast_actual_revenue - entry.forecast_primary_forecast : null;
-  const hasForecData = hasForecastData(entry);
-
-  const totalScore = scorecard ? scorecard.total.total : null;
-  const totalPass = scorecard ? scorecard.total.pass : false;
-
-  const kpiRows = scorecard ? [
+  const summaryBoxes = [
     {
-      name: 'Budgeted GOP', weight: '35%',
-      target: fmt$(gopB), actual: fmt$(gopA),
-      variance: gopVariance != null ? `${gopVariance >= 0 ? '+' : '-'}$${Math.abs(Math.round(gopVariance)).toLocaleString('en-US')}` : '—',
-      score: scorecard.gop.score, max: 35, pass: scorecard.gop.pass, incomplete: scorecard.gop.incomplete,
+      title: 'Budgeted GOP',
+      headline: gopVariance != null ? fmtDollar(gopVariance) : '—',
+      headlineColor: gopVariance == null ? [100,116,139] : gopVariance >= 0 ? [76,175,80] : [239,68,68],
+      sub: 'vs Budget',
+      rows: [
+        ['Actual', fmtDollar(gopA)],
+        ['Budget', fmtDollar(gopB)],
+        ['Achievement', gopPct != null ? gopPct.toFixed(1) + '%' : '—'],
+      ],
     },
     {
-      name: 'GOP Margin Improvement', weight: '35%',
-      target: marginLy != null ? marginLy.toFixed(1) + '%' : '—',
+      title: 'GOP Margin (vs LY)',
+      headline: marginVar != null ? fmtPts(marginVar) : '—',
+      headlineColor: marginVar == null ? [100,116,139] : marginVar >= 0 ? [76,175,80] : [239,68,68],
+      sub: 'pts vs LY',
+      rows: [
+        ['TY Margin', marginTy != null ? marginTy.toFixed(1) + '%' : '—'],
+        ['PY Margin', marginPy != null ? marginPy.toFixed(1) + '%' : '—'],
+      ],
+    },
+    {
+      title: 'RevPAR Index (RGI)',
+      headline: rgiChg != null ? fmtPct(rgiChg) : '—',
+      headlineColor: rgiChg == null ? [100,116,139] : rgiChg >= 0.1 ? [76,175,80] : [239,68,68],
+      sub: 'YOY Change',
+      rows: [
+        ['TY Index', fmtNum(rgiTy)],
+        ['LY Index', fmtNum(rgiLy)],
+      ],
+    },
+    {
+      title: 'GSS Score (100-pt)',
+      headline: gssVar != null ? fmtPts(gssVar) : '—',
+      headlineColor: gssVar == null ? [100,116,139] : gssVar >= 0 ? [76,175,80] : [239,68,68],
+      sub: 'pts vs PY',
+      rows: [
+        ['TY Score', fmtNum(gssNorm)],
+        ['PY Score', fmtNum(gssPriorNorm)],
+      ],
+    },
+  ];
+
+  summaryBoxes.forEach((box, i) => {
+    const bx = 28 + i * (boxW + boxGap);
+
+    // Box background
+    doc.setFillColor(255, 255, 255);
+    doc.setDrawColor(226, 232, 240);
+    doc.roundedRect(bx, boxY, boxW, boxH, 4, 4, 'FD');
+
+    // Accent top strip
+    doc.setFillColor(...accent);
+    doc.roundedRect(bx, boxY, boxW, 3, 2, 2, 'F');
+
+    // Title
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(7);
+    doc.setTextColor(100, 116, 139);
+    doc.text(box.title.toUpperCase(), bx + 8, boxY + 14);
+
+    // Headline value
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(14);
+    doc.setTextColor(...box.headlineColor);
+    doc.text(box.headline, bx + 8, boxY + 32);
+
+    // Sub label
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7);
+    doc.setTextColor(148, 163, 184);
+    doc.text(box.sub, bx + 8, boxY + 42);
+
+    // Divider
+    doc.setDrawColor(226, 232, 240);
+    doc.line(bx + 8, boxY + 50, bx + boxW - 8, boxY + 50);
+
+    // Sub-rows
+    box.rows.forEach((row, ri) => {
+      const ry = boxY + 62 + ri * 14;
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(7);
+      doc.setTextColor(100, 116, 139);
+      doc.text(row[0], bx + 8, ry);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(30, 41, 59);
+      doc.text(row[1], bx + boxW - 8, ry, { align: 'right' });
+    });
+  });
+
+  // ── KPI DETAIL TABLE ─────────────────────────────────────────────────────────
+  const tableY = boxY + boxH + 12;
+  const tableH = 126;
+
+  doc.setFillColor(248, 250, 252);
+  doc.setDrawColor(226, 232, 240);
+  doc.roundedRect(28, tableY, W - 56, tableH, 4, 4, 'FD');
+
+  // Table header
+  doc.setFillColor(...accent);
+  doc.roundedRect(28, tableY, W - 56, 18, 4, 4, 'F');
+  doc.setFillColor(...accent);
+  doc.rect(28, tableY + 10, W - 56, 8, 'F');
+
+  const cols = [
+    { label: 'KPI', x: 36, w: 180, align: 'left' },
+    { label: 'Weight', x: 220, w: 44, align: 'center' },
+    { label: 'Target', x: 268, w: 100, align: 'center' },
+    { label: 'Actual', x: 372, w: 100, align: 'center' },
+    { label: 'Variance', x: 476, w: 100, align: 'center' },
+    { label: 'Score', x: 580, w: 60, align: 'center' },
+    { label: 'Status', x: 644, w: 80, align: 'center' },
+                                   // 724 — fits within 792-28=764
+  ];
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(7);
+  doc.setTextColor(255, 255, 255);
+  cols.forEach(c => {
+    const tx = c.align === 'center' ? c.x + c.w / 2 : c.x;
+    doc.text(c.label, tx, tableY + 12, { align: c.align === 'center' ? 'center' : 'left' });
+  });
+
+  // Build KPI rows data
+  const rgiTarget = (rgiTy != null && rgiChg != null) ? (rgiTy / (1 + rgiChg / 100)) * 1.001 : null;
+  const gssStd = scorecard.gssStd;
+
+  const kpiData = [
+    {
+      name: 'Budgeted GOP',
+      weight: '35%',
+      target: fmtDollar(gopB),
+      actual: fmtDollar(gopA),
+      variance: gopVariance != null ? fmtDollar(gopVariance) : '—',
+      variancePos: gopVariance != null ? gopVariance >= 0 : null,
+      score: scorecard.gop.score,
+      max: 35,
+      pass: scorecard.gop.pass,
+      incomplete: scorecard.gop.incomplete,
+    },
+    {
+      name: 'GOP Margin Improvement',
+      weight: '35%',
+      target: marginPy != null ? marginPy.toFixed(1) + '%' : '—',
       actual: marginTy != null ? marginTy.toFixed(1) + '%' : '—',
-      variance: fmtPts(marginVar),
-      score: scorecard.gopMargin.score, max: 35, pass: scorecard.gopMargin.pass, incomplete: scorecard.gopMargin.incomplete,
+      variance: marginVar != null ? fmtPts(marginVar) : '—',
+      variancePos: marginVar != null ? marginVar >= 0 : null,
+      score: scorecard.gopMargin.score,
+      max: 35,
+      pass: scorecard.gopMargin.pass,
+      incomplete: scorecard.gopMargin.incomplete,
     },
     {
-      name: 'RevPAR Index % Change (RGI)', weight: '15%',
-      target: rgiLy != null ? (rgiLy * 1.001).toFixed(1) : '—',
-      actual: fmtIdx(rgiTy),
-      variance: fmtPct(rgiChg),
-      score: scorecard.rgi.score, max: 15, pass: scorecard.rgi.pass, incomplete: scorecard.rgi.incomplete,
+      name: 'RevPAR Index % Change (RGI)',
+      weight: '15%',
+      target: rgiTarget != null ? rgiTarget.toFixed(1) : '—',
+      actual: rgiTy != null ? rgiTy.toFixed(1) : '—',
+      variance: rgiChg != null ? fmtPct(rgiChg) : '—',
+      variancePos: rgiChg != null ? rgiChg >= 0.1 : null,
+      score: scorecard.rgi.score,
+      max: 15,
+      pass: scorecard.rgi.pass,
+      incomplete: scorecard.rgi.incomplete,
     },
     {
-      name: `GSS — ${scorecard.gssStd.label}`, weight: '15%',
-      target: fmtRaw(gssPriorNorm),
-      actual: fmtRaw(gssNorm),
-      variance: fmtPts(gssVar),
-      score: scorecard.gss.score, max: 15, pass: scorecard.gss.pass, incomplete: scorecard.gss.incomplete,
+      name: `GSS — ${gssStd.label}`,
+      weight: '15%',
+      target: gssPriorNorm != null ? gssPriorNorm.toFixed(1) : '—',
+      actual: gssNorm != null ? gssNorm.toFixed(1) : '—',
+      variance: gssVar != null ? fmtPts(gssVar) : '—',
+      variancePos: gssVar != null ? gssVar >= 0 : null,
+      score: scorecard.gss.score,
+      max: 15,
+      pass: scorecard.gss.pass,
+      incomplete: scorecard.gss.incomplete,
     },
-  ] : [];
+  ];
 
-  const green = '#2e7d32';
-  const red = '#c62828';
-  const navy = '#2d4b5e';
+  kpiData.forEach((row, ri) => {
+    const ry = tableY + 18 + ri * 24;
+    const rowBg = ri % 2 === 0 ? [255, 255, 255] : [248, 250, 252];
+    doc.setFillColor(...rowBg);
+    doc.rect(28, ry, W - 56, 24, 'F');
 
-  const metricBox = (label, value) => `
-    <div style="flex:1;min-width:0;border-right:1px solid #e5e7eb;padding:0 12px;text-align:center;">
-      <div style="font-size:9px;color:#6b7280;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:2px;">${label}</div>
-      <div style="font-size:13px;font-weight:700;color:#111;">${value}</div>
-    </div>`;
+    const cy = ry + 15;
 
-  const coloredVal = (val, isGood) => `<span style="color:${isGood ? green : red};font-weight:700;">${val}</span>`;
+    // KPI name
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8);
+    doc.setTextColor(30, 41, 59);
+    doc.text(row.name, cols[0].x, cy);
 
-  return `<!DOCTYPE html>
-<html>
-<head>
-<meta charset="utf-8"/>
-<title>Scorecard — ${property.name}</title>
-<style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  @page { size: landscape; margin: 0; }
-  body { font-family: Arial, Helvetica, sans-serif; font-size: 11px; color: #111; background: #fff; width: 279mm; min-height: 215mm; }
-  .page { width: 279mm; min-height: 215mm; padding: 0; display: flex; flex-direction: column; }
-  .accent-bar { height: 6px; background: ${accentColor}; width: 100%; }
-  .header { padding: 10px 20px 8px; display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1px solid #e5e7eb; }
-  .header-left h1 { font-size: 18px; font-weight: 800; color: ${navy}; line-height: 1.1; }
-  .header-left .sub { font-size: 10px; color: #6b7280; margin-top: 2px; }
-  .header-right { text-align: right; }
-  .header-right .period { font-size: 13px; font-weight: 700; color: ${navy}; }
-  .header-right .meta { font-size: 9px; color: #9ca3af; margin-top: 2px; }
-  .brand-badge { display: inline-block; background: ${accentColor}; color: #fff; font-size: 9px; font-weight: 700; padding: 2px 8px; border-radius: 3px; letter-spacing: 0.05em; margin-top: 4px; }
-  .kpi-summary { display: flex; padding: 10px 20px; gap: 0; background: #f9fafb; border-bottom: 1px solid #e5e7eb; }
-  .kpi-summary-box { flex: 1; padding: 6px 12px; border-right: 1px solid #e5e7eb; }
-  .kpi-summary-box:last-child { border-right: none; }
-  .kpi-summary-box .kpi-title { font-size: 8px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #6b7280; margin-bottom: 6px; }
-  .kpi-summary-box .kpi-metrics { display: flex; gap: 16px; flex-wrap: wrap; }
-  .kpi-summary-box .metric { }
-  .kpi-summary-box .metric .mlabel { font-size: 8px; color: #9ca3af; text-transform: uppercase; }
-  .kpi-summary-box .metric .mval { font-size: 13px; font-weight: 800; color: #111; }
-  .kpi-table { margin: 8px 20px; }
-  .kpi-table table { width: 100%; border-collapse: collapse; font-size: 10px; }
-  .kpi-table th { background: ${navy}; color: #fff; padding: 5px 8px; text-align: left; font-size: 9px; text-transform: uppercase; letter-spacing: 0.05em; }
-  .kpi-table th.center { text-align: center; }
-  .kpi-table td { padding: 5px 8px; border-bottom: 1px solid #e5e7eb; }
-  .kpi-table td.center { text-align: center; }
-  .kpi-table tr:last-child td { border-bottom: none; }
-  .kpi-table .total-row td { background: ${navy}; color: #fff; font-weight: 700; }
-  .badge { display: inline-block; padding: 1px 8px; border-radius: 99px; font-size: 9px; font-weight: 700; color: #fff; }
-  .badge-pass { background: ${green}; }
-  .badge-fail { background: ${red}; }
-  .badge-na { background: #9ca3af; }
-  .bottom-section { display: flex; gap: 12px; padding: 8px 20px; flex: 1; }
-  .forecast-box { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 6px; padding: 8px 12px; min-width: 200px; }
-  .forecast-box .box-title { font-size: 8px; font-weight: 700; text-transform: uppercase; color: #6b7280; margin-bottom: 6px; letter-spacing: 0.05em; }
-  .forecast-metrics { display: flex; gap: 12px; flex-wrap: wrap; }
-  .narrative-box { flex: 1; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 6px; padding: 8px 12px; }
-  .narrative-box .box-title { font-size: 8px; font-weight: 700; text-transform: uppercase; color: #6b7280; margin-bottom: 6px; letter-spacing: 0.05em; }
-  .narrative-cols { display: flex; gap: 12px; }
-  .narrative-col { flex: 1; }
-  .narrative-col .nc-label { font-size: 8px; font-weight: 700; color: ${navy}; margin-bottom: 2px; }
-  .narrative-col .nc-text { font-size: 9px; color: #374151; line-height: 1.4; white-space: pre-wrap; word-break: break-word; }
-  .footer { padding: 6px 20px; border-top: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center; background: #f9fafb; }
-  .footer-left { font-size: 9px; color: #6b7280; }
-  .footer-right { font-size: 9px; color: #9ca3af; }
-  .score-chip { display: inline-flex; align-items: center; gap: 6px; background: ${totalPass ? green : red}; color: #fff; border-radius: 4px; padding: 2px 10px; font-size: 12px; font-weight: 800; }
-</style>
-</head>
-<body>
-<div class="page">
-  <div class="accent-bar"></div>
+    // Weight
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.setTextColor(100, 116, 139);
+    doc.text(row.weight, cols[1].x + cols[1].w / 2, cy, { align: 'center' });
 
-  <div class="header">
-    <div class="header-left">
-      <div style="font-size:10px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:2px;">REBEL Hotel Co.</div>
-      <h1>${property.name}</h1>
-      <div class="sub">${property.city || ''}, ${property.state || ''}${property.gm_name ? ' &nbsp;·&nbsp; GM: ' + property.gm_name : ''}</div>
-      <span class="brand-badge">${formatBrandLabel(property.parent_brand, property.sub_brand)}</span>
-    </div>
-    <div class="header-right">
-      <div class="period">${periodLabel}</div>
-      <div class="meta">Generated ${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</div>
-      <div style="margin-top:8px;">
-        <span class="score-chip">
-          ${anyIncomplete ? '— INCOMPLETE' : totalScore + ' / 100 &nbsp; ' + (totalPass ? '✓ PASS' : '✗ FAIL')}
-        </span>
-      </div>
-    </div>
-  </div>
+    // Target
+    doc.setTextColor(100, 116, 139);
+    doc.text(row.target, cols[2].x + cols[2].w / 2, cy, { align: 'center' });
 
-  <!-- KPI Summary Row -->
-  <div class="kpi-summary">
-    <!-- GOP -->
-    <div class="kpi-summary-box">
-      <div class="kpi-title">Budgeted GOP</div>
-      <div class="kpi-metrics">
-        <div class="metric"><div class="mlabel">Actual</div><div class="mval">${fmt$(gopA)}</div></div>
-        <div class="metric"><div class="mlabel">Budget</div><div class="mval">${fmt$(gopB)}</div></div>
-        <div class="metric"><div class="mlabel">Achievement</div><div class="mval" style="color:${gopPct != null ? (gopPct >= 100 ? green : red) : '#111'};">${gopPct != null ? gopPct.toFixed(1) + '%' : '—'}</div></div>
-      </div>
-    </div>
-    <!-- Margin -->
-    <div class="kpi-summary-box">
-      <div class="kpi-title">GOP Margin Improvement</div>
-      <div class="kpi-metrics">
-        <div class="metric"><div class="mlabel">TY</div><div class="mval">${marginTy != null ? marginTy.toFixed(1) + '%' : '—'}</div></div>
-        <div class="metric"><div class="mlabel">PY</div><div class="mval">${marginLy != null ? marginLy.toFixed(1) + '%' : '—'}</div></div>
-        <div class="metric"><div class="mlabel">Variance</div><div class="mval" style="color:${marginVar != null ? (marginVar >= 0.1 ? green : red) : '#111'};">${fmtPts(marginVar)}</div></div>
-      </div>
-    </div>
-    <!-- RGI -->
-    <div class="kpi-summary-box">
-      <div class="kpi-title">RevPAR Index (RGI)</div>
-      <div class="kpi-metrics">
-        <div class="metric"><div class="mlabel">TY Index</div><div class="mval">${fmtIdx(rgiTy)}</div></div>
-        <div class="metric"><div class="mlabel">LY Index</div><div class="mval">${fmtIdx(rgiLy)}</div></div>
-        <div class="metric"><div class="mlabel">YOY</div><div class="mval" style="color:${rgiChg != null ? (rgiChg >= 0.1 ? green : red) : '#111'};">${fmtPct(rgiChg)}</div></div>
-      </div>
-    </div>
-    <!-- GSS -->
-    <div class="kpi-summary-box" style="border-right:none;">
-      <div class="kpi-title">GSS Score</div>
-      <div class="kpi-metrics">
-        <div class="metric"><div class="mlabel">TY</div><div class="mval">${fmtRaw(gssNorm)}</div></div>
-        <div class="metric"><div class="mlabel">PY</div><div class="mval">${fmtRaw(gssPriorNorm)}</div></div>
-        <div class="metric"><div class="mlabel">Variance</div><div class="mval" style="color:${gssVar != null ? (gssVar >= 0 ? green : red) : '#111'};">${fmtPts(gssVar)}</div></div>
-      </div>
-    </div>
-  </div>
+    // Actual
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(30, 41, 59);
+    doc.text(row.actual, cols[3].x + cols[3].w / 2, cy, { align: 'center' });
 
-  <!-- KPI Detail Table -->
-  <div class="kpi-table">
-    <table>
-      <thead>
-        <tr>
-          <th>KPI Measure</th>
-          <th class="center">Weight</th>
-          <th class="center">Target</th>
-          <th class="center">Actual</th>
-          <th class="center">Variance</th>
-          <th class="center">Score</th>
-          <th class="center">Max</th>
-          <th class="center">Status</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${kpiRows.map(r => `
-        <tr>
-          <td><strong>${r.name}</strong></td>
-          <td class="center">${r.weight}</td>
-          <td class="center">${r.target}</td>
-          <td class="center">${r.actual}</td>
-          <td class="center">${r.variance}</td>
-          <td class="center"><strong>${r.incomplete ? '—' : r.score.toFixed(1)}</strong></td>
-          <td class="center">${r.max}</td>
-          <td class="center">
-            ${r.incomplete
-              ? '<span class="badge badge-na">N/A</span>'
-              : `<span class="badge ${r.pass ? 'badge-pass' : 'badge-fail'}">${r.pass ? 'PASS' : 'FAIL'}</span>`}
-          </td>
-        </tr>`).join('')}
-      </tbody>
-      <tfoot>
-        <tr class="total-row">
-          <td colspan="5"><strong>TOTAL SCORE</strong></td>
-          <td class="center"><strong>${anyIncomplete ? '—' : totalScore}</strong></td>
-          <td class="center"><strong>100</strong></td>
-          <td class="center">
-            ${anyIncomplete
-              ? '<span class="badge badge-na">INCOMPLETE</span>'
-              : `<span class="badge ${totalPass ? 'badge-pass' : 'badge-fail'}">${totalPass ? '✓ PASS' : '✗ FAIL'}</span>`}
-          </td>
-        </tr>
-      </tfoot>
-    </table>
-  </div>
+    // Variance
+    const varColor = row.variancePos == null ? [100, 116, 139] : row.variancePos ? [76, 175, 80] : [239, 68, 68];
+    doc.setTextColor(...varColor);
+    doc.text(row.variance, cols[4].x + cols[4].w / 2, cy, { align: 'center' });
 
-  <!-- Bottom: Forecast + Narrative -->
-  <div class="bottom-section">
-    <div class="forecast-box">
-      <div class="box-title">Forecast Accuracy Kicker</div>
-      ${hasForecData ? `
-      <div class="forecast-metrics">
-        <div class="metric"><div class="mlabel">Actual</div><div class="mval">${fmt$(entry.forecast_actual_revenue)}</div></div>
-        <div class="metric"><div class="mlabel">Forecast</div><div class="mval">${fmt$(entry.forecast_primary_forecast)}</div></div>
-        <div class="metric"><div class="mlabel">Variance</div><div class="mval" style="color:${forecastVar != null ? (forecastVar >= 0 ? green : red) : '#111'};">${forecastVar != null ? (forecastVar >= 0 ? '+' : '-') + '$' + Math.abs(Math.round(forecastVar)).toLocaleString('en-US') : '—'}</div></div>
-        <div class="metric"><div class="mlabel">Result</div><div class="mval"><span class="badge ${entry.forecast_kicker ? 'badge-pass' : 'badge-fail'}">${entry.forecast_kicker ? 'HIT' : 'MISS'}</span></div></div>
-      </div>` : '<div style="font-size:9px;color:#9ca3af;">No forecast data</div>'}
-      ${!entry.red_zone_kicker && entry.red_zone_kicker !== undefined
-        ? `<div style="margin-top:8px;font-size:9px;"><strong style="color:#6b7280;">Red Zone Kicker:</strong> <span class="badge ${entry.red_zone_kicker ? 'badge-pass' : 'badge-fail'}">${entry.red_zone_kicker ? 'HIT' : 'MISS'}</span></div>`
-        : `<div style="margin-top:8px;font-size:9px;"><strong style="color:#6b7280;">Red Zone Kicker:</strong> <span class="badge ${entry.red_zone_kicker ? 'badge-pass' : 'badge-fail'}">${entry.red_zone_kicker ? 'HIT' : 'MISS'}</span></div>`}
-    </div>
+    // Score
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(30, 41, 59);
+    const scoreStr = row.incomplete ? '—' : `${row.score.toFixed(1)} / ${row.max}`;
+    doc.text(scoreStr, cols[5].x + cols[5].w / 2, cy, { align: 'center' });
 
-    ${(entry.key_wins || entry.previous_results || entry.next_priorities) ? `
-    <div class="narrative-box">
-      <div class="box-title">Narrative</div>
-      <div class="narrative-cols">
-        ${entry.key_wins ? `<div class="narrative-col"><div class="nc-label">Key Wins</div><div class="nc-text">${entry.key_wins}</div></div>` : ''}
-        ${entry.previous_results ? `<div class="narrative-col"><div class="nc-label">Previous Results</div><div class="nc-text">${entry.previous_results}</div></div>` : ''}
-        ${entry.next_priorities ? `<div class="narrative-col"><div class="nc-label">Next Priorities</div><div class="nc-text">${entry.next_priorities}</div></div>` : ''}
-      </div>
-    </div>` : ''}
-  </div>
-
-  <div class="footer">
-    <div class="footer-left">
-      ${entry.prepared_by ? `Prepared by: <strong>${entry.prepared_by}</strong>` : ''}
-      ${entry.prepared_by && entry.reviewed_by ? '&nbsp;&nbsp;|&nbsp;&nbsp;' : ''}
-      ${entry.reviewed_by ? `Reviewed by: <strong>${entry.reviewed_by}</strong>` : ''}
-    </div>
-    <div class="footer-right">REBEL Hotel Co. · Balanced Scorecard · Confidential</div>
-  </div>
-</div>
-</body>
-</html>`;
-}
-
-export default function ScorecardPdfExport({ property, entry, scorecard, periodLabel }) {
-  const [loading, setLoading] = useState(false);
-
-  const handleDownload = () => {
-    if (!property || !entry || !scorecard) return;
-    setLoading(true);
-    const html = buildHtmlPage(property, entry, scorecard, periodLabel);
-    const blob = new Blob([html], { type: 'text/html' });
-    const url = URL.createObjectURL(blob);
-    const win = window.open(url, '_blank');
-    if (win) {
-      win.addEventListener('load', () => {
-        setTimeout(() => {
-          win.print();
-          setLoading(false);
-          URL.revokeObjectURL(url);
-        }, 500);
-      });
+    // Status badge
+    if (!row.incomplete) {
+      const badgeColor = row.pass ? [76, 175, 80] : [239, 68, 68];
+      const badgeLabel = row.pass ? 'PASS' : 'FAIL';
+      const bx = cols[6].x + cols[6].w / 2;
+      doc.setFillColor(...badgeColor);
+      doc.roundedRect(bx - 18, cy - 9, 36, 13, 3, 3, 'F');
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(7);
+      doc.setTextColor(255, 255, 255);
+      doc.text(badgeLabel, bx, cy, { align: 'center' });
     } else {
-      setLoading(false);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(7);
+      doc.setTextColor(148, 163, 184);
+      doc.text('N/A', cols[6].x + cols[6].w / 2, cy, { align: 'center' });
     }
-  };
+  });
 
-  return (
-    <button
-      onClick={handleDownload}
-      disabled={loading || !property || !entry}
-      className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90 active:scale-95"
-      style={{ backgroundColor: '#2d4b5e' }}
-    >
-      <Download className="w-4 h-4" />
-      {loading ? 'Preparing…' : 'Download PDF'}
-    </button>
-  );
+  // Total score row
+  const totalY = tableY + 18 + kpiData.length * 24;
+  doc.setFillColor(...accent);
+  doc.rect(28, totalY, W - 56, 20, 'F');
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(9);
+  doc.setTextColor(255, 255, 255);
+  doc.text('TOTAL SCORE', cols[0].x, totalY + 13);
+  const anyIncomplete = kpiData.some(r => r.incomplete);
+  const totalScore = scorecard.total.total;
+  doc.text(anyIncomplete ? '—' : `${totalScore} / 100`, cols[5].x + cols[5].w / 2, totalY + 13, { align: 'center' });
+  if (!anyIncomplete) {
+    const passLabel = scorecard.total.pass ? '✓ PASS' : '✗ FAIL';
+    const bx = cols[6].x + cols[6].w / 2;
+    doc.setFillColor(scorecard.total.pass ? 76 : 239, scorecard.total.pass ? 175 : 68, scorecard.total.pass ? 80 : 68);
+    doc.roundedRect(bx - 22, totalY + 4, 44, 13, 3, 3, 'F');
+    doc.setFontSize(8);
+    doc.text(passLabel, bx, totalY + 13, { align: 'center' });
+  }
+
+  // ── FORECAST + KICKERS + NARRATIVE ──────────────────────────────────────────
+  const bottomY = tableY + tableH + 10;
+  const bottomH = H - bottomY - 28;
+
+  // Forecast section (left ~38%)
+  const fcW = Math.floor((W - 56) * 0.38);
+  const fcX = 28;
+
+  doc.setFillColor(255, 255, 255);
+  doc.setDrawColor(226, 232, 240);
+  doc.roundedRect(fcX, bottomY, fcW, bottomH, 4, 4, 'FD');
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(7);
+  doc.setTextColor(...accent);
+  doc.text('FORECAST KICKER', fcX + 8, bottomY + 12);
+
+  const fcActual = entry.forecast_actual_revenue;
+  const fcForecast = entry.forecast_primary_forecast;
+  const fcVariance = (fcActual != null && fcForecast != null) ? fcActual - fcForecast : null;
+  const fcHasData = hasForecastData(entry);
+  const fcHit = fcHasData ? (entry.forecast_kicker || false) : false;
+
+  doc.setDrawColor(226, 232, 240);
+  doc.line(fcX + 8, bottomY + 16, fcX + fcW - 8, bottomY + 16);
+
+  const fcRows = [
+    ['Actual Revenue', fmtDollar(fcActual)],
+    ['Primary Forecast', fmtDollar(fcForecast)],
+    ['Variance', fcVariance != null ? fmtDollar(fcVariance) : '—'],
+  ];
+
+  fcRows.forEach(([label, val], ri) => {
+    const ry = bottomY + 26 + ri * 14;
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7.5);
+    doc.setTextColor(100, 116, 139);
+    doc.text(label, fcX + 8, ry);
+    doc.setFont('helvetica', 'bold');
+    const isVariance = label === 'Variance';
+    const valColor = isVariance && fcVariance != null
+      ? (fcVariance >= 0 ? [76, 175, 80] : [239, 68, 68])
+      : [30, 41, 59];
+    doc.setTextColor(...valColor);
+    doc.text(val, fcX + fcW - 8, ry, { align: 'right' });
+  });
+
+  // Kicker badge
+  if (fcHasData) {
+    const badgeColor = fcHit ? [76, 175, 80] : [239, 68, 68];
+    doc.setFillColor(...badgeColor);
+    doc.roundedRect(fcX + 8, bottomY + 70, 50, 14, 3, 3, 'F');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8);
+    doc.setTextColor(255, 255, 255);
+    doc.text(fcHit ? 'HIT ✓' : 'MISS ✗', fcX + 33, bottomY + 80, { align: 'center' });
+  } else {
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7);
+    doc.setTextColor(148, 163, 184);
+    doc.text('No forecast data', fcX + 8, bottomY + 80);
+  }
+
+  // Red Zone kicker
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(7);
+  doc.setTextColor(...accent);
+  doc.text('RED ZONE KICKER', fcX + 8, bottomY + 100);
+  doc.setDrawColor(226, 232, 240);
+  doc.line(fcX + 8, bottomY + 104, fcX + fcW - 8, bottomY + 104);
+  const rzHit = entry.red_zone_kicker || false;
+  if (brand !== 'Independent') {
+    const rzColor = rzHit ? [76, 175, 80] : [239, 68, 68];
+    doc.setFillColor(...rzColor);
+    doc.roundedRect(fcX + 8, bottomY + 110, 50, 14, 3, 3, 'F');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8);
+    doc.setTextColor(255, 255, 255);
+    doc.text(rzHit ? 'HIT ✓' : 'MISS ✗', fcX + 33, bottomY + 120, { align: 'center' });
+  } else {
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7);
+    doc.setTextColor(148, 163, 184);
+    doc.text('N/A (Independent)', fcX + 8, bottomY + 120);
+  }
+
+  // Narrative section (right ~60%)
+  const narX = fcX + fcW + 8;
+  const narW = W - 56 - fcW - 8;
+
+  doc.setFillColor(255, 255, 255);
+  doc.setDrawColor(226, 232, 240);
+  doc.roundedRect(narX, bottomY, narW, bottomH, 4, 4, 'FD');
+
+  const narSections = [
+    { label: 'KEY WINS', value: entry.key_wins },
+    { label: 'PREVIOUS RESULTS', value: entry.previous_results },
+    { label: 'NEXT PRIORITIES', value: entry.next_priorities },
+  ];
+
+  const narColW = Math.floor(narW / 3) - 6;
+  narSections.forEach((sec, i) => {
+    const nx = narX + 8 + i * (narColW + 6);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(7);
+    doc.setTextColor(...accent);
+    doc.text(sec.label, nx, bottomY + 12);
+    doc.setDrawColor(226, 232, 240);
+    doc.line(nx, bottomY + 16, nx + narColW, bottomY + 16);
+    if (sec.value) {
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(7.5);
+      doc.setTextColor(51, 65, 85);
+      const lines = doc.splitTextToSize(sec.value, narColW);
+      doc.text(lines.slice(0, Math.floor((bottomH - 24) / 10)), nx, bottomY + 26);
+    } else {
+      doc.setFont('helvetica', 'italic');
+      doc.setFontSize(7);
+      doc.setTextColor(148, 163, 184);
+      doc.text('No data entered', nx, bottomY + 26);
+    }
+  });
+
+  // ── FOOTER ───────────────────────────────────────────────────────────────────
+  doc.setFillColor(248, 250, 252);
+  doc.rect(0, H - 22, W, 22, 'F');
+  doc.setDrawColor(226, 232, 240);
+  doc.line(0, H - 22, W, H - 22);
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(7);
+  doc.setTextColor(100, 116, 139);
+  const preparedBy = entry.prepared_by ? `Prepared by: ${entry.prepared_by}` : '';
+  const reviewedBy = entry.reviewed_by ? `Reviewed by: ${entry.reviewed_by}` : '';
+  const footerLeft = [preparedBy, reviewedBy].filter(Boolean).join('   |   ');
+  if (footerLeft) doc.text(footerLeft, 28, H - 8);
+  doc.text('Page 1 of 1', W - 28, H - 8, { align: 'right' });
+  doc.setTextColor(...accent);
+  doc.text('REBEL Hotel Co. — Confidential', W / 2, H - 8, { align: 'center' });
+
+  // ── SAVE ─────────────────────────────────────────────────────────────────────
+  const filename = `scorecard_${(property?.name || 'hotel').replace(/\s+/g, '_')}_${periodLabel.replace(/\s+/g, '_')}.pdf`;
+  doc.save(filename);
 }
