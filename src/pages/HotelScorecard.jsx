@@ -306,7 +306,11 @@ export default function HotelScorecard() {
             <h2 className="font-bold text-sm text-muted-foreground uppercase tracking-wide">Overall Score</h2>
             {scorecard && <ScoreGauge score={scorecard.total.total} pass={scorecard.total.pass} />}
             <div className="w-full space-y-2">
-              <KickerBadge type="forecast" hit={activeEntry.forecast_kicker || false} forecastValue={activeEntry.forecast_primary_forecast} />
+              <KickerBadge
+                type="forecast"
+                hit={(activeEntry.forecast_actual_revenue != null && activeEntry.forecast_primary_forecast != null) ? (activeEntry.forecast_kicker || false) : false}
+                missingData={activeEntry.forecast_actual_revenue == null || activeEntry.forecast_primary_forecast == null}
+              />
               <KickerBadge type="redzone" hit={activeEntry.red_zone_kicker || false} />
             </div>
           </div>

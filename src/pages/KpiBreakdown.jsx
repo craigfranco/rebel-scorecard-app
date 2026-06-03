@@ -152,7 +152,8 @@ export default function KpiBreakdown() {
           entry._gss_scale = sc.gssStd.scale;
           entry._gss_growth = (entry.gss_actual != null && entry.gss_prior != null) ? entry.gss_actual - entry.gss_prior : null;
         } else if (activeKpi === 'forecast') {
-          pass = entry.forecast_kicker || false;
+          const hasForecastData = entry.forecast_actual_revenue != null && entry.forecast_primary_forecast != null;
+          pass = hasForecastData ? (entry.forecast_kicker || false) : false;
           score = pass ? 1 : 0;
           actual = entry.forecast_actual_revenue != null ? `$${Math.round(entry.forecast_actual_revenue).toLocaleString('en-US')}` : '—';
           target = entry.forecast_primary_forecast != null ? `$${Math.round(entry.forecast_primary_forecast).toLocaleString('en-US')}` : '—';
@@ -413,7 +414,9 @@ export default function KpiBreakdown() {
                           className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold text-white"
                           style={{ backgroundColor: pass ? '#4CAF50' : '#ef4444' }}
                         >
-                          {activeKpi === 'forecast' ? (pass ? 'HIT' : 'MISS') : (pass ? 'PASS' : 'FAIL')}
+                          {activeKpi === 'forecast'
+                            ? (pass ? 'HIT' : (entry.forecast_actual_revenue == null || entry.forecast_primary_forecast == null) ? '✗ No Data' : '✗ MISS')
+                            : (pass ? 'PASS' : 'FAIL')}
                         </span>
                       ) : (
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-muted text-muted-foreground">

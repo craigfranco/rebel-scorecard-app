@@ -9,7 +9,8 @@ export default function ForecastKickerTracker({ properties, allEntries, getPerio
   const rows = properties.map(prop => {
     const propEntries = allEntries.filter(e => e.property_id === prop.id && periodMonths.includes(e.month) && e.year === selectedYear);
     const latest = propEntries[propEntries.length - 1];
-    const hit = latest?.forecast_kicker === true;
+    const hasForecastData = latest?.forecast_actual_revenue != null && latest?.forecast_primary_forecast != null;
+    const hit = hasForecastData && latest?.forecast_kicker === true;
     return { prop, hit, hasData: !!latest };
   }).filter(r => r.hasData);
 

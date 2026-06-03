@@ -80,7 +80,10 @@ export function calculateScorecard(entry, property) {
     gss,
     gssStd,
     total,
-    forecastKicker: entry.forecast_kicker || false,
+    forecastKicker: (entry.forecast_actual_revenue != null && entry.forecast_primary_forecast != null)
+      ? (entry.forecast_kicker || false)
+      : false,
+    forecastMissingData: entry.forecast_actual_revenue == null || entry.forecast_primary_forecast == null,
     redZoneKicker: entry.red_zone_kicker || false,
   };
 }
