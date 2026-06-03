@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 
-export default function KpiRow({ measure, weight, target, actual, ytdActual, score, maxScore, pass, incomplete, gopActual, gopBudget }) {
+export default function KpiRow({ measure, weight, target, targetLy, actual, ytdActual, score, maxScore, pass, incomplete, gopActual, gopBudget }) {
   const [barWidth, setBarWidth] = useState(0);
 
   useEffect(() => {
@@ -16,7 +16,16 @@ export default function KpiRow({ measure, weight, target, actual, ytdActual, sco
     <tr className="border-b border-border hover:bg-muted/30 transition-colors">
       <td className="py-3 px-4 font-medium text-sm text-foreground">{measure}</td>
       <td className="py-3 px-4 text-center text-sm text-muted-foreground font-medium">{weight}</td>
-      <td className="py-3 px-4 text-center text-sm text-muted-foreground">{target}</td>
+      <td className="py-3 px-4 text-center text-sm">
+        <div className="flex flex-col items-center gap-0.5">
+          <span className="font-normal text-foreground">{target}</span>
+          {targetLy && (
+            <span className="text-xs text-muted-foreground" style={{ fontSize: '10px' }}>
+              LY: {targetLy}
+            </span>
+          )}
+        </div>
+      </td>
       <td className="py-3 px-4 text-center text-sm font-semibold">
         {gopActual != null ? (
           <span className="font-bold text-foreground">${Math.round(gopActual).toLocaleString('en-US')}</span>

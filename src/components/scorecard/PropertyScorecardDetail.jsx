@@ -56,6 +56,9 @@ export default function PropertyScorecardDetail({
       ? activeEntry.gop_margin_actual - activeEntry.gop_margin_prior
       : null;
 
+  const marginTy = activeEntry.gop_margin_actual;
+  const marginPy = activeEntry.gop_margin_prior;
+
   const rgiChg = activeEntry.revpar_index_change;
   const rgiTy = activeEntry.revpar_index;
   const rgiLy = rgiTy != null && rgiChg != null ? rgiTy / (1 + rgiChg / 100) : null;
@@ -79,7 +82,8 @@ export default function PropertyScorecardDetail({
         {
           measure: 'Budgeted GOP',
           weight: '35%',
-          target: gopB != null ? `Budget: $${(gopB / 1000).toFixed(0)}K` : 'Budget',
+          target: gopB != null ? `$${Math.round(gopB).toLocaleString('en-US')}` : '—',
+          targetLy: gopB != null ? `$${Math.round(gopB).toLocaleString('en-US')}` : '—',
           actual: null,
           ytdActual: null,
           gopActual: gopA,
@@ -92,8 +96,9 @@ export default function PropertyScorecardDetail({
         {
           measure: 'GOP Margin Improvement',
           weight: '35%',
-          target: '≥ 0.1% vs LY',
-          actual: activeEntry.gop_margin_actual != null ? `TY: ${activeEntry.gop_margin_actual.toFixed(1)}%` : '—',
+          target: marginPy != null ? (marginPy + 0.1).toFixed(1) + '%' : '—',
+          targetLy: marginPy != null ? marginPy.toFixed(1) + '%' : '—',
+          actual: marginTy != null ? marginTy.toFixed(1) + '%' : '—',
           ytdActual: (() => {
             const a = activeEntry.gop_margin_actual;
             const p = activeEntry.gop_margin_prior;
@@ -117,7 +122,8 @@ export default function PropertyScorecardDetail({
         {
           measure: 'RevPAR Index % Change (STR RGI)',
           weight: '15%',
-          target: '0.1–2.0% = 7.5 pts / 2.1%+ = 15 pts',
+          target: rgiLy != null ? (rgiLy * 1.001).toFixed(1) : '—',
+          targetLy: rgiLy != null ? rgiLy.toFixed(1) : '—',
           actual: rgiTy != null ? rgiTy.toFixed(1) : '—',
           ytdActual: (() => {
             if (rgiChg == null) return '—';
@@ -139,7 +145,8 @@ export default function PropertyScorecardDetail({
           return {
             measure: `GSS — ${scorecard.gssStd.label}`,
             weight: '15%',
-            target: 'TY > LY (any improvement)',
+            target: gssPriorNorm != null ? '>' + gssPriorNorm.toFixed(1) : '—',
+            targetLy: gssPriorNorm != null ? gssPriorNorm.toFixed(1) : '—',
             actual: gssNorm != null ? gssNorm.toFixed(1) : '—',
             ytdActual:
               gssVar != null ? (
