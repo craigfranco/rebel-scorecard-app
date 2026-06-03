@@ -110,13 +110,32 @@ export default function HotelScorecard() {
     {
       measure: 'RevPAR Index % Change (STR RGI)',
       weight: '15%',
-      target: activeEntry.revpar_index_prior != null ? `PY: ${activeEntry.revpar_index_prior.toFixed(1)}` : '—',
+      target: (() => {
+        const py = activeEntry.revpar_index_prior;
+        if (py == null) return '—';
+        const minTarget = (py * 1.001).toFixed(1);
+        return `Min: ${minTarget} (PY: ${py.toFixed(1)})`;
+      })(),
       actual: activeEntry.revpar_index != null ? `TY: ${activeEntry.revpar_index.toFixed(1)}` : '—',
       ytdActual: (() => {
+        const ty = activeEntry.revpar_index;
+        const py = activeEntry.revpar_index_prior;
         const chg = activeEntry.revpar_index_change;
-        if (chg == null) return '—';
-        const color = chg >= 0.1 ? '#4CAF50' : '#ef4444';
-        return <span style={{ color, fontWeight: 'bold' }}>{chg >= 0 ? '+' : ''}{chg.toFixed(1)}%</span>;
+        if (ty == null || py == null) return chg != null ? `${chg >= 0 ? '+' : ''}${chg.toFixed(1)}%` : '—';
+        const minTarget = py * 1.001;
+        const vsTarget = ty - minTarget;
+        const pass = chg != null ? chg >= 0.1 : ty >= minTarget;
+        const color = pass ? '#4CAF50' : '#ef4444';
+        const chgStr = chg != null ? `${chg >= 0 ? '+' : ''}${chg.toFixed(1)}%` : '';
+        const vsStr = vsTarget >= 0
+          ? `Beat target by +${vsTarget.toFixed(1)} pts`
+          : `Below target by ${vsTarget.toFixed(1)} pts`;
+        return (
+          <span style={{ color, fontWeight: 'bold' }}>
+            {chgStr && <>{chgStr}<br /></>}
+            <span style={{ fontSize: '11px' }}>{vsStr}</span>
+          </span>
+        );
       })(),
       score: scorecard.rgi.score,
       maxScore: 15,

@@ -140,10 +140,14 @@ export default function KpiBreakdown() {
           kpiData = sc.rgi;
           score = sc.rgi.score;
           pass = sc.rgi.pass;
-          actual = entry.revpar_index != null ? `TY: ${entry.revpar_index.toFixed(1)}` : '—';
-          target = entry.revpar_index_prior != null ? `PY: ${entry.revpar_index_prior.toFixed(1)}` : '—';
+          actual = entry.revpar_index != null ? entry.revpar_index.toFixed(1) : '—';
+          target = entry.revpar_index_prior != null ? (entry.revpar_index_prior * 1.001).toFixed(1) : '—';
           entry._rgi_change = entry.revpar_index_change;
           entry._rgi_prior = entry.revpar_index_prior;
+          entry._rgi_target = entry.revpar_index_prior != null ? entry.revpar_index_prior * 1.001 : null;
+          entry._rgi_vs_target = (entry.revpar_index != null && entry.revpar_index_prior != null)
+            ? entry.revpar_index - (entry.revpar_index_prior * 1.001)
+            : null;
         } else if (activeKpi === 'gss') {
           kpiData = sc.gss;
           score = sc.gss.score;
@@ -259,13 +263,19 @@ export default function KpiBreakdown() {
                   <div className="flex items-center justify-center gap-1">GM <SortIcon col="gm" /></div>
                 </th>
                 <th className="py-3 px-4 text-center font-semibold">
-                  {activeKpi === 'rgi' ? 'RevPAR Index' : activeKpi === 'gopMargin' ? 'TY Margin' : activeKpi === 'gop' ? 'Achievement' : 'Actual'}
+                  {activeKpi === 'rgi' ? 'TY Index' : activeKpi === 'gopMargin' ? 'TY Margin' : activeKpi === 'gop' ? 'Achievement' : 'Actual'}
                 </th>
+                {activeKpi === 'rgi' && (
+                  <th className="py-3 px-4 text-center font-semibold">Target (min)</th>
+                )}
                 {activeKpi === 'rgi' && (
                   <th className="py-3 px-4 text-center font-semibold">PY Index</th>
                 )}
                 {activeKpi === 'rgi' && (
-                  <th className="py-3 px-4 text-center font-semibold">RGI % Change YOY</th>
+                  <th className="py-3 px-4 text-center font-semibold">Change %</th>
+                )}
+                {activeKpi === 'rgi' && (
+                  <th className="py-3 px-4 text-center font-semibold">vs Target</th>
                 )}
                 {activeKpi === 'gop' && (
                   <th className="py-3 px-4 text-center font-semibold">Actual $</th>
@@ -332,6 +342,11 @@ export default function KpiBreakdown() {
                     </td>
 
                     {activeKpi === 'rgi' && (
+                      <td className="py-3 px-4 text-center text-sm font-semibold text-muted-foreground">
+                        {entry && entry._rgi_target != null ? entry._rgi_target.toFixed(1) : '—'}
+                      </td>
+                    )}
+                    {activeKpi === 'rgi' && (
                       <td className="py-3 px-4 text-center text-sm text-muted-foreground">
                         {entry && entry._rgi_prior != null ? entry._rgi_prior.toFixed(1) : '—'}
                       </td>
@@ -341,6 +356,17 @@ export default function KpiBreakdown() {
                         {entry && entry._rgi_change != null ? (
                           <span style={{ color: entry._rgi_change >= 0.1 ? '#4CAF50' : '#ef4444' }}>
                             {entry._rgi_change >= 0 ? '+' : ''}{entry._rgi_change.toFixed(1)}%
+                          </span>
+                        ) : '—'}
+                      </td>
+                    )}
+                    {activeKpi === 'rgi' && (
+                      <td className="py-3 px-4 text-center text-sm font-bold">
+                        {entry && entry._rgi_vs_target != null ? (
+                          <span style={{ color: entry._rgi_vs_target >= 0 ? '#4CAF50' : '#ef4444' }}>
+                            {entry._rgi_vs_target >= 0
+                              ? `+${entry._rgi_vs_target.toFixed(1)} pts`
+                              : `${entry._rgi_vs_target.toFixed(1)} pts`}
                           </span>
                         ) : '—'}
                       </td>
