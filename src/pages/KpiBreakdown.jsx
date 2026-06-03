@@ -140,14 +140,19 @@ export default function KpiBreakdown() {
           kpiData = sc.rgi;
           score = sc.rgi.score;
           pass = sc.rgi.pass;
-          actual = entry.revpar_index != null ? entry.revpar_index.toFixed(1) : '—';
-          target = entry.revpar_index_prior != null ? (entry.revpar_index_prior * 1.001).toFixed(1) : '—';
-          entry._rgi_change = entry.revpar_index_change;
-          entry._rgi_prior = entry.revpar_index_prior;
-          entry._rgi_target = entry.revpar_index_prior != null ? entry.revpar_index_prior * 1.001 : null;
-          entry._rgi_vs_target = (entry.revpar_index != null && entry.revpar_index_prior != null)
-            ? entry.revpar_index - (entry.revpar_index_prior * 1.001)
-            : null;
+          // Derive PY index: TY / (1 + change/100). Falls back to stored value if available.
+          const rgiTy = entry.revpar_index;
+          const rgiChg = entry.revpar_index_change;
+          const rgiPy = entry.revpar_index_prior != null
+            ? entry.revpar_index_prior
+            : (rgiTy != null && rgiChg != null ? rgiTy / (1 + rgiChg / 100) : null);
+          const rgiTarget = rgiPy != null ? rgiPy * 1.001 : null;
+          actual = rgiTy != null ? rgiTy.toFixed(1) : '—';
+          target = rgiTarget != null ? rgiTarget.toFixed(1) : '—';
+          entry._rgi_change = rgiChg;
+          entry._rgi_prior = rgiPy;
+          entry._rgi_target = rgiTarget;
+          entry._rgi_vs_target = (rgiTy != null && rgiTarget != null) ? rgiTy - rgiTarget : null;
         } else if (activeKpi === 'gss') {
           kpiData = sc.gss;
           score = sc.gss.score;

@@ -107,41 +107,41 @@ export default function HotelScorecard() {
       pass: scorecard.gopMargin.pass,
       incomplete: scorecard.gopMargin.incomplete,
     },
-    {
-      measure: 'RevPAR Index % Change (STR RGI)',
-      weight: '15%',
-      target: (() => {
-        const py = activeEntry.revpar_index_prior;
-        if (py == null) return '—';
-        const minTarget = (py * 1.001).toFixed(1);
-        return `Min: ${minTarget} (PY: ${py.toFixed(1)})`;
-      })(),
-      actual: activeEntry.revpar_index != null ? `TY: ${activeEntry.revpar_index.toFixed(1)}` : '—',
-      ytdActual: (() => {
-        const ty = activeEntry.revpar_index;
-        const py = activeEntry.revpar_index_prior;
-        const chg = activeEntry.revpar_index_change;
-        if (ty == null || py == null) return chg != null ? `${chg >= 0 ? '+' : ''}${chg.toFixed(1)}%` : '—';
-        const minTarget = py * 1.001;
-        const vsTarget = ty - minTarget;
-        const pass = chg != null ? chg >= 0.1 : ty >= minTarget;
-        const color = pass ? '#4CAF50' : '#ef4444';
-        const chgStr = chg != null ? `${chg >= 0 ? '+' : ''}${chg.toFixed(1)}%` : '';
-        const vsStr = vsTarget >= 0
-          ? `Beat target by +${vsTarget.toFixed(1)} pts`
-          : `Below target by ${vsTarget.toFixed(1)} pts`;
-        return (
-          <span style={{ color, fontWeight: 'bold' }}>
-            {chgStr && <>{chgStr}<br /></>}
-            <span style={{ fontSize: '11px' }}>{vsStr}</span>
-          </span>
-        );
-      })(),
-      score: scorecard.rgi.score,
-      maxScore: 15,
-      pass: scorecard.rgi.pass,
-      incomplete: scorecard.rgi.incomplete,
-    },
+    (() => {
+      const ty = activeEntry.revpar_index;
+      const chg = activeEntry.revpar_index_change;
+      // Derive PY index: TY / (1 + change/100). Falls back to stored value if available.
+      const py = activeEntry.revpar_index_prior != null
+        ? activeEntry.revpar_index_prior
+        : (ty != null && chg != null ? ty / (1 + chg / 100) : null);
+      const minTarget = py != null ? py * 1.001 : null;
+      const vsTarget = (ty != null && minTarget != null) ? ty - minTarget : null;
+      const pass = chg != null ? chg >= 0.1 : (vsTarget != null ? vsTarget >= 0 : false);
+      const color = pass ? '#4CAF50' : '#ef4444';
+      return {
+        measure: 'RevPAR Index % Change (STR RGI)',
+        weight: '15%',
+        target: minTarget != null ? `Min: ${minTarget.toFixed(1)} (PY: ${py.toFixed(1)})` : '—',
+        actual: ty != null ? `TY: ${ty.toFixed(1)}` : '—',
+        ytdActual: (() => {
+          if (ty == null || minTarget == null) return chg != null ? `${chg >= 0 ? '+' : ''}${chg.toFixed(1)}%` : '—';
+          const chgStr = chg != null ? `${chg >= 0 ? '+' : ''}${chg.toFixed(1)}%` : '';
+          const vsStr = vsTarget >= 0
+            ? `Beat target by +${vsTarget.toFixed(1)} pts`
+            : `Below target by ${vsTarget.toFixed(1)} pts`;
+          return (
+            <span style={{ color, fontWeight: 'bold' }}>
+              {chgStr && <>{chgStr}<br /></>}
+              <span style={{ fontSize: '11px' }}>{vsStr}</span>
+            </span>
+          );
+        })(),
+        score: scorecard.rgi.score,
+        maxScore: 15,
+        pass: scorecard.rgi.pass,
+        incomplete: scorecard.rgi.incomplete,
+      };
+    })(),
     {
       measure: `GSS — ${scorecard.gssStd.label}`,
       weight: '15%',
@@ -299,6 +299,19 @@ export default function HotelScorecard() {
                 <div className="flex flex-col">
                   <span className="text-[10px] text-muted-foreground uppercase tracking-wide">TY Index</span>
                   <span className="text-sm font-bold text-foreground">{activeEntry.revpar_index != null ? activeEntry.revpar_index.toFixed(1) : '—'}</span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-[10px] text-muted-foreground uppercase tracking-wide">PY Index</span>
+                  <span className="text-sm font-bold text-foreground">
+                    {(() => {
+                      const ty = activeEntry.revpar_index;
+                      const chg = activeEntry.revpar_index_change;
+                      const py = activeEntry.revpar_index_prior != null
+                        ? activeEntry.revpar_index_prior
+                        : (ty != null && chg != null ? ty / (1 + chg / 100) : null);
+                      return py != null ? py.toFixed(1) : '—';
+                    })()}
+                  </span>
                 </div>
               </div>
             </div>
