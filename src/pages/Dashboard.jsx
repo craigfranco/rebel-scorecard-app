@@ -8,8 +8,6 @@ import { useTimePeriod } from '@/lib/TimePeriodContext';
 import { normalizeGssTo100 } from '@/lib/scoring';
 import { getBrandColor } from '@/lib/portfolioHelpers';
 
-import ExecutiveSummaryBar from '@/components/dashboard/ExecutiveSummaryBar';
-import PortfolioKpiRollup from '@/components/dashboard/PortfolioKpiRollup';
 import KpiTracker from '@/components/dashboard/KpiTracker';
 
 export default function Dashboard() {
@@ -32,8 +30,6 @@ export default function Dashboard() {
     queryKey: ['all-entries', selectedYear],
     queryFn: () => base44.entities.ScoreEntry.filter({ year: selectedYear }),
   });
-
-  const portfolioProps = { properties, allEntries, getPeriodMonths, selectedYear, periodType, selectedMonth };
 
   // Build tracker data for each KPI
   const periodMonths = getPeriodMonths();
@@ -158,10 +154,6 @@ export default function Dashboard() {
         <h1 className="text-2xl font-bold">Portfolio Dashboard</h1>
         <p className="text-white/60 text-xs mt-0.5">Company-level overview — GOP, RPI, GSS, and forecast performance</p>
       </div>
-
-      <ExecutiveSummaryBar {...portfolioProps} />
-
-      <PortfolioKpiRollup {...portfolioProps} />
 
       {/* KPI Trackers Grid - 5 trackers using identical component design */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
