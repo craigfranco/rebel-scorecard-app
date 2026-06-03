@@ -60,7 +60,7 @@ export default function KpiBreakdown() {
   const properties = filterPropertiesForUser(rawProperties);
 
   const { data: allEntries = [] } = useQuery({
-    queryKey: ['all-entries', selectedYear],
+    queryKey: ['all-entries', selectedYear, selectedMonth, periodType],
     queryFn: () => base44.entities.ScoreEntry.filter({ year: selectedYear }),
   });
 

@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useTimePeriod } from '@/lib/TimePeriodContext';
+import { useQueryClient } from '@tanstack/react-query';
 
 const MONTH_LABELS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
@@ -17,7 +18,17 @@ export default function TimePeriodSelector() {
     hasData,
     getQuarterLoadedMonths,
     getQuarterState,
+    refreshAvailableData,
   } = useTimePeriod();
+  const queryClient = useQueryClient();
+  const [refreshing, setRefreshing] = useState(false);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await queryClient.invalidateQueries();
+    await refreshAvailableData();
+    setRefreshing(false);
+  };
 
   const handleYearChange = (year) => {
     const y = parseInt(year, 10);
@@ -97,6 +108,30 @@ export default function TimePeriodSelector() {
               Quarterly
             </button>
           </div>
+
+          {/* Refresh button */}
+          <button
+            onClick={handleRefresh}
+            disabled={refreshing}
+            title="Refresh data"
+            className="h-8 w-8 flex items-center justify-center rounded-lg border border-gray-200 bg-white shadow-sm text-gray-500 hover:text-primary hover:border-primary/40 transition-colors disabled:opacity-50"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`}
+            >
+              <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" />
+              <path d="M21 3v5h-5" />
+              <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" />
+              <path d="M8 16H3v5" />
+            </svg>
+          </button>
 
           {/* Divider */}
           <div className="h-6 w-px bg-gray-200" />

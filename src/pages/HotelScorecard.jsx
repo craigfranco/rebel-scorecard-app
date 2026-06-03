@@ -40,7 +40,7 @@ export default function HotelScorecard() {
   const properties = filterPropertiesForUser(allProperties);
 
   const { data: entries = [] } = useQuery({
-    queryKey: ['score-entries', selectedPropertyId, selectedYear],
+    queryKey: ['score-entries', selectedPropertyId, selectedYear, selectedMonth, periodType],
     queryFn: () =>
       selectedPropertyId
         ? base44.entities.ScoreEntry.filter({ property_id: selectedPropertyId, year: selectedYear })
