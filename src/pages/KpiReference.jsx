@@ -15,14 +15,14 @@ const KPI_ROWS = [
     weight: '35%',
     pts: '35',
     target: '0.1% or >',
-    scoring: 'Binary: 35 pts if TY margin – PY margin ≥ 0.1%. 0 pts if improvement < 0.1%. No partial credit.',
-    pass: 'Margin TY – Margin PY ≥ 0.1%',
+    scoring: 'Binary: 35 pts if TY margin – LY margin ≥ 0.1%. 0 pts if improvement < 0.1%. No partial credit.',
+    pass: 'Margin TY – Margin LY ≥ 0.1%',
   },
   {
     measure: 'RGI Improvement**',
     weight: '15%',
     pts: '0 / 7.5 / 15',
-    target: '0.1%–2.0% vs PY = 7.5 pts / 2.1%+ vs PY = 15 pts',
+    target: '0.1%–2.0% vs LY = 7.5 pts / 2.1%+ vs LY = 15 pts',
     scoring: 'Two-tier: < 0.1% = 0 pts (FAIL). 0.1%–2.0% YOY = 7.5 pts (half). 2.1%+ YOY = 15 pts (full). Pass at 0.1%+.',
     pass: 'RGI YOY Change ≥ 0.1%',
   },
@@ -31,8 +31,8 @@ const KPI_ROWS = [
     weight: '15%',
     pts: '15',
     target: 'YOY > Pays 100%',
-    scoring: 'Binary: 15 pts if TY score > PY score (any positive improvement). 0 pts if TY ≤ PY. Full points or none.',
-    pass: 'GSS TY > GSS PY',
+    scoring: 'Binary: 15 pts if TY score > LY score (any positive improvement). 0 pts if TY ≤ LY. Full points or none.',
+    pass: 'GSS TY > GSS LY',
   },
 ];
 

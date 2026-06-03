@@ -92,7 +92,7 @@ export default function PropertyScorecardDetail({
         {
           measure: 'GOP Margin Improvement',
           weight: '35%',
-          target: '≥ 0.1% vs PY',
+          target: '≥ 0.1% vs LY',
           actual: activeEntry.gop_margin_actual != null ? `TY: ${activeEntry.gop_margin_actual.toFixed(1)}%` : '—',
           ytdActual: (() => {
             const a = activeEntry.gop_margin_actual;
@@ -139,7 +139,7 @@ export default function PropertyScorecardDetail({
           return {
             measure: `GSS — ${scorecard.gssStd.label}`,
             weight: '15%',
-            target: 'TY > PY (any improvement)',
+            target: 'TY > LY (any improvement)',
             actual: gssNorm != null ? gssNorm.toFixed(1) : '—',
             ytdActual:
               gssVar != null ? (
@@ -334,7 +334,7 @@ export default function PropertyScorecardDetail({
           </div>
           <div className="flex gap-4 pt-1 border-t border-border">
             <div className="flex flex-col">
-              <span className="text-[10px] text-muted-foreground uppercase tracking-wide">TY vs PY</span>
+              <span className="text-[10px] text-muted-foreground uppercase tracking-wide">TY vs LY</span>
               <span className="text-sm font-bold text-foreground">
                 {gssNorm != null ? gssNorm.toFixed(1) : '—'} vs {gssPriorNorm != null ? gssPriorNorm.toFixed(1) : '—'}
               </span>

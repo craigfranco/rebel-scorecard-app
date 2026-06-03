@@ -143,7 +143,7 @@ export function generateScorecardPDF(property, entry, periodType, selectedMonth,
       sub: 'pts vs LY',
       rows: [
         ['TY Margin', marginTy != null ? marginTy.toFixed(1) + '%' : '—'],
-        ['PY Margin', marginPy != null ? marginPy.toFixed(1) + '%' : '—'],
+        ['LY Margin', marginPy != null ? marginPy.toFixed(1) + '%' : '—'],
       ],
     },
     {
@@ -160,10 +160,10 @@ export function generateScorecardPDF(property, entry, periodType, selectedMonth,
       title: 'GSS Score (100-pt)',
       headline: gssVar != null ? fmtPts(gssVar) : '—',
       headlineColor: gssVar == null ? [100,116,139] : gssVar >= 0 ? [76,175,80] : [239,68,68],
-      sub: 'pts vs PY',
+      sub: 'pts vs LY',
       rows: [
         ['TY Score', fmtNum(gssNorm)],
-        ['PY Score', fmtNum(gssPriorNorm)],
+        ['LY Score', fmtNum(gssPriorNorm)],
       ],
     },
   ];
