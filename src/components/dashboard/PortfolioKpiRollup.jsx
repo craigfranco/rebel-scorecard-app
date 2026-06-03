@@ -143,8 +143,12 @@ export default function PortfolioKpiRollup({ properties, allEntries, periodType,
       gopVariance,
       gopPass: hasGop ? gopActual > gopBudget : null,
       gopYOY: (hasGop && gopPrior !== 0) ? ((gopActual - gopPrior) / Math.abs(gopPrior)) * 100 : null,
-      // Achievement % only when budget is positive (meaningful)
-      gopAchievement: (hasGop && gopBudget > 0) ? (gopActual / gopBudget) * 100 : null,
+      // Achievement %: positive budget → Actual/Budget×100; negative budget → (Actual-Budget)/ABS(Budget)×100
+      gopAchievement: hasGop && gopBudget !== 0
+        ? gopBudget > 0
+          ? (gopActual / gopBudget) * 100
+          : ((gopActual - gopBudget) / Math.abs(gopBudget)) * 100
+        : null,
       tyMargin, lyMargin, budgetMargin,
       marginYOY: tyMargin != null && lyMargin != null ? tyMargin - lyMargin : null,
       marginVsBudget: tyMargin != null && budgetMargin != null ? tyMargin - budgetMargin : null,
@@ -167,16 +171,10 @@ export default function PortfolioKpiRollup({ properties, allEntries, periodType,
         </div>
         <div className="flex gap-4 pt-1 border-t border-border">
           <div className="flex flex-col">
-            <span className="text-[10px] text-muted-foreground uppercase tracking-wide">vs Budget</span>
+            <span className="text-[10px] text-muted-foreground uppercase tracking-wide">Achievement</span>
             {s.gopAchievement != null ? (
-              // Positive budget: show %
               <span className="text-sm font-bold" style={{ color: s.gopPass ? '#4CAF50' : '#ef4444' }}>
-                {s.gopAchievement.toFixed(1)}%
-              </span>
-            ) : s.gopVariance != null ? (
-              // Negative budget: show dollar variance
-              <span className="text-sm font-bold" style={{ color: s.gopPass ? '#4CAF50' : '#ef4444' }}>
-                {s.gopPass ? '+' : '-'}${Math.abs(Math.round(s.gopVariance)).toLocaleString('en-US')}
+                {s.gopPass && s.gopAchievement > 0 ? '+' : ''}{s.gopAchievement.toFixed(1)}%
               </span>
             ) : <span className="text-sm text-muted-foreground">—</span>}
           </div>

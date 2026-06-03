@@ -211,9 +211,13 @@ export default function HotelScorecard() {
                   const gopA = activeEntry.budgeted_gop_actual;
                   const gopB = activeEntry.budgeted_gop_target;
                   const variance = (gopA != null && gopB != null) ? gopA - gopB : null;
-                  const pass = variance != null ? variance >= 0 : null;
-                  // Achievement %: only meaningful when budget is positive
-                  const pct = (gopA != null && gopB != null && gopB > 0) ? (gopA / gopB) * 100 : null;
+                  const pass = variance != null ? gopA > gopB : null;
+                  // Achievement %: positive budget → Actual/Budget×100; negative budget → (Actual-Budget)/ABS(Budget)×100
+                  const pct = (gopA != null && gopB != null && gopB !== 0)
+                    ? gopB > 0
+                      ? (gopA / gopB) * 100
+                      : ((gopA - gopB) / Math.abs(gopB)) * 100
+                    : null;
                   const color = pass == null ? undefined : pass ? '#4CAF50' : '#ef4444';
                   return (
                     <>
@@ -225,14 +229,11 @@ export default function HotelScorecard() {
                       <div className="text-xs text-muted-foreground">vs Budget</div>
                       <div className="flex gap-4 pt-1 border-t border-border mt-2">
                         <div className="flex flex-col">
-                          <span className="text-[10px] text-muted-foreground uppercase tracking-wide">
-                            {pct != null ? 'Achievement' : 'Result'}
-                          </span>
+                          <span className="text-[10px] text-muted-foreground uppercase tracking-wide">Achievement</span>
                           <span className="text-sm font-bold" style={{ color }}>
                             {pct != null
-                              ? `${pct.toFixed(1)}%`
-                              : pass == null ? '—'
-                              : pass ? 'Beat Budget' : 'Missed Budget'}
+                              ? `${pass && pct > 0 ? '+' : ''}${pct.toFixed(1)}%`
+                              : '—'}
                           </span>
                         </div>
                         <div className="flex flex-col">

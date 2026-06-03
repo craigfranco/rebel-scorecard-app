@@ -118,12 +118,15 @@ export default function KpiBreakdown() {
           pass = sc.gop.pass;
           const gopA = entry.budgeted_gop_actual;
           const gopB = entry.budgeted_gop_target;
-          // Show % only when budget is positive; otherwise show beat/missed label
-          actual = (gopA != null && gopB != null && gopB > 0)
-            ? `${((gopA / gopB) * 100).toFixed(1)}%`
-            : (gopA != null && gopB != null)
-              ? (gopA > gopB ? 'Beat' : 'Missed')
-              : '—';
+          // Achievement %: positive budget → Actual/Budget×100; negative budget → (Actual-Budget)/ABS(Budget)×100
+          const achievePct = (gopA != null && gopB != null && gopB !== 0)
+            ? gopB > 0
+              ? (gopA / gopB) * 100
+              : ((gopA - gopB) / Math.abs(gopB)) * 100
+            : null;
+          actual = achievePct != null
+            ? `${pass && achievePct > 0 ? '+' : ''}${achievePct.toFixed(1)}%`
+            : '—';
           target = gopB != null ? `$${Math.round(gopB).toLocaleString('en-US')}` : '—';
           entry._gop_actual_dollars = gopA;
           entry._gop_variance = (gopA != null && gopB != null) ? gopA - gopB : null;
