@@ -66,38 +66,44 @@ export function generateScorecardPDF(property, entry, periodType, selectedMonth,
   doc.setFillColor(248, 250, 252);
   doc.rect(0, 8, W, headerH, 'F');
 
-  // Logo / company name
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(16);
-  doc.setTextColor(...accent);
-  doc.text('REBEL Hotel Co.', 28, 30);
+  // Logo image
+  const LOGO_DATA_URL = 'data:image/jpeg;base64,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';
+  try {
+    doc.addImage(LOGO_DATA_URL, 'JPEG', 28, 14, 80, 40, undefined, 'FAST');
+  } catch(e) {
+    // fallback: text if image fails
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(14);
+    doc.setTextColor(...accent);
+    doc.text('REBEL Hotel Co.', 28, 34);
+  }
 
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8);
   doc.setTextColor(100, 116, 139);
-  doc.text('Balanced Scorecard', 28, 42);
+  doc.text('Balanced Scorecard', 28, 62);
 
   // Hotel name
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(18);
+  doc.setFontSize(14);
   doc.setTextColor(30, 41, 59);
-  doc.text(property?.name || '—', 28, 62);
+  doc.text(property?.name || '—', 120, 34);
 
   // Right side meta
   const metaX = W - 28;
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8);
   doc.setTextColor(100, 116, 139);
-  doc.text(`${formatBrandLabel(property?.parent_brand, property?.sub_brand)}`, metaX, 22, { align: 'right' });
-  doc.text(`GM: ${property?.gm_name || '—'}`, metaX, 34, { align: 'right' });
+  doc.text(`${formatBrandLabel(property?.parent_brand, property?.sub_brand)}`, metaX, 24, { align: 'right' });
+  doc.text(`GM: ${property?.gm_name || '—'}`, metaX, 36, { align: 'right' });
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(10);
   doc.setTextColor(...accent);
-  doc.text(periodLabel, metaX, 48, { align: 'right' });
+  doc.text(periodLabel, metaX, 50, { align: 'right' });
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8);
   doc.setTextColor(100, 116, 139);
-  doc.text(`Generated: ${today}`, metaX, 62, { align: 'right' });
+  doc.text(`Generated: ${today}`, metaX, 64, { align: 'right' });
 
   // ── KPI SUMMARY BOXES ───────────────────────────────────────────────────────
   const boxY = 88;
