@@ -1,20 +1,27 @@
 import React from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
-import { ChevronRight } from 'lucide-react';
+import { ChevronRight, Target, TrendingUp, BarChart3, Smile, Zap } from 'lucide-react';
 import SeedOnMount from '../components/SeedOnMount';
 
 import { useTimePeriod } from '@/lib/TimePeriodContext';
+import { normalizeGssTo100 } from '@/lib/scoring';
+import { getBrandColor } from '@/lib/portfolioHelpers';
 
 import ExecutiveSummaryBar from '@/components/dashboard/ExecutiveSummaryBar';
-import AttentionNeeded from '@/components/dashboard/AttentionNeeded';
-import PerformanceHeatMap from '@/components/dashboard/PerformanceHeatMap';
-import DataCompletenessIndicator from '@/components/dashboard/DataCompletenessIndicator';
-import ForecastKickerTracker from '@/components/dashboard/ForecastKickerTracker';
 import PortfolioKpiRollup from '@/components/dashboard/PortfolioKpiRollup';
+import KpiTracker from '@/components/dashboard/KpiTracker';
 
 export default function Dashboard() {
   const { selectedMonth, selectedYear, periodType, getPeriodMonths } = useTimePeriod();
+  
+  // Helper to map status labels
+  const getStatusLabel = (status) => {
+    if (status === 'pass') return 'PASS';
+    if (status === 'partial') return 'PARTIAL';
+    if (status === 'na') return 'N/A';
+    return 'FAIL';
+  };
 
   const { data: properties = [] } = useQuery({
     queryKey: ['properties'],
@@ -27,6 +34,108 @@ export default function Dashboard() {
   });
 
   const portfolioProps = { properties, allEntries, getPeriodMonths, selectedYear, periodType, selectedMonth };
+
+  // Build tracker data for each KPI
+  const periodMonths = getPeriodMonths();
+
+  // BUDGETED GOP TRACKER
+  const gopHotels = properties.map(prop => {
+    const propEntries = allEntries.filter(e => e.property_id === prop.id && periodMonths.includes(e.month) && e.year === selectedYear);
+    if (!propEntries.length) return { prop, hasData: false };
+    
+    const gopActual = propEntries.reduce((s, e) => s + (e.budgeted_gop_actual ?? 0), 0);
+    const gopTarget = propEntries.reduce((s, e) => s + (e.budgeted_gop_target ?? 0), 0);
+    const pass = gopTarget > 0 ? gopActual >= gopTarget : false;
+    const details = gopTarget > 0 ? `$${Math.round(gopActual / 1000)}K vs $${Math.round(gopTarget / 1000)}K` : '';
+    
+    return {
+      prop,
+      hasData: true,
+      status: pass ? 'pass' : 'fail',
+      details,
+    };
+  });
+
+  // GOP MARGIN IMPROVEMENT TRACKER
+  const marginHotels = properties.map(prop => {
+    const propEntries = allEntries.filter(e => e.property_id === prop.id && periodMonths.includes(e.month) && e.year === selectedYear);
+    if (!propEntries.length) return { prop, hasData: false };
+    
+    const latest = propEntries[propEntries.length - 1];
+    const ty = latest.gop_margin_actual;
+    const ly = latest.gop_margin_prior;
+    const improvement = (ty != null && ly != null) ? ty - ly : null;
+    const pass = improvement != null && improvement >= 0.1;
+    const details = (ty != null && ly != null) ? `${ty.toFixed(1)}% vs ${ly.toFixed(1)}%` : '';
+    
+    return {
+      prop,
+      hasData: true,
+      status: pass ? 'pass' : 'fail',
+      details,
+    };
+  });
+
+  // RGI IMPROVEMENT TRACKER (three tiers)
+  const rgiHotels = properties.map(prop => {
+    const propEntries = allEntries.filter(e => e.property_id === prop.id && periodMonths.includes(e.month) && e.year === selectedYear);
+    if (!propEntries.length) return { prop, hasData: false };
+    
+    const latest = propEntries[propEntries.length - 1];
+    const change = latest.revpar_index_change;
+    
+    let status = 'fail';
+    if (change != null) {
+      if (change > 2.0) status = 'pass';
+      else if (change >= 0.1) status = 'partial';
+    }
+    const details = change != null ? `${change >= 0 ? '+' : ''}${change.toFixed(1)}%` : '';
+    
+    return {
+      prop,
+      hasData: true,
+      status,
+      details,
+    };
+  });
+
+  // GSS IMPROVEMENT TRACKER
+  const gssHotels = properties.map(prop => {
+    const propEntries = allEntries.filter(e => e.property_id === prop.id && periodMonths.includes(e.month) && e.year === selectedYear);
+    if (!propEntries.length) return { prop, hasData: false };
+    
+    const latest = propEntries[propEntries.length - 1];
+    const tyNorm = normalizeGssTo100(latest.gss_actual, prop.parent_brand);
+    const lyNorm = normalizeGssTo100(latest.gss_prior, prop.parent_brand);
+    
+    if (tyNorm == null || lyNorm == null) {
+      return { prop, hasData: true, status: 'na', details: '' };
+    }
+    
+    const pass = tyNorm > lyNorm;
+    const details = `${tyNorm.toFixed(1)} vs ${lyNorm.toFixed(1)}`;
+    
+    return {
+      prop,
+      hasData: true,
+      status: pass ? 'pass' : 'fail',
+      details,
+    };
+  });
+
+  // FORECAST KICKER TRACKER (existing logic)
+  const forecastHotels = properties.map(prop => {
+    const propEntries = allEntries.filter(e => e.property_id === prop.id && periodMonths.includes(e.month) && e.year === selectedYear);
+    const latest = propEntries[propEntries.length - 1];
+    const hit = latest && latest.forecast_kicker === true;
+    const hasData = !!latest;
+    return { prop, hit, hasData };
+  }).filter(r => r.hasData).map(({ prop, hit }) => ({
+    prop,
+    hasData: true,
+    status: hit ? 'pass' : 'fail',
+    details: '',
+  }));
 
   return (
     <div className="p-4 lg:p-8 space-y-6 max-w-7xl mx-auto">
@@ -47,14 +156,48 @@ export default function Dashboard() {
 
       <PortfolioKpiRollup {...portfolioProps} />
 
+      {/* KPI Trackers Grid - 5 trackers using identical component design */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-        <AttentionNeeded {...portfolioProps} />
-        <ForecastKickerTracker {...portfolioProps} />
+        <KpiTracker
+          title="Budgeted GOP Tracker"
+          icon={<Target className="w-4 h-4 text-blue-500" />}
+          iconColor="text-blue-500"
+          subtitle="Pass: actual ≥ budget (35 pts)"
+          hotels={gopHotels}
+        />
+
+        <KpiTracker
+          title="GOP Margin Improvement Tracker"
+          icon={<TrendingUp className="w-4 h-4 text-green-500" />}
+          iconColor="text-green-500"
+          subtitle="Pass: improvement ≥ 0.1% vs LY (35 pts)"
+          hotels={marginHotels}
+        />
+
+        <KpiTracker
+          title="RGI Improvement Tracker"
+          icon={<BarChart3 className="w-4 h-4 text-purple-500" />}
+          iconColor="text-purple-500"
+          subtitle="Full: >2.0% (15 pts) / Partial: 0.1-2.0% (7.5 pts)"
+          hotels={rgiHotels}
+        />
+
+        <KpiTracker
+          title="GSS Improvement Tracker"
+          icon={<Smile className="w-4 h-4 text-orange-500" />}
+          iconColor="text-orange-500"
+          subtitle="Pass: TY > LY (15 pts)"
+          hotels={gssHotels}
+        />
+
+        <KpiTracker
+          title="Forecast Kicker Tracker"
+          icon={<Zap className="w-4 h-4 text-yellow-500" />}
+          iconColor="text-yellow-500"
+          subtitle="+3% salary bonus if 3/4 quarterly forecasts within ±3%"
+          hotels={forecastHotels}
+        />
       </div>
-
-      <PerformanceHeatMap {...portfolioProps} />
-
-      <DataCompletenessIndicator {...portfolioProps} />
     </div>
   );
 }
