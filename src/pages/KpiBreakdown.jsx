@@ -154,8 +154,8 @@ export default function KpiBreakdown() {
         } else if (activeKpi === 'forecast') {
           pass = entry.forecast_kicker || false;
           score = pass ? 1 : 0;
-          actual = entry.forecast_actual_revenue != null ? `$${(entry.forecast_actual_revenue / 1000).toFixed(0)}K` : '—';
-          target = entry.forecast_primary_forecast != null ? `$${(entry.forecast_primary_forecast / 1000).toFixed(0)}K` : '—';
+          actual = entry.forecast_actual_revenue != null ? `$${Math.round(entry.forecast_actual_revenue).toLocaleString('en-US')}` : '—';
+          target = entry.forecast_primary_forecast != null ? `$${Math.round(entry.forecast_primary_forecast).toLocaleString('en-US')}` : '—';
           entry._forecast_variance = (entry.forecast_actual_revenue != null && entry.forecast_primary_forecast != null)
             ? entry.forecast_actual_revenue - entry.forecast_primary_forecast : null;
           entry._forecast_accuracy = (entry.forecast_actual_revenue != null && entry.forecast_primary_forecast != null && entry.forecast_primary_forecast !== 0)
