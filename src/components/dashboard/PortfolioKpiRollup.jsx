@@ -188,23 +188,22 @@ export default function PortfolioKpiRollup({ properties, allEntries, periodType,
       {/* GOP Margin */}
       <KpiCard title="GOP Margin">
         <div>
-          <div className="text-2xl font-black text-foreground">
+          <div className="text-xl font-black text-foreground leading-tight">
             {s.tyMargin != null ? s.tyMargin.toFixed(1) + '%' : '—'}
           </div>
-          <div className="text-xs text-muted-foreground">TY Margin</div>
-        </div>
-        <div className="flex gap-4">
-          <MetricRow label="Budget" value={s.budgetMargin != null ? s.budgetMargin.toFixed(1) + '%' : '—'} />
-          <MetricRow label="Prior Year" value={s.lyMargin != null ? s.lyMargin.toFixed(1) + '%' : '—'} />
+          <div className="text-xs text-muted-foreground">actual margin</div>
+          <div className="text-sm font-medium text-muted-foreground mt-0.5">
+            {s.budgetMargin != null ? s.budgetMargin.toFixed(1) + '%' : '—'} <span className="text-xs font-normal">budget</span>
+          </div>
         </div>
         <div className="flex gap-4 pt-1 border-t border-border">
           <div className="flex flex-col">
-            <span className="text-[10px] text-muted-foreground uppercase tracking-wide">YOY</span>
-            <Delta value={s.marginYOY} suffix=" pts" decimals={1} />
-          </div>
-          <div className="flex flex-col">
             <span className="text-[10px] text-muted-foreground uppercase tracking-wide">vs Budget</span>
             <Delta value={s.marginVsBudget} suffix=" pts" decimals={1} />
+          </div>
+          <div className="flex flex-col">
+            <span className="text-[10px] text-muted-foreground uppercase tracking-wide">YOY</span>
+            <Delta value={s.marginYOY} suffix=" pts" decimals={1} />
           </div>
         </div>
       </KpiCard>

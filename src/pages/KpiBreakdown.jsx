@@ -308,6 +308,7 @@ export default function KpiBreakdown() {
                   <th className="py-3 px-4 text-center font-semibold">Target</th>
                 )}
 
+
                 <th className="py-3 px-4 text-center font-semibold cursor-pointer" onClick={() => handleSort('score')}>
                   <div className="flex items-center justify-center gap-1">Score <SortIcon col="score" /></div>
                 </th>
@@ -374,9 +375,23 @@ export default function KpiBreakdown() {
                     )}
                     {activeKpi === 'gopMargin' && (
                       <td className="py-3 px-4 text-center text-sm font-bold">
-                        {entry && target !== null ? (
-                          <span style={{ color: target >= 0 ? '#4CAF50' : '#ef4444' }}>
-                            {target >= 0 ? '+' : ''}{target.toFixed(1)}pp
+                        {entry && entry._margin_yoy != null ? (
+                          <span style={{ color: entry._margin_yoy >= 0 ? '#4CAF50' : '#ef4444' }}>
+                            {entry._margin_yoy >= 0 ? '+' : ''}{entry._margin_yoy.toFixed(1)} pts
+                          </span>
+                        ) : '—'}
+                      </td>
+                    )}
+                    {activeKpi === 'gopMargin' && (
+                      <td className="py-3 px-4 text-center text-sm font-medium">
+                        {entry && entry._budget_margin != null ? `${entry._budget_margin.toFixed(1)}%` : '—'}
+                      </td>
+                    )}
+                    {activeKpi === 'gopMargin' && (
+                      <td className="py-3 px-4 text-center text-sm font-bold">
+                        {entry && entry._margin_vs_budget != null ? (
+                          <span style={{ color: entry._margin_vs_budget >= 0 ? '#4CAF50' : '#ef4444' }}>
+                            {entry._margin_vs_budget >= 0 ? '+' : ''}{entry._margin_vs_budget.toFixed(1)} pts
                           </span>
                         ) : '—'}
                       </td>
