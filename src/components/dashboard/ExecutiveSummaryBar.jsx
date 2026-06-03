@@ -22,12 +22,14 @@ export default function ExecutiveSummaryBar({ properties, allEntries, getPeriodM
     // Use latest month entry for boolean/single-value fields; sum for financials
     const latest = propEntries[propEntries.length - 1];
 
-    // GOP budget
-    const gopActual = propEntries.reduce((s, e) => s + (e.budgeted_gop_actual ?? 0), 0);
-    const gopTarget = propEntries.reduce((s, e) => s + (e.budgeted_gop_target ?? 0), 0);
-    if (gopTarget > 0) {
+    // GOP budget - use latest entry only (same as Budgeted GOP Tracker)
+    const gopActual = latest.budgeted_gop_actual;
+    const gopTarget = latest.budgeted_gop_target;
+    
+    // Exclude if either value is null, or if actual=0 and target>0
+    if (gopActual != null && gopTarget != null && !(gopActual === 0 && gopTarget > 0)) {
       totalWithGop++;
-      if (gopActual >= gopTarget) onBudgetCount++;
+      if (gopActual > gopTarget) onBudgetCount++;
     }
 
     // RPI

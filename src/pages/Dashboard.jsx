@@ -43,10 +43,17 @@ export default function Dashboard() {
     const propEntries = allEntries.filter(e => e.property_id === prop.id && periodMonths.includes(e.month) && e.year === selectedYear);
     if (!propEntries.length) return { prop, hasData: false };
     
-    const gopActual = propEntries.reduce((s, e) => s + (e.budgeted_gop_actual ?? 0), 0);
-    const gopTarget = propEntries.reduce((s, e) => s + (e.budgeted_gop_target ?? 0), 0);
-    const pass = gopTarget > 0 ? gopActual >= gopTarget : false;
-    const details = gopTarget > 0 ? `$${Math.round(gopActual / 1000)}K vs $${Math.round(gopTarget / 1000)}K` : '';
+    const latest = propEntries[propEntries.length - 1];
+    const gopActual = latest.budgeted_gop_actual;
+    const gopTarget = latest.budgeted_gop_target;
+    
+    // Exclude if either value is null, or if actual=0 and target>0
+    if (gopActual == null || gopTarget == null || (gopActual === 0 && gopTarget > 0)) {
+      return { prop, hasData: false };
+    }
+    
+    const pass = gopActual > gopTarget;
+    const details = `$${Math.round(gopActual / 1000)}K vs $${Math.round(gopTarget / 1000)}K`;
     
     return {
       prop,
