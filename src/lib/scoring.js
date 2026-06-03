@@ -49,9 +49,13 @@ export function calcRGIScore(revparIndexChange) {
   if (revparIndexChange == null) return { score: 0, diff: 0, pass: false, incomplete: true };
   const pct = revparIndexChange;
   const pass = pct >= 0.1;
-  // All-or-nothing: 15 pts if pass, 0 if fail
-  const score = pass ? 15 : 0;
-  return { score, diff: Math.round(pct * 100) / 100, pass, incomplete: false };
+  // Linear scale: 0.1% = 1 pt minimum, 3%+ = 15 pts capped
+  let score = 0;
+  if (pct >= 0.1) {
+    score = Math.min((pct / 3) * 15, 15);
+    score = Math.max(score, 1); // at least 1 pt when passing
+  }
+  return { score: Math.round(score * 10) / 10, diff: Math.round(pct * 100) / 100, pass, incomplete: false };
 }
 
 export function calcGSSScore(actual, prior, gssTarget) {

@@ -110,11 +110,14 @@ export default function HotelScorecard() {
     {
       measure: 'RevPAR Index % Change (STR RGI)',
       weight: '15%',
-      target: '0.1%-2.0% partial / 2.1%+ full',
-      actual: activeEntry.revpar_index != null ? `Index: ${activeEntry.revpar_index.toFixed(1)}` : '—',
-      ytdActual: activeEntry.revpar_index_change != null
-        ? `${activeEntry.revpar_index_change >= 0 ? '+' : ''}${activeEntry.revpar_index_change.toFixed(1)}%`
-        : '—',
+      target: activeEntry.revpar_index_prior != null ? `PY: ${activeEntry.revpar_index_prior.toFixed(1)}` : '—',
+      actual: activeEntry.revpar_index != null ? `TY: ${activeEntry.revpar_index.toFixed(1)}` : '—',
+      ytdActual: (() => {
+        const chg = activeEntry.revpar_index_change;
+        if (chg == null) return '—';
+        const color = chg >= 0.1 ? '#4CAF50' : '#ef4444';
+        return <span style={{ color, fontWeight: 'bold' }}>{chg >= 0 ? '+' : ''}{chg.toFixed(1)}%</span>;
+      })(),
       score: scorecard.rgi.score,
       maxScore: 15,
       pass: scorecard.rgi.pass,

@@ -140,9 +140,10 @@ export default function KpiBreakdown() {
           kpiData = sc.rgi;
           score = sc.rgi.score;
           pass = sc.rgi.pass;
-          actual = entry.revpar_index != null ? entry.revpar_index.toFixed(1) : '—';
-          target = '≥ +0.1% YOY';
+          actual = entry.revpar_index != null ? `TY: ${entry.revpar_index.toFixed(1)}` : '—';
+          target = entry.revpar_index_prior != null ? `PY: ${entry.revpar_index_prior.toFixed(1)}` : '—';
           entry._rgi_change = entry.revpar_index_change;
+          entry._rgi_prior = entry.revpar_index_prior;
         } else if (activeKpi === 'gss') {
           kpiData = sc.gss;
           score = sc.gss.score;
@@ -261,6 +262,9 @@ export default function KpiBreakdown() {
                   {activeKpi === 'rgi' ? 'RevPAR Index' : activeKpi === 'gopMargin' ? 'TY Margin' : activeKpi === 'gop' ? 'Achievement' : 'Actual'}
                 </th>
                 {activeKpi === 'rgi' && (
+                  <th className="py-3 px-4 text-center font-semibold">PY Index</th>
+                )}
+                {activeKpi === 'rgi' && (
                   <th className="py-3 px-4 text-center font-semibold">RGI % Change YOY</th>
                 )}
                 {activeKpi === 'gop' && (
@@ -328,9 +332,14 @@ export default function KpiBreakdown() {
                     </td>
 
                     {activeKpi === 'rgi' && (
+                      <td className="py-3 px-4 text-center text-sm text-muted-foreground">
+                        {entry && entry._rgi_prior != null ? entry._rgi_prior.toFixed(1) : '—'}
+                      </td>
+                    )}
+                    {activeKpi === 'rgi' && (
                       <td className="py-3 px-4 text-center text-sm font-bold">
                         {entry && entry._rgi_change != null ? (
-                          <span style={{ color: entry._rgi_change >= 0 ? '#4CAF50' : '#ef4444' }}>
+                          <span style={{ color: entry._rgi_change >= 0.1 ? '#4CAF50' : '#ef4444' }}>
                             {entry._rgi_change >= 0 ? '+' : ''}{entry._rgi_change.toFixed(1)}%
                           </span>
                         ) : '—'}
