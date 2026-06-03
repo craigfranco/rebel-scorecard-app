@@ -118,15 +118,12 @@ export default function KpiBreakdown() {
           pass = sc.gop.pass;
           const gopA = entry.budgeted_gop_actual;
           const gopB = entry.budgeted_gop_target;
-          // Achievement %: positive budget → Actual/Budget×100; negative budget → (Actual-Budget)/ABS(Budget)×100
-          const achievePct = (gopA != null && gopB != null && gopB !== 0)
-            ? gopB > 0
-              ? (gopA / gopB) * 100
-              : ((gopA - gopB) / Math.abs(gopB)) * 100
-            : null;
-          actual = achievePct != null
-            ? `${pass && achievePct > 0 ? '+' : ''}${achievePct.toFixed(1)}%`
-            : '—';
+          // Show % only when budget is positive; otherwise show beat/missed label
+          actual = (gopA != null && gopB != null && gopB > 0)
+            ? `${((gopA / gopB) * 100).toFixed(1)}%`
+            : (gopA != null && gopB != null)
+              ? (gopA > gopB ? 'Beat' : 'Missed')
+              : '—';
           target = gopB != null ? `$${Math.round(gopB).toLocaleString('en-US')}` : '—';
           entry._gop_actual_dollars = gopA;
           entry._gop_variance = (gopA != null && gopB != null) ? gopA - gopB : null;
@@ -135,11 +132,17 @@ export default function KpiBreakdown() {
           score = sc.gopMargin.score;
           pass = sc.gopMargin.pass;
           actual = entry.gop_margin_actual != null ? `${entry.gop_margin_actual.toFixed(1)}%` : '—';
-          target = entry.gop_margin_actual != null && entry.gop_margin_prior != null
+          // YOY variance: actual - prior (simple subtraction, handles negatives correctly)
+          entry._margin_yoy = (entry.gop_margin_actual != null && entry.gop_margin_prior != null)
             ? entry.gop_margin_actual - entry.gop_margin_prior
             : null;
-          // store LY% for display in extra column
+          // vs Budget variance: actual - budget
+          entry._margin_vs_budget = (entry.gop_margin_actual != null && entry.gop_margin_budget != null)
+            ? entry.gop_margin_actual - entry.gop_margin_budget
+            : null;
           entry._ly_margin = entry.gop_margin_prior;
+          entry._budget_margin = entry.gop_margin_budget;
+          target = entry._margin_yoy; // used in LY Growth column
         } else if (activeKpi === 'rgi') {
           kpiData = sc.rgi;
           score = sc.rgi.score;
@@ -277,10 +280,16 @@ export default function KpiBreakdown() {
                   <th className="py-3 px-4 text-center font-semibold">$ vs Budget</th>
                 )}
                 {activeKpi === 'gopMargin' && (
-                  <th className="py-3 px-4 text-center font-semibold">Last Year %</th>
+                  <th className="py-3 px-4 text-center font-semibold">Prior Year %</th>
                 )}
                 {activeKpi === 'gopMargin' && (
-                  <th className="py-3 px-4 text-center font-semibold">LY Growth</th>
+                  <th className="py-3 px-4 text-center font-semibold">YOY (pts)</th>
+                )}
+                {activeKpi === 'gopMargin' && (
+                  <th className="py-3 px-4 text-center font-semibold">Budget %</th>
+                )}
+                {activeKpi === 'gopMargin' && (
+                  <th className="py-3 px-4 text-center font-semibold">vs Budget (pts)</th>
                 )}
                 {activeKpi === 'forecast' && (
                   <th className="py-3 px-4 text-center font-semibold">Forecast</th>

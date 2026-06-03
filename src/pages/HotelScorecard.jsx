@@ -113,7 +113,7 @@ export default function HotelScorecard() {
       target: '0.1%-2.0% partial / 2.1%+ full',
       actual: activeEntry.revpar_index != null ? `Index: ${activeEntry.revpar_index.toFixed(1)}` : '—',
       ytdActual: activeEntry.revpar_index_change != null
-        ? `${activeEntry.revpar_index_change >= 0 ? '+' : ''}${activeEntry.revpar_index_change.toFixed(2)}%`
+        ? `${activeEntry.revpar_index_change >= 0 ? '+' : ''}${activeEntry.revpar_index_change.toFixed(1)}%`
         : '—',
       score: scorecard.rgi.score,
       maxScore: 15,
@@ -269,7 +269,7 @@ export default function HotelScorecard() {
               <div className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">RevPAR Index YOY</div>
               <div>
                 <div className="text-2xl font-black" style={{ color: yoyRpi == null ? undefined : yoyRpi >= 0 ? '#4CAF50' : '#ef4444' }}>
-                  {yoyRpi != null ? `${yoyRpi >= 0 ? '+' : ''}${yoyRpi.toFixed(2)}%` : '—'}
+                  {yoyRpi != null ? `${yoyRpi >= 0 ? '+' : ''}${yoyRpi.toFixed(1)}%` : '—'}
                 </div>
                 <div className="text-xs text-muted-foreground">% Change</div>
               </div>
