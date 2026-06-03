@@ -90,7 +90,7 @@ export default function HotelScorecard() {
     {
       measure: 'GOP Margin Improvement',
       weight: '35%',
-      target: activeEntry.gop_margin_prior != null ? `PY: ${activeEntry.gop_margin_prior.toFixed(1)}%` : '—',
+      target: activeEntry.gop_margin_prior != null ? `${activeEntry.gop_margin_prior.toFixed(1)}%` : '—',
       actual: activeEntry.gop_margin_actual != null ? `TY: ${activeEntry.gop_margin_actual.toFixed(1)}%` : '—',
       ytdActual: (() => {
         const a = activeEntry.gop_margin_actual;
