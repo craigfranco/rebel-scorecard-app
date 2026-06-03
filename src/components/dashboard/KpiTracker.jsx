@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { ChevronDown, ChevronUp, X } from 'lucide-react';
 import { getBrandColor } from '@/lib/portfolioHelpers';
-import { useNavigate } from 'react-router-dom';
 
 function fmtDollar(val) {
   if (val == null) return '—';
@@ -18,8 +17,7 @@ function fmtNum(val, decimals = 1) {
   return val.toFixed(decimals);
 }
 
-export default function KpiTracker({ title, icon, iconColor, subtitle, hotels, selectedMonth, selectedYear }) {
-  const navigate = useNavigate();
+export default function KpiTracker({ title, icon, iconColor, subtitle, hotels }) {
   const [expanded, setExpanded] = useState(false);
   
   // Filter to only hotels with data
@@ -41,11 +39,6 @@ export default function KpiTracker({ title, icon, iconColor, subtitle, hotels, s
     const statusOrder = { 'fail': 0, 'partial': 1, 'na': 2, 'pass': 3 };
     return (statusOrder[a.status] ?? 4) - (statusOrder[b.status] ?? 4);
   });
-
-  const handleHotelClick = (propId) => {
-    // Navigate to Hotel Scorecard with property ID and period params
-    navigate(`/hotel-scorecard?propertyId=${propId}&month=${selectedMonth}&year=${selectedYear}`);
-  };
 
   return (
     <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
@@ -140,12 +133,9 @@ export default function KpiTracker({ title, icon, iconColor, subtitle, hotels, s
                     <div className="w-2 h-2 rounded-full shrink-0 mt-1" style={{ backgroundColor: brandColor }} />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-2 mb-1">
-                        <button
-                          onClick={() => handleHotelClick(prop.id)}
-                          className="text-sm font-semibold text-foreground truncate hover:text-primary hover:underline text-left transition-colors cursor-pointer"
-                        >
+                        <span className="text-sm font-semibold text-foreground truncate">
                           {prop.name}
-                        </button>
+                        </span>
                         <span
                           className="text-xs font-bold px-2.5 py-1 rounded-full shrink-0"
                           style={{
@@ -178,7 +168,7 @@ export default function KpiTracker({ title, icon, iconColor, subtitle, hotels, s
                         <div>
                           <div className="text-muted-foreground mb-0.5">LY</div>
                           <div className="font-semibold text-foreground">
-                            {metricType === 'gop' || metricType === 'forecast' ? fmtDollar(ly) : 
+                            {metricType === 'gop' ? fmtDollar(ly) : 
                              metricType === 'margin' ? fmtPct(ly) :
                              metricType === 'rgi' ? fmtNum(ly) :
                              fmtNum(ly)}

@@ -46,6 +46,7 @@ export default function Dashboard() {
     const latest = propEntries[propEntries.length - 1];
     const gopActual = latest.budgeted_gop_actual;
     const gopTarget = latest.budgeted_gop_target;
+    const gopPrior = latest.budgeted_gop_prior;
     
     // Exclude if either value is null, or if actual=0 and target>0
     if (gopActual == null || gopTarget == null || (gopActual === 0 && gopTarget > 0)) {
@@ -60,6 +61,10 @@ export default function Dashboard() {
       hasData: true,
       status: pass ? 'pass' : 'fail',
       details,
+      actual: gopActual,
+      target: gopTarget,
+      ly: gopPrior,
+      metricType: 'gop',
     };
   });
 
@@ -71,6 +76,7 @@ export default function Dashboard() {
     const latest = propEntries[propEntries.length - 1];
     const ty = latest.gop_margin_actual;
     const ly = latest.gop_margin_prior;
+    const budget = latest.gop_margin_budget;
     const improvement = (ty != null && ly != null) ? ty - ly : null;
     const pass = improvement != null && improvement >= 0.1;
     const details = (ty != null && ly != null) ? `${ty.toFixed(1)}% vs ${ly.toFixed(1)}%` : '';
@@ -80,6 +86,10 @@ export default function Dashboard() {
       hasData: true,
       status: pass ? 'pass' : 'fail',
       details,
+      actual: ty,
+      target: budget,
+      ly,
+      metricType: 'margin',
     };
   });
 
@@ -90,6 +100,8 @@ export default function Dashboard() {
     
     const latest = propEntries[propEntries.length - 1];
     const change = latest.revpar_index_change;
+    const rgiTy = latest.revpar_index;
+    const rgiLy = rgiTy != null && change != null ? rgiTy / (1 + change / 100) : null;
     
     let status = 'fail';
     if (change != null) {
@@ -103,6 +115,10 @@ export default function Dashboard() {
       hasData: true,
       status,
       details,
+      actual: rgiTy,
+      target: change,
+      ly: rgiLy,
+      metricType: 'rgi',
     };
   });
 
@@ -127,22 +143,31 @@ export default function Dashboard() {
       hasData: true,
       status: pass ? 'pass' : 'fail',
       details,
+      actual: tyNorm,
+      target: lyNorm,
+      ly: lyNorm,
+      metricType: 'gss',
     };
   });
 
-  // FORECAST KICKER TRACKER (existing logic)
+  // FORECAST KICKER TRACKER
   const forecastHotels = properties.map(prop => {
     const propEntries = allEntries.filter(e => e.property_id === prop.id && periodMonths.includes(e.month) && e.year === selectedYear);
     const latest = propEntries[propEntries.length - 1];
     const hit = latest && latest.forecast_kicker === true;
     const hasData = !!latest;
-    return { prop, hit, hasData };
-  }).filter(r => r.hasData).map(({ prop, hit }) => ({
-    prop,
-    hasData: true,
-    status: hit ? 'pass' : 'fail',
-    details: '',
-  }));
+    
+    return {
+      prop,
+      hasData: true,
+      status: hit ? 'pass' : 'fail',
+      details: '',
+      actual: latest?.forecast_actual_revenue,
+      target: latest?.forecast_primary_forecast,
+      ly: null,
+      metricType: 'forecast',
+    };
+  });
 
   return (
     <div className="p-4 lg:p-8 space-y-6 max-w-7xl mx-auto">
