@@ -158,8 +158,7 @@ export default function KpiBreakdown() {
           target = entry.forecast_primary_forecast != null ? `$${Math.round(entry.forecast_primary_forecast).toLocaleString('en-US')}` : '—';
           entry._forecast_variance = (entry.forecast_actual_revenue != null && entry.forecast_primary_forecast != null)
             ? entry.forecast_actual_revenue - entry.forecast_primary_forecast : null;
-          entry._forecast_accuracy = (entry.forecast_actual_revenue != null && entry.forecast_primary_forecast != null && entry.forecast_primary_forecast !== 0)
-            ? (1 - Math.abs(entry.forecast_actual_revenue - entry.forecast_primary_forecast) / entry.forecast_primary_forecast) * 100 : null;
+
         } else if (activeKpi === 'redzone') {
           pass = entry.red_zone_kicker || false;
           score = pass ? 1 : 0;
@@ -284,9 +283,7 @@ export default function KpiBreakdown() {
                 {activeKpi === 'forecast' && (
                   <th className="py-3 px-4 text-center font-semibold">Variance ($)</th>
                 )}
-                {activeKpi === 'forecast' && (
-                  <th className="py-3 px-4 text-center font-semibold">Forecast Accuracy</th>
-                )}
+
                 {activeKpi === 'gss' && (
                   <th className="py-3 px-4 text-center font-semibold">Last Year</th>
                 )}
@@ -383,15 +380,7 @@ export default function KpiBreakdown() {
                         ) : '—'}
                       </td>
                     )}
-                    {activeKpi === 'forecast' && (
-                      <td className="py-3 px-4 text-center text-sm font-bold">
-                        {entry && entry._forecast_accuracy != null ? (
-                          <span style={{ color: entry._forecast_accuracy >= 95 ? '#4CAF50' : entry._forecast_accuracy >= 90 ? '#f59e0b' : '#ef4444' }}>
-                            {entry._forecast_accuracy.toFixed(1)}%
-                          </span>
-                        ) : '—'}
-                      </td>
-                    )}
+
                     {activeKpi === 'gss' && (
                       <td className="py-3 px-4 text-center text-sm text-muted-foreground">
                         {entry && entry._gss_prior != null ? `${Number(entry._gss_prior).toFixed(1)} /${entry._gss_scale}` : '—'}
