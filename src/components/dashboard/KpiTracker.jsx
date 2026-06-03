@@ -122,7 +122,7 @@ export default function KpiTracker({ title, icon, iconColor, subtitle, hotels })
               </button>
             </div>
             <div className="space-y-2 max-h-96 overflow-y-auto">
-              {sortedHotels.map(({ prop, status, actual, target, ly, metricType }) => {
+              {sortedHotels.map(({ prop, status, actual, target, ly, metricType, onClick }) => {
                 const brandColor = getBrandColor(prop.parent_brand);
                 const isPass = status === 'pass';
                 const isPartial = status === 'partial';
@@ -133,9 +133,12 @@ export default function KpiTracker({ title, icon, iconColor, subtitle, hotels })
                     <div className="w-2 h-2 rounded-full shrink-0 mt-1" style={{ backgroundColor: brandColor }} />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-2 mb-1">
-                        <span className="text-sm font-semibold text-foreground truncate">
+                        <button
+                          onClick={onClick}
+                          className="text-sm font-semibold text-blue-600 truncate hover:text-blue-800 hover:underline text-left transition-colors cursor-pointer"
+                        >
                           {prop.name}
-                        </span>
+                        </button>
                         <span
                           className="text-xs font-bold px-2.5 py-1 rounded-full shrink-0"
                           style={{

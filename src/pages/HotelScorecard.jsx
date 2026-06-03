@@ -4,13 +4,17 @@ import { useQuery } from '@tanstack/react-query';
 import PropertyScorecardDetail from '@/components/scorecard/PropertyScorecardDetail';
 import SeedOnMount from '../components/SeedOnMount';
 import { useUserProfile } from '@/lib/UserProfileContext';
+import { useTimePeriod } from '@/lib/TimePeriodContext';
 
 export default function HotelScorecard() {
   const { filterPropertiesForUser } = useUserProfile();
+  const { setSelectedMonth, setSelectedYear } = useTimePeriod();
 
-  // Read propertyId from URL query param (e.g. ?propertyId=abc123)
+  // Read URL params (e.g. ?propertyId=abc123&month=6&year=2025)
   const urlParams = new URLSearchParams(window.location.search);
   const paramPropertyId = urlParams.get('propertyId');
+  const paramMonth = urlParams.get('month');
+  const paramYear = urlParams.get('year');
 
   const [selectedPropertyId, setSelectedPropertyId] = useState(paramPropertyId || '');
 
@@ -21,6 +25,14 @@ export default function HotelScorecard() {
 
   const properties = filterPropertiesForUser(allProperties);
   const selectedProperty = properties.find(p => p.id === selectedPropertyId) || null;
+
+  // Set period from URL params if provided (from Dashboard drill-down)
+  useEffect(() => {
+    if (paramMonth && paramYear) {
+      setSelectedMonth(parseInt(paramMonth, 10));
+      setSelectedYear(parseInt(paramYear, 10));
+    }
+  }, [paramMonth, paramYear]);
 
   // Only fall back to first property if no param was provided and nothing is selected yet
   useEffect(() => {
