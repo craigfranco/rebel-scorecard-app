@@ -143,14 +143,10 @@ export default function KpiBreakdown() {
           // Derive PY index: TY / (1 + change/100). Falls back to stored value if available.
           const rgiTy = entry.revpar_index;
           const rgiChg = entry.revpar_index_change;
-          const rgiPy = entry.revpar_index_prior != null
-            ? entry.revpar_index_prior
-            : (rgiTy != null && rgiChg != null ? rgiTy / (1 + rgiChg / 100) : null);
-          const rgiTarget = rgiPy != null ? rgiPy * 1.001 : null;
+          const rgiTarget = (rgiTy != null && rgiChg != null) ? (rgiTy / (1 + rgiChg / 100)) * 1.001 : null;
           actual = rgiTy != null ? rgiTy.toFixed(1) : '—';
           target = rgiTarget != null ? rgiTarget.toFixed(1) : '—';
           entry._rgi_change = rgiChg;
-          entry._rgi_prior = rgiPy;
           entry._rgi_target = rgiTarget;
           entry._rgi_vs_target = (rgiTy != null && rgiTarget != null) ? rgiTy - rgiTarget : null;
         } else if (activeKpi === 'gss') {
@@ -271,16 +267,10 @@ export default function KpiBreakdown() {
                   {activeKpi === 'rgi' ? 'TY Index' : activeKpi === 'gopMargin' ? 'TY Margin' : activeKpi === 'gop' ? 'Achievement' : 'Actual'}
                 </th>
                 {activeKpi === 'rgi' && (
-                  <th className="py-3 px-4 text-center font-semibold">Target (min)</th>
-                )}
-                {activeKpi === 'rgi' && (
-                  <th className="py-3 px-4 text-center font-semibold">PY Index</th>
+                  <th className="py-3 px-4 text-center font-semibold">Target</th>
                 )}
                 {activeKpi === 'rgi' && (
                   <th className="py-3 px-4 text-center font-semibold">Change %</th>
-                )}
-                {activeKpi === 'rgi' && (
-                  <th className="py-3 px-4 text-center font-semibold">vs Target</th>
                 )}
                 {activeKpi === 'gop' && (
                   <th className="py-3 px-4 text-center font-semibold">Actual $</th>
@@ -347,13 +337,8 @@ export default function KpiBreakdown() {
                     </td>
 
                     {activeKpi === 'rgi' && (
-                      <td className="py-3 px-4 text-center text-sm font-semibold text-muted-foreground">
-                        {entry && entry._rgi_target != null ? entry._rgi_target.toFixed(1) : '—'}
-                      </td>
-                    )}
-                    {activeKpi === 'rgi' && (
                       <td className="py-3 px-4 text-center text-sm text-muted-foreground">
-                        {entry && entry._rgi_prior != null ? entry._rgi_prior.toFixed(1) : '—'}
+                        {entry && entry._rgi_target != null ? entry._rgi_target.toFixed(1) : '—'}
                       </td>
                     )}
                     {activeKpi === 'rgi' && (
@@ -361,17 +346,6 @@ export default function KpiBreakdown() {
                         {entry && entry._rgi_change != null ? (
                           <span style={{ color: entry._rgi_change >= 0.1 ? '#4CAF50' : '#ef4444' }}>
                             {entry._rgi_change >= 0 ? '+' : ''}{entry._rgi_change.toFixed(1)}%
-                          </span>
-                        ) : '—'}
-                      </td>
-                    )}
-                    {activeKpi === 'rgi' && (
-                      <td className="py-3 px-4 text-center text-sm font-bold">
-                        {entry && entry._rgi_vs_target != null ? (
-                          <span style={{ color: entry._rgi_vs_target >= 0 ? '#4CAF50' : '#ef4444' }}>
-                            {entry._rgi_vs_target >= 0
-                              ? `+${entry._rgi_vs_target.toFixed(1)} pts`
-                              : `${entry._rgi_vs_target.toFixed(1)} pts`}
                           </span>
                         ) : '—'}
                       </td>
