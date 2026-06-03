@@ -8,7 +8,7 @@ import { useTimePeriod } from '@/lib/TimePeriodContext';
 import { getBrandColor, getStatusBadge, formatBrandLabel } from '@/lib/portfolioHelpers';
 import PropertyFilters from '@/components/filters/PropertyFilters';
 import { getLeadTypes } from '@/functions/getLeadTypes';
-import PropertyScorecardDetail from '@/components/scorecard/PropertyScorecardDetail';
+import { useNavigate } from 'react-router-dom';
 
 
 
@@ -21,7 +21,7 @@ export default function AllProperties() {
   const [sortDir, setSortDir] = useState('desc');
   const [filters, setFilters] = useState(EMPTY_FILTERS);
   const [fieldToPersonStrIds, setFieldToPersonStrIds] = useState({});
-  const [drawerProperty, setDrawerProperty] = useState(null);
+  const navigate = useNavigate();
 
   React.useEffect(() => {
     getLeadTypes({}).then(res => {
@@ -112,22 +112,6 @@ export default function AllProperties() {
 
   return (
     <div className="p-4 lg:p-8 space-y-6 max-w-7xl mx-auto">
-      {/* Drawer overlay */}
-      {drawerProperty && (
-        <div className="fixed inset-0 z-50 flex">
-          {/* Backdrop */}
-          <div className="flex-1 bg-black/40" onClick={() => setDrawerProperty(null)} />
-          {/* Panel */}
-          <div className="w-full max-w-5xl bg-background overflow-y-auto shadow-2xl">
-            <div className="p-4 lg:p-8">
-              <PropertyScorecardDetail
-                property={drawerProperty}
-                onClose={() => setDrawerProperty(null)}
-              />
-            </div>
-          </div>
-        </div>
-      )}
       {/* Header */}
       <div className="rounded-2xl text-white p-6 shadow-lg" style={{ background: 'linear-gradient(135deg, #2d4b5e 0%, #1e3547 100%)' }}>
         <h1 className="text-2xl font-bold">All Properties</h1>
@@ -209,7 +193,7 @@ export default function AllProperties() {
                   <tr
                     key={property.id}
                     className="border-b border-border hover:bg-muted/20 transition-colors cursor-pointer"
-                    onClick={() => setDrawerProperty(property)}
+                    onClick={() => navigate(`/hotel-scorecard?propertyId=${property.id}`)}
                   >
                     <td className="py-3 px-4 text-muted-foreground text-xs font-medium">{idx + 1}</td>
                     <td className="py-3 px-4">

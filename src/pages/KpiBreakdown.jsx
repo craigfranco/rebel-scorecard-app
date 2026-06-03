@@ -320,7 +320,7 @@ export default function KpiBreakdown() {
                   <tr
                     key={property.id}
                     className={`border-b border-border cursor-pointer transition-colors ${rowBg}`}
-                    onClick={() => navigate(`/hotel/${property.id}`)}
+                    onClick={() => navigate(`/hotel-scorecard?propertyId=${property.id}`)}
                   >
                     <td className="py-3 px-4 text-muted-foreground text-xs font-medium">{idx + 1}</td>
                     <td className="py-3 px-4">
