@@ -78,9 +78,22 @@ export function calcGSSScore(actual, prior) {
   return { score, diff: Math.round(diff * 100) / 100, pass, incomplete: false };
 }
 
-export function calcTotalScore(gopScore, gopMarginScore, rgiScore, gssScore) {
-  const total = gopScore + gopMarginScore + rgiScore + gssScore;
-  return { total: Math.round(total * 10) / 10, pass: total >= 70 };
+/**
+ * Calculates total score.
+ * If gssIncomplete is true, GSS is excluded from scoring:
+ *   - maxPossible = 85, pass threshold scales to 70/100 × 85 = 59.5
+ */
+export function calcTotalScore(gopScore, gopMarginScore, rgiScore, gssScore, gssIncomplete = false) {
+  const total = gopScore + gopMarginScore + rgiScore + (gssIncomplete ? 0 : gssScore);
+  const maxPossible = gssIncomplete ? 85 : 100;
+  const passThreshold = Math.round(70 * maxPossible / 100 * 10) / 10; // 70% of max
+  return {
+    total: Math.round(total * 10) / 10,
+    maxPossible,
+    gssIncomplete,
+    pass: total >= passThreshold,
+    passThreshold,
+  };
 }
 
 export function calculateScorecard(entry, property) {
@@ -98,7 +111,7 @@ export function calculateScorecard(entry, property) {
     entry.gss_actual != null ? entry.gss_actual : null,
     entry.gss_prior != null ? entry.gss_prior : null
   );
-  const total = calcTotalScore(gop.score, gopMargin.score, rgi.score, gss.score);
+  const total = calcTotalScore(gop.score, gopMargin.score, rgi.score, gss.score, gss.incomplete);
   return {
     gop,
     gopMargin,

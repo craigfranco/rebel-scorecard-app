@@ -345,7 +345,7 @@ export default function HotelScorecard() {
             {/* Gauge */}
           <div className="bg-card rounded-2xl border border-border p-6 shadow-sm flex flex-col items-center justify-center gap-4">
             <h2 className="font-bold text-sm text-muted-foreground uppercase tracking-wide">Overall Score</h2>
-            {scorecard && <ScoreGauge score={scorecard.total.total} pass={scorecard.total.pass} />}
+            {scorecard && <ScoreGauge score={scorecard.total.total} pass={scorecard.total.pass} maxPossible={scorecard.total.maxPossible} gssIncomplete={scorecard.total.gssIncomplete} />}
             <div className="w-full space-y-2">
               <KickerBadge
                 type="forecast"
@@ -383,25 +383,29 @@ export default function HotelScorecard() {
                   ))}
                 </tbody>
                 {scorecard && (() => {
-                  const anyIncomplete = kpiRows.some(r => r.incomplete);
+                  const nonGssIncomplete = kpiRows.filter(r => r.measure !== `GSS — ${scorecard.gssStd.label}`).some(r => r.incomplete);
+                  const { total, maxPossible, gssIncomplete, pass } = scorecard.total;
                   return (
                     <tfoot>
                       <tr style={{ backgroundColor: '#2d4b5e' }}>
-                        <td colSpan={5} className="py-3 px-4 font-bold text-white text-sm">Total Score</td>
+                        <td colSpan={5} className="py-3 px-4 font-bold text-white text-sm">
+                          Total Score
+                          {gssIncomplete && <span className="ml-2 text-white/60 text-xs font-normal">(GSS N/A — max {maxPossible} pts)</span>}
+                        </td>
                         <td className="py-3 px-4 text-center font-black text-white text-lg">
-                          {anyIncomplete ? '—' : scorecard.total.total}
+                          {nonGssIncomplete ? '—' : `${total}/${maxPossible}`}
                         </td>
                         <td className="py-3 px-4 text-center">
-                          {anyIncomplete ? (
+                          {nonGssIncomplete ? (
                             <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-white/20 text-white">
                               INCOMPLETE
                             </span>
                           ) : (
                             <span
                               className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold text-white"
-                              style={{ backgroundColor: scorecard.total.pass ? '#4CAF50' : '#ef4444' }}
+                              style={{ backgroundColor: pass ? '#4CAF50' : '#ef4444' }}
                             >
-                              {scorecard.total.pass ? '✓ PASS' : '✗ FAIL'}
+                              {pass ? '✓ PASS' : '✗ FAIL'}
                             </span>
                           )}
                         </td>

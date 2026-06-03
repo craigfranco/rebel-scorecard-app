@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 
-export default function ScoreGauge({ score, pass }) {
+export default function ScoreGauge({ score, pass, maxPossible = 100, gssIncomplete = false }) {
   const [animated, setAnimated] = useState(0);
 
   useEffect(() => {
@@ -10,8 +10,10 @@ export default function ScoreGauge({ score, pass }) {
 
   const radius = 54;
   const circumference = 2 * Math.PI * radius;
-  const offset = circumference - (animated / 100) * circumference;
+  const pct = maxPossible > 0 ? animated / maxPossible : 0;
+  const offset = circumference - pct * circumference;
   const color = pass ? '#4CAF50' : '#ef4444';
+  const threshold = Math.round(70 * maxPossible / 100);
 
   return (
     <div className="flex flex-col items-center gap-2">
@@ -30,8 +32,9 @@ export default function ScoreGauge({ score, pass }) {
           />
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <span className="text-4xl font-black" style={{ color }}>{Math.round(score)}</span>
-          <span className="text-xs text-muted-foreground font-medium">/ 100</span>
+          <span className="text-3xl font-black" style={{ color }}>{Math.round(score)}</span>
+          <span className="text-xs text-muted-foreground font-medium">/ {maxPossible}</span>
+          {gssIncomplete && <span className="text-[9px] text-muted-foreground mt-0.5">GSS N/A</span>}
         </div>
       </div>
       <div
@@ -40,7 +43,7 @@ export default function ScoreGauge({ score, pass }) {
       >
         {pass ? '✓ PASS' : '✗ FAIL'}
       </div>
-      <p className="text-xs text-muted-foreground">Threshold: 70 pts</p>
+      <p className="text-xs text-muted-foreground">Threshold: {threshold} pts</p>
     </div>
   );
 }

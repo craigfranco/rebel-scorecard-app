@@ -57,7 +57,7 @@ export default function KpiRow({ measure, weight, target, actual, ytdActual, sco
       </td>
       <td className="py-3 px-4 text-center">
         {incomplete ? (
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-muted text-muted-foreground">
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-500 border border-slate-200">
             N/A
           </span>
         ) : (
