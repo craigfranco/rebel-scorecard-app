@@ -9,7 +9,7 @@ import KpiRow from '@/components/scorecard/KpiRow';
 import KickerBadge from '@/components/scorecard/KickerBadge';
 import SeedOnMount from '../components/SeedOnMount';
 
-import { calculateScorecard, MONTHS, getQuarterFromMonth, aggregateEntries } from '../lib/scoring';
+import { calculateScorecard, MONTHS, getQuarterFromMonth, aggregateEntries, hasForecastData } from '../lib/scoring';
 import { useTimePeriod } from '@/lib/TimePeriodContext';
 import { useUserProfile } from '@/lib/UserProfileContext';
 
@@ -308,8 +308,8 @@ export default function HotelScorecard() {
             <div className="w-full space-y-2">
               <KickerBadge
                 type="forecast"
-                hit={(activeEntry.forecast_actual_revenue != null && activeEntry.forecast_primary_forecast != null) ? (activeEntry.forecast_kicker || false) : false}
-                missingData={activeEntry.forecast_actual_revenue == null || activeEntry.forecast_primary_forecast == null}
+                hit={hasForecastData(activeEntry) ? (activeEntry.forecast_kicker || false) : false}
+                missingData={!hasForecastData(activeEntry)}
               />
               <KickerBadge type="redzone" hit={activeEntry.red_zone_kicker || false} />
             </div>

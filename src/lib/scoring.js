@@ -9,6 +9,14 @@ export const GSS_STANDARDS = {
   Independent: { metric: 'Revinate', target: 0.03, label: 'Independent Revinate +0.03', scale: 5 },
 };
 
+// Returns true if a forecast entry has valid (non-null, non-zero) data for both fields
+export function hasForecastData(entry) {
+  return (
+    entry.forecast_actual_revenue != null && entry.forecast_actual_revenue !== 0 &&
+    entry.forecast_primary_forecast != null && entry.forecast_primary_forecast !== 0
+  );
+}
+
 export function getGssStandard(parentBrand) {
   return GSS_STANDARDS[parentBrand] || GSS_STANDARDS['Independent'];
 }
@@ -80,10 +88,8 @@ export function calculateScorecard(entry, property) {
     gss,
     gssStd,
     total,
-    forecastKicker: (entry.forecast_actual_revenue != null && entry.forecast_primary_forecast != null)
-      ? (entry.forecast_kicker || false)
-      : false,
-    forecastMissingData: entry.forecast_actual_revenue == null || entry.forecast_primary_forecast == null,
+    forecastKicker: hasForecastData(entry) ? (entry.forecast_kicker || false) : false,
+    forecastMissingData: !hasForecastData(entry),
     redZoneKicker: entry.red_zone_kicker || false,
   };
 }

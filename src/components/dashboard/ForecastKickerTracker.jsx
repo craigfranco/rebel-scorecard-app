@@ -2,6 +2,7 @@ import React from 'react';
 import { Zap } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { getBrandColor } from '@/lib/portfolioHelpers';
+import { hasForecastData } from '@/lib/scoring';
 
 export default function ForecastKickerTracker({ properties, allEntries, getPeriodMonths, selectedYear }) {
   const periodMonths = getPeriodMonths();
@@ -9,8 +10,7 @@ export default function ForecastKickerTracker({ properties, allEntries, getPerio
   const rows = properties.map(prop => {
     const propEntries = allEntries.filter(e => e.property_id === prop.id && periodMonths.includes(e.month) && e.year === selectedYear);
     const latest = propEntries[propEntries.length - 1];
-    const hasForecastData = latest?.forecast_actual_revenue != null && latest?.forecast_primary_forecast != null;
-    const hit = hasForecastData && latest?.forecast_kicker === true;
+    const hit = latest && hasForecastData(latest) && latest.forecast_kicker === true;
     return { prop, hit, hasData: !!latest };
   }).filter(r => r.hasData);
 
