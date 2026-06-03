@@ -168,23 +168,39 @@ export default function PortfolioKpiRollup({ properties, allEntries, periodType,
       {/* GOP Performance */}
       <KpiCard title="GOP Performance">
         <div>
-          <div className="text-xl font-black text-foreground leading-tight">{fmt$(s.gopActual)}</div>
-          <div className="text-xs text-muted-foreground">actual</div>
-          <div className="text-sm font-medium text-muted-foreground mt-0.5">{fmt$(s.gopBudget)} <span className="text-xs font-normal">budget</span></div>
-        </div>
-        <div className="flex gap-4 pt-1 border-t border-border">
-          <div className="flex flex-col">
-            <span className="text-[10px] text-muted-foreground uppercase tracking-wide">Achievement</span>
-            {s.gopAchievement != null ? (
-              <span className="text-sm font-bold" style={{ color: s.gopPass ? '#4CAF50' : '#ef4444' }}>
-                {s.gopPass && s.gopAchievement > 0 ? '+' : ''}{s.gopAchievement.toFixed(1)}%
-              </span>
-            ) : <span className="text-sm text-muted-foreground">—</span>}
-          </div>
-          <div className="flex flex-col">
-            <span className="text-[10px] text-muted-foreground uppercase tracking-wide">YOY</span>
-            <Delta value={s.gopYOY} suffix="%" />
-          </div>
+          {(() => {
+            const pass = s.gopVariance != null ? s.gopActual > s.gopBudget : null;
+            const color = pass == null ? undefined : pass ? '#4CAF50' : '#ef4444';
+            return (
+              <>
+                <div className="text-2xl font-black" style={{ color }}>
+                  {s.gopVariance != null
+                    ? `${s.gopVariance >= 0 ? '+' : '-'}$${Math.abs(Math.round(s.gopVariance)).toLocaleString('en-US')}`
+                    : '—'}
+                </div>
+                <div className="text-xs text-muted-foreground">vs Budget</div>
+                <div className="flex gap-4 pt-1 border-t border-border mt-2">
+                  <div className="flex flex-col">
+                    <span className="text-[10px] text-muted-foreground uppercase tracking-wide">Target</span>
+                    <span className="text-sm font-bold text-foreground">
+                      {s.gopBudget != null ? `$${Math.round(s.gopBudget).toLocaleString('en-US')}` : '—'}
+                    </span>
+                    {s.gopPrior != null && (
+                      <span className="text-xs text-muted-foreground" style={{ fontSize: '10px' }}>
+                        LY: ${Math.round(s.gopPrior).toLocaleString('en-US')}
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-[10px] text-muted-foreground uppercase tracking-wide">Achievement</span>
+                    <span className="text-sm font-bold" style={{ color }}>
+                      {s.gopAchievement != null ? `${pass && s.gopAchievement > 0 ? '+' : ''}${s.gopAchievement.toFixed(1)}%` : '—'}
+                    </span>
+                  </div>
+                </div>
+              </>
+            );
+          })()}
         </div>
       </KpiCard>
 
