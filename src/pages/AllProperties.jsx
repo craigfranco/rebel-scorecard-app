@@ -3,12 +3,12 @@ import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import { Search, TrendingUp, TrendingDown, Minus, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
 import { Input } from '@/components/ui/input';
-import { calculateScorecard, MONTHS, getQuarterFromMonth, aggregateEntries } from '../lib/scoring';
-import { Link } from 'react-router-dom';
+import { calculateScorecard, aggregateEntries } from '../lib/scoring';
 import { useTimePeriod } from '@/lib/TimePeriodContext';
-import { getBrandColor, getStatusBadge, formatPercentage, formatBrandLabel } from '@/lib/portfolioHelpers';
+import { getBrandColor, getStatusBadge, formatBrandLabel } from '@/lib/portfolioHelpers';
 import PropertyFilters from '@/components/filters/PropertyFilters';
 import { getLeadTypes } from '@/functions/getLeadTypes';
+import PropertyScorecardDetail from '@/components/scorecard/PropertyScorecardDetail';
 
 
 
@@ -21,6 +21,7 @@ export default function AllProperties() {
   const [sortDir, setSortDir] = useState('desc');
   const [filters, setFilters] = useState(EMPTY_FILTERS);
   const [fieldToPersonStrIds, setFieldToPersonStrIds] = useState({});
+  const [drawerProperty, setDrawerProperty] = useState(null);
 
   React.useEffect(() => {
     getLeadTypes({}).then(res => {
@@ -111,6 +112,22 @@ export default function AllProperties() {
 
   return (
     <div className="p-4 lg:p-8 space-y-6 max-w-7xl mx-auto">
+      {/* Drawer overlay */}
+      {drawerProperty && (
+        <div className="fixed inset-0 z-50 flex">
+          {/* Backdrop */}
+          <div className="flex-1 bg-black/40" onClick={() => setDrawerProperty(null)} />
+          {/* Panel */}
+          <div className="w-full max-w-5xl bg-background overflow-y-auto shadow-2xl">
+            <div className="p-4 lg:p-8">
+              <PropertyScorecardDetail
+                property={drawerProperty}
+                onClose={() => setDrawerProperty(null)}
+              />
+            </div>
+          </div>
+        </div>
+      )}
       {/* Header */}
       <div className="rounded-2xl text-white p-6 shadow-lg" style={{ background: 'linear-gradient(135deg, #2d4b5e 0%, #1e3547 100%)' }}>
         <h1 className="text-2xl font-bold">All Properties</h1>
@@ -189,15 +206,19 @@ export default function AllProperties() {
                 const brandColor = getBrandColor(property.parent_brand);
                 
                 return (
-                  <tr key={property.id} className="border-b border-border hover:bg-muted/20 transition-colors">
+                  <tr
+                    key={property.id}
+                    className="border-b border-border hover:bg-muted/20 transition-colors cursor-pointer"
+                    onClick={() => setDrawerProperty(property)}
+                  >
                     <td className="py-3 px-4 text-muted-foreground text-xs font-medium">{idx + 1}</td>
                     <td className="py-3 px-4">
                       <div className="flex items-center gap-3">
                         <div className="w-1 h-10 rounded-full" style={{ backgroundColor: brandColor }} />
-                        <Link to={`/hotel/${property.id}`} className="hover:underline">
+                        <div>
                           <div className="font-semibold text-foreground text-sm">{property.name}</div>
                           <div className="text-xs text-muted-foreground">{property.city}, {property.state}</div>
-                        </Link>
+                        </div>
                       </div>
                     </td>
                     <td className="py-3 px-4 text-center">
