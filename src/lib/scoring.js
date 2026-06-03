@@ -36,9 +36,13 @@ export function calcGOPMarginScore(actual, prior) {
   if (actual == null || prior == null) return { score: 0, diff: 0, pass: false, incomplete: true };
   const diff = actual - prior;
   const pass = diff >= 0.1;
-  // All-or-nothing: 35 pts if pass, 0 if fail
-  const score = pass ? 35 : 0;
-  return { score, diff: Math.round(diff * 100) / 100, pass, incomplete: false };
+  // Linear scale: 0.1% = 1 pt minimum, 5%+ = 35 pts capped
+  let score = 0;
+  if (diff >= 0.1) {
+    score = Math.min((diff / 5) * 35, 35);
+    score = Math.max(score, 1); // at least 1 pt when passing
+  }
+  return { score: Math.round(score * 10) / 10, diff: Math.round(diff * 100) / 100, pass, incomplete: false };
 }
 
 export function calcRGIScore(revparIndexChange) {

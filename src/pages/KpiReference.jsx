@@ -14,7 +14,7 @@ const KPI_ROWS = [
     measure: 'GOP Margin Improvement',
     weight: '35%',
     pts: '0–35',
-    target: 'Margin improvement vs Prior Year',
+    target: 'Margin Actual – Margin PY ≥ 0.1%',
     scoring: 'Growth-based scoring: 0.1% = 1 pt (minimum), scales linearly to 5%+ = 35 pts (capped). Pass at 0.1%+ improvement.',
     pass: 'Margin Actual – Margin PY ≥ 0.1%',
   },
