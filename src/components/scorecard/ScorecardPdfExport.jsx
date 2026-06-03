@@ -229,12 +229,13 @@ export function generateScorecardPDF(property, entry, periodType, selectedMonth,
   doc.rect(28, tableY + 10, W - 56, 8, 'F');
 
   const cols = [
-    { label: 'KPI', x: 36, w: 180, align: 'left' },
-    { label: 'Weight', x: 220, w: 44, align: 'center' },
-    { label: 'Target', x: 268, w: 100, align: 'center' },
-    { label: 'Actual', x: 372, w: 100, align: 'center' },
-    { label: 'Variance', x: 476, w: 100, align: 'center' },
-    { label: 'Score', x: 580, w: 60, align: 'center' },
+    { label: 'KPI', x: 36, w: 160, align: 'left' },
+    { label: 'Weight', x: 200, w: 44, align: 'center' },
+    { label: 'Actual', x: 248, w: 80, align: 'center' },
+    { label: 'Target', x: 332, w: 80, align: 'center' },
+    { label: 'LY', x: 416, w: 80, align: 'center' },
+    { label: 'Variance', x: 500, w: 80, align: 'center' },
+    { label: 'Score', x: 584, w: 56, align: 'center' },
     { label: 'Status', x: 644, w: 80, align: 'center' },
                                    // 724 — fits within 792-28=764
   ];
@@ -255,8 +256,9 @@ export function generateScorecardPDF(property, entry, periodType, selectedMonth,
     {
       name: 'Budgeted GOP',
       weight: '35%',
-      target: fmtDollar(gopB),
+      target: gopB != null ? fmtDollar(gopB) : '—',
       actual: fmtDollar(gopA),
+      ly: fmtDollar(gopB), // LY = budget for GOP
       variance: gopVariance != null ? fmtDollar(gopVariance) : '—',
       variancePos: gopVariance != null ? gopVariance >= 0 : null,
       score: scorecard.gop.score,
@@ -267,8 +269,9 @@ export function generateScorecardPDF(property, entry, periodType, selectedMonth,
     {
       name: 'GOP Margin Improvement',
       weight: '35%',
-      target: marginPy != null ? marginPy.toFixed(1) + '%' : '—',
+      target: marginPy != null ? (marginPy + 0.1).toFixed(1) + '%' : '—',
       actual: marginTy != null ? marginTy.toFixed(1) + '%' : '—',
+      ly: marginPy != null ? marginPy.toFixed(1) + '%' : '—',
       variance: marginVar != null ? fmtPts(marginVar) : '—',
       variancePos: marginVar != null ? marginVar >= 0 : null,
       score: scorecard.gopMargin.score,
@@ -279,8 +282,9 @@ export function generateScorecardPDF(property, entry, periodType, selectedMonth,
     {
       name: 'RevPAR Index % Change (RGI)',
       weight: '15%',
-      target: rgiTarget != null ? rgiTarget.toFixed(1) : '—',
+      target: rgiLy != null ? (rgiLy * 1.001).toFixed(1) : '—',
       actual: rgiTy != null ? rgiTy.toFixed(1) : '—',
+      ly: fmtNum(rgiLy),
       variance: rgiChg != null ? fmtPct(rgiChg) : '—',
       variancePos: rgiChg != null ? rgiChg >= 0.1 : null,
       score: scorecard.rgi.score,
@@ -291,8 +295,9 @@ export function generateScorecardPDF(property, entry, periodType, selectedMonth,
     {
       name: `GSS — ${gssStd.label}`,
       weight: '15%',
-      target: gssPriorNorm != null ? gssPriorNorm.toFixed(1) : '—',
+      target: gssPriorNorm != null ? '> ' + gssPriorNorm.toFixed(1) : '—',
       actual: gssNorm != null ? gssNorm.toFixed(1) : '—',
+      ly: fmtNum(gssPriorNorm),
       variance: gssVar != null ? fmtPts(gssVar) : '—',
       variancePos: gssVar != null ? gssVar >= 0 : null,
       score: scorecard.gss.score,
@@ -322,31 +327,36 @@ export function generateScorecardPDF(property, entry, periodType, selectedMonth,
     doc.setTextColor(100, 116, 139);
     doc.text(row.weight, cols[1].x + cols[1].w / 2, cy, { align: 'center' });
 
-    // Target
-    doc.setTextColor(100, 116, 139);
-    doc.text(row.target, cols[2].x + cols[2].w / 2, cy, { align: 'center' });
-
     // Actual
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(30, 41, 59);
-    doc.text(row.actual, cols[3].x + cols[3].w / 2, cy, { align: 'center' });
+    doc.text(row.actual, cols[2].x + cols[2].w / 2, cy, { align: 'center' });
+
+    // Target
+    doc.setTextColor(100, 116, 139);
+    doc.text(row.target, cols[3].x + cols[3].w / 2, cy, { align: 'center' });
+
+    // LY
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(100, 116, 139);
+    doc.text(row.ly, cols[4].x + cols[4].w / 2, cy, { align: 'center' });
 
     // Variance
     const varColor = row.variancePos == null ? [100, 116, 139] : row.variancePos ? [76, 175, 80] : [239, 68, 68];
     doc.setTextColor(...varColor);
-    doc.text(row.variance, cols[4].x + cols[4].w / 2, cy, { align: 'center' });
+    doc.text(row.variance, cols[5].x + cols[5].w / 2, cy, { align: 'center' });
 
     // Score
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(30, 41, 59);
     const scoreStr = row.incomplete ? '—' : `${row.score.toFixed(1)} / ${row.max}`;
-    doc.text(scoreStr, cols[5].x + cols[5].w / 2, cy, { align: 'center' });
+    doc.text(scoreStr, cols[6].x + cols[6].w / 2, cy, { align: 'center' });
 
     // Status badge
     if (!row.incomplete) {
       const badgeColor = row.pass ? [76, 175, 80] : [239, 68, 68];
       const badgeLabel = row.pass ? 'PASS' : 'FAIL';
-      const bx = cols[6].x + cols[6].w / 2;
+      const bx = cols[7].x + cols[7].w / 2;
       doc.setFillColor(...badgeColor);
       doc.roundedRect(bx - 18, cy - 9, 36, 13, 3, 3, 'F');
       doc.setFont('helvetica', 'bold');
@@ -357,7 +367,7 @@ export function generateScorecardPDF(property, entry, periodType, selectedMonth,
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(7);
       doc.setTextColor(148, 163, 184);
-      doc.text('N/A', cols[6].x + cols[6].w / 2, cy, { align: 'center' });
+      doc.text('N/A', cols[7].x + cols[7].w / 2, cy, { align: 'center' });
     }
   });
 
@@ -371,10 +381,10 @@ export function generateScorecardPDF(property, entry, periodType, selectedMonth,
   doc.text('TOTAL SCORE', cols[0].x, totalY + 13);
   const anyIncomplete = kpiData.some(r => r.incomplete);
   const totalScore = scorecard.total.total;
-  doc.text(anyIncomplete ? '—' : `${totalScore} / 100`, cols[5].x + cols[5].w / 2, totalY + 13, { align: 'center' });
+  doc.text(anyIncomplete ? '—' : `${totalScore} / 100`, cols[6].x + cols[6].w / 2, totalY + 13, { align: 'center' });
   if (!anyIncomplete) {
     const passLabel = scorecard.total.pass ? '✓ PASS' : '✗ FAIL';
-    const bx = cols[6].x + cols[6].w / 2;
+    const bx = cols[7].x + cols[7].w / 2;
     doc.setFillColor(scorecard.total.pass ? 76 : 239, scorecard.total.pass ? 175 : 68, scorecard.total.pass ? 80 : 68);
     doc.roundedRect(bx - 22, totalY + 4, 44, 13, 3, 3, 'F');
     doc.setFontSize(8);
