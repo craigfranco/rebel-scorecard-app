@@ -3,18 +3,26 @@ import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import { ChevronRight, Target, TrendingUp, BarChart3, Smile, Zap } from 'lucide-react';
 import SeedOnMount from '../components/SeedOnMount';
-import { useNavigate } from 'react-router-dom';
 
 import { useTimePeriod } from '@/lib/TimePeriodContext';
-import { calculateScorecard, normalizeGssTo100, hasForecastData } from '@/lib/scoring';
+import { normalizeGssTo100 } from '@/lib/scoring';
 import { getBrandColor } from '@/lib/portfolioHelpers';
 
+import ExecutiveSummaryBar from '@/components/dashboard/ExecutiveSummaryBar';
+import PortfolioKpiRollup from '@/components/dashboard/PortfolioKpiRollup';
 import KpiTracker from '@/components/dashboard/KpiTracker';
 
 export default function Dashboard() {
-  const navigate = useNavigate();
   const { selectedMonth, selectedYear, periodType, getPeriodMonths } = useTimePeriod();
   
+  // Helper to map status labels
+  const getStatusLabel = (status) => {
+    if (status === 'pass') return 'PASS';
+    if (status === 'partial') return 'PARTIAL';
+    if (status === 'na') return 'N/A';
+    return 'FAIL';
+  };
+
   const { data: properties = [] } = useQuery({
     queryKey: ['properties'],
     queryFn: () => base44.entities.Property.filter({ is_active: true }, 'name', 100),
@@ -27,151 +35,114 @@ export default function Dashboard() {
 
   const portfolioProps = { properties, allEntries, getPeriodMonths, selectedYear, periodType, selectedMonth };
 
-  const handleHotelClick = (propId) => {
-    navigate(`/hotel-scorecard?propertyId=${propId}&month=${selectedMonth}&year=${selectedYear}`);
-  };
-
   // Build tracker data for each KPI
   const periodMonths = getPeriodMonths();
 
-  // BUDGETED GOP TRACKER - uses exact same logic as calculateScorecard
+  // BUDGETED GOP TRACKER
   const gopHotels = properties.map(prop => {
     const propEntries = allEntries.filter(e => e.property_id === prop.id && periodMonths.includes(e.month) && e.year === selectedYear);
     if (!propEntries.length) return { prop, hasData: false };
     
     const latest = propEntries[propEntries.length - 1];
-    const scorecard = calculateScorecard(latest, prop);
     const gopActual = latest.budgeted_gop_actual;
     const gopTarget = latest.budgeted_gop_target;
-    const gopPrior = latest.budgeted_gop_prior;
     
-    // Same exclusion as scorecard: null values = incomplete
-    if (gopActual == null || gopTarget == null) {
+    // Exclude if either value is null, or if actual=0 and target>0
+    if (gopActual == null || gopTarget == null || (gopActual === 0 && gopTarget > 0)) {
       return { prop, hasData: false };
     }
+    
+    const pass = gopActual > gopTarget;
+    const details = `$${Math.round(gopActual / 1000)}K vs $${Math.round(gopTarget / 1000)}K`;
     
     return {
       prop,
       hasData: true,
-      status: scorecard.gop.pass ? 'pass' : 'fail',
-      details: '',
-      actual: gopActual,
-      target: gopTarget,
-      ly: gopPrior,
-      metricType: 'gop',
-      onClick: () => handleHotelClick(prop.id),
+      status: pass ? 'pass' : 'fail',
+      details,
     };
   });
 
-  // GOP MARGIN IMPROVEMENT TRACKER - uses exact same logic as calculateScorecard
+  // GOP MARGIN IMPROVEMENT TRACKER
   const marginHotels = properties.map(prop => {
     const propEntries = allEntries.filter(e => e.property_id === prop.id && periodMonths.includes(e.month) && e.year === selectedYear);
     if (!propEntries.length) return { prop, hasData: false };
     
     const latest = propEntries[propEntries.length - 1];
-    const scorecard = calculateScorecard(latest, prop);
     const ty = latest.gop_margin_actual;
     const ly = latest.gop_margin_prior;
-    const budget = latest.gop_margin_budget;
-    
-    // Same exclusion as scorecard: null values = incomplete
-    if (ty == null || ly == null) {
-      return { prop, hasData: false };
-    }
+    const improvement = (ty != null && ly != null) ? ty - ly : null;
+    const pass = improvement != null && improvement >= 0.1;
+    const details = (ty != null && ly != null) ? `${ty.toFixed(1)}% vs ${ly.toFixed(1)}%` : '';
     
     return {
       prop,
       hasData: true,
-      status: scorecard.gopMargin.pass ? 'pass' : 'fail',
-      details: '',
-      actual: ty,
-      target: budget,
-      ly,
-      metricType: 'margin',
-      onClick: () => handleHotelClick(prop.id),
+      status: pass ? 'pass' : 'fail',
+      details,
     };
   });
 
-  // RGI IMPROVEMENT TRACKER - uses exact same logic as calculateScorecard
+  // RGI IMPROVEMENT TRACKER (three tiers)
   const rgiHotels = properties.map(prop => {
     const propEntries = allEntries.filter(e => e.property_id === prop.id && periodMonths.includes(e.month) && e.year === selectedYear);
     if (!propEntries.length) return { prop, hasData: false };
     
     const latest = propEntries[propEntries.length - 1];
-    const scorecard = calculateScorecard(latest, prop);
     const change = latest.revpar_index_change;
-    const rgiTy = latest.revpar_index;
-    const rgiLy = rgiTy != null && change != null ? rgiTy / (1 + change / 100) : null;
     
-    // Same exclusion as scorecard: null = incomplete
-    if (change == null) {
-      return { prop, hasData: false };
+    let status = 'fail';
+    if (change != null) {
+      if (change > 2.0) status = 'pass';
+      else if (change >= 0.1) status = 'partial';
     }
+    const details = change != null ? `${change >= 0 ? '+' : ''}${change.toFixed(1)}%` : '';
     
     return {
       prop,
       hasData: true,
-      status: scorecard.rgi.pass ? 'pass' : scorecard.rgi.tier === 'partial' ? 'partial' : 'fail',
-      details: '',
-      actual: rgiTy,
-      target: rgiLy,
-      ly: rgiLy,
-      metricType: 'rgi',
-      onClick: () => handleHotelClick(prop.id),
+      status,
+      details,
     };
   });
 
-  // GSS IMPROVEMENT TRACKER - uses exact same logic as calculateScorecard
+  // GSS IMPROVEMENT TRACKER
   const gssHotels = properties.map(prop => {
     const propEntries = allEntries.filter(e => e.property_id === prop.id && periodMonths.includes(e.month) && e.year === selectedYear);
     if (!propEntries.length) return { prop, hasData: false };
     
     const latest = propEntries[propEntries.length - 1];
-    const scorecard = calculateScorecard(latest, prop);
     const tyNorm = normalizeGssTo100(latest.gss_actual, prop.parent_brand);
     const lyNorm = normalizeGssTo100(latest.gss_prior, prop.parent_brand);
     
-    // Same exclusion as scorecard: null values = N/A
     if (tyNorm == null || lyNorm == null) {
       return { prop, hasData: true, status: 'na', details: '' };
     }
     
+    const pass = tyNorm > lyNorm;
+    const details = `${tyNorm.toFixed(1)} vs ${lyNorm.toFixed(1)}`;
+    
     return {
       prop,
       hasData: true,
-      status: scorecard.gss.pass ? 'pass' : 'fail',
-      details: '',
-      actual: tyNorm,
-      target: lyNorm,
-      ly: lyNorm,
-      metricType: 'gss',
-      onClick: () => handleHotelClick(prop.id),
+      status: pass ? 'pass' : 'fail',
+      details,
     };
   });
 
-  // FORECAST KICKER TRACKER - uses exact same logic as calculateScorecard
+  // FORECAST KICKER TRACKER (existing logic)
   const forecastHotels = properties.map(prop => {
     const propEntries = allEntries.filter(e => e.property_id === prop.id && periodMonths.includes(e.month) && e.year === selectedYear);
-    if (!propEntries.length) return { prop, hasData: false };
-    
     const latest = propEntries[propEntries.length - 1];
-    const scorecard = calculateScorecard(latest, prop);
-    
-    // Same check as hasForecastData in scoring.js
-    const hasValidData = hasForecastData(latest);
-    
-    return {
-      prop,
-      hasData: hasValidData,
-      status: scorecard.forecastKicker ? 'pass' : 'fail',
-      details: '',
-      actual: latest?.forecast_actual_revenue,
-      target: latest?.forecast_primary_forecast,
-      ly: null,
-      metricType: 'forecast',
-      onClick: () => handleHotelClick(prop.id),
-    };
-  });
+    const hit = latest && latest.forecast_kicker === true;
+    const hasData = !!latest;
+    return { prop, hit, hasData };
+  }).filter(r => r.hasData).map(({ prop, hit }) => ({
+    prop,
+    hasData: true,
+    status: hit ? 'pass' : 'fail',
+    details: '',
+  }));
 
   return (
     <div className="p-4 lg:p-8 space-y-6 max-w-7xl mx-auto">
@@ -187,6 +158,10 @@ export default function Dashboard() {
         <h1 className="text-2xl font-bold">Portfolio Dashboard</h1>
         <p className="text-white/60 text-xs mt-0.5">Company-level overview — GOP, RPI, GSS, and forecast performance</p>
       </div>
+
+      <ExecutiveSummaryBar {...portfolioProps} />
+
+      <PortfolioKpiRollup {...portfolioProps} />
 
       {/* KPI Trackers Grid - 5 trackers using identical component design */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
