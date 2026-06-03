@@ -186,24 +186,23 @@ export default function PortfolioKpiRollup({ properties, allEntries, periodType,
       </KpiCard>
 
       {/* GOP Margin */}
-      <KpiCard title="GOP Margin">
+      <KpiCard title="GOP Margin Improvement (vs LY)">
         <div>
           <div className="text-xl font-black text-foreground leading-tight">
-            {s.tyMargin != null ? s.tyMargin.toFixed(1) + '%' : '—'}
+            {s.marginYOY != null
+              ? <span style={{ color: s.marginYOY >= 0 ? '#4CAF50' : '#ef4444' }}>{s.marginYOY >= 0 ? '+' : ''}{s.marginYOY.toFixed(1)} pts vs LY</span>
+              : '—'}
           </div>
-          <div className="text-xs text-muted-foreground">actual margin</div>
-          <div className="text-sm font-medium text-muted-foreground mt-0.5">
-            {s.budgetMargin != null ? s.budgetMargin.toFixed(1) + '%' : '—'} <span className="text-xs font-normal">budget</span>
-          </div>
+          <div className="text-xs text-muted-foreground">TY vs prior year margin</div>
         </div>
         <div className="flex gap-4 pt-1 border-t border-border">
           <div className="flex flex-col">
-            <span className="text-[10px] text-muted-foreground uppercase tracking-wide">vs Budget</span>
-            <Delta value={s.marginVsBudget} suffix=" pts" decimals={1} />
+            <span className="text-[10px] text-muted-foreground uppercase tracking-wide">TY Margin</span>
+            <span className="text-sm font-bold text-foreground">{s.tyMargin != null ? s.tyMargin.toFixed(1) + '%' : '—'}</span>
           </div>
           <div className="flex flex-col">
-            <span className="text-[10px] text-muted-foreground uppercase tracking-wide">YOY</span>
-            <Delta value={s.marginYOY} suffix=" pts" decimals={1} />
+            <span className="text-[10px] text-muted-foreground uppercase tracking-wide">LY Margin</span>
+            <span className="text-sm font-bold text-foreground">{s.lyMargin != null ? s.lyMargin.toFixed(1) + '%' : '—'}</span>
           </div>
         </div>
       </KpiCard>

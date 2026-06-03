@@ -16,7 +16,7 @@ const EMPTY_FILTERS = { brand: '', subBrand: '', city: '', state: '', leadRole: 
 
 const KPI_TABS = [
   { key: 'gop', label: 'Budgeted GOP', max: 35 },
-  { key: 'gopMargin', label: 'GOP Margin', max: 35 },
+  { key: 'gopMargin', label: 'GOP Margin Improvement (vs LY)', max: 35 },
   { key: 'rgi', label: 'RevPAR Index (RGI)', max: 15 },
   { key: 'gss', label: 'GSS', max: 15 },
   { key: 'forecast', label: 'Forecast Kicker', max: null },
@@ -132,17 +132,11 @@ export default function KpiBreakdown() {
           score = sc.gopMargin.score;
           pass = sc.gopMargin.pass;
           actual = entry.gop_margin_actual != null ? `${entry.gop_margin_actual.toFixed(1)}%` : '—';
-          // YOY variance: actual - prior (simple subtraction, handles negatives correctly)
+          // Improvement = TY margin - LY margin (always vs prior year)
           entry._margin_yoy = (entry.gop_margin_actual != null && entry.gop_margin_prior != null)
             ? entry.gop_margin_actual - entry.gop_margin_prior
             : null;
-          // vs Budget variance: actual - budget
-          entry._margin_vs_budget = (entry.gop_margin_actual != null && entry.gop_margin_budget != null)
-            ? entry.gop_margin_actual - entry.gop_margin_budget
-            : null;
           entry._ly_margin = entry.gop_margin_prior;
-          entry._budget_margin = entry.gop_margin_budget;
-          target = entry._margin_yoy; // used in LY Growth column
         } else if (activeKpi === 'rgi') {
           kpiData = sc.rgi;
           score = sc.rgi.score;
@@ -265,7 +259,7 @@ export default function KpiBreakdown() {
                   <div className="flex items-center justify-center gap-1">GM <SortIcon col="gm" /></div>
                 </th>
                 <th className="py-3 px-4 text-center font-semibold">
-                  {activeKpi === 'rgi' ? 'RevPAR Index' : activeKpi === 'gopMargin' ? 'Actual %' : activeKpi === 'gop' ? 'Achievement' : 'Actual'}
+                  {activeKpi === 'rgi' ? 'RevPAR Index' : activeKpi === 'gopMargin' ? 'TY Margin %' : activeKpi === 'gop' ? 'Achievement' : 'Actual'}
                 </th>
                 {activeKpi === 'rgi' && (
                   <th className="py-3 px-4 text-center font-semibold">RGI % Change YOY</th>
@@ -283,13 +277,7 @@ export default function KpiBreakdown() {
                   <th className="py-3 px-4 text-center font-semibold">Prior Year %</th>
                 )}
                 {activeKpi === 'gopMargin' && (
-                  <th className="py-3 px-4 text-center font-semibold">YOY (pts)</th>
-                )}
-                {activeKpi === 'gopMargin' && (
-                  <th className="py-3 px-4 text-center font-semibold">Budget %</th>
-                )}
-                {activeKpi === 'gopMargin' && (
-                  <th className="py-3 px-4 text-center font-semibold">vs Budget (pts)</th>
+                  <th className="py-3 px-4 text-center font-semibold">Improvement (pts vs LY)</th>
                 )}
                 {activeKpi === 'forecast' && (
                   <th className="py-3 px-4 text-center font-semibold">Forecast</th>
@@ -382,20 +370,7 @@ export default function KpiBreakdown() {
                         ) : '—'}
                       </td>
                     )}
-                    {activeKpi === 'gopMargin' && (
-                      <td className="py-3 px-4 text-center text-sm font-medium">
-                        {entry && entry._budget_margin != null ? `${entry._budget_margin.toFixed(1)}%` : '—'}
-                      </td>
-                    )}
-                    {activeKpi === 'gopMargin' && (
-                      <td className="py-3 px-4 text-center text-sm font-bold">
-                        {entry && entry._margin_vs_budget != null ? (
-                          <span style={{ color: entry._margin_vs_budget >= 0 ? '#4CAF50' : '#ef4444' }}>
-                            {entry._margin_vs_budget >= 0 ? '+' : ''}{entry._margin_vs_budget.toFixed(1)} pts
-                          </span>
-                        ) : '—'}
-                      </td>
-                    )}
+
                     {activeKpi === 'forecast' && (
                       <td className="py-3 px-4 text-center text-sm text-muted-foreground">
                         {entry ? target : '—'}
