@@ -106,11 +106,14 @@ export default function PortfolioKpiRollup({ properties, allEntries, periodType,
       }
       if (entry.gop_margin_budget != null) { budgetMarginSum += entry.gop_margin_budget; budgetMarginCount++; }
 
-      // RGI
-      if (entry.revpar_index != null) {
+      // RGI — derive LY index as TY / (1 + change/100)
+      if (entry.revpar_index != null && entry.revpar_index_change != null) {
         rgiTYSum += entry.revpar_index;
-        rgiLYSum += (entry.revpar_index_prior ?? 0);
-        rgiChangeSum += (entry.revpar_index_change ?? 0);
+        rgiLYSum += entry.revpar_index / (1 + entry.revpar_index_change / 100);
+        rgiChangeSum += entry.revpar_index_change;
+        rgiCount++;
+      } else if (entry.revpar_index != null) {
+        rgiTYSum += entry.revpar_index;
         rgiCount++;
       }
 
@@ -209,14 +212,15 @@ export default function PortfolioKpiRollup({ properties, allEntries, periodType,
 
       {/* RevPAR Index */}
       <KpiCard title="RevPAR Index (RGI)">
-        <div>
-          <div className="text-2xl font-black text-foreground">{fmtIdx(s.rgiTY)}</div>
-          <div className="text-xs text-muted-foreground">TY Index</div>
-        </div>
-        <div className="flex gap-4">
-          <MetricRow label="Prior Year" value={fmtIdx(s.rgiLY)} />
-        </div>
-        <div className="flex gap-4 pt-1 border-t border-border">
+        <div className="flex gap-4 pt-1 border-t border-border flex-wrap">
+          <div className="flex flex-col">
+            <span className="text-[10px] text-muted-foreground uppercase tracking-wide">TY Index</span>
+            <span className="text-sm font-bold text-foreground">{fmtIdx(s.rgiTY)}</span>
+          </div>
+          <div className="flex flex-col">
+            <span className="text-[10px] text-muted-foreground uppercase tracking-wide">LY Index</span>
+            <span className="text-sm font-bold text-foreground">{fmtIdx(s.rgiLY)}</span>
+          </div>
           <div className="flex flex-col">
             <span className="text-[10px] text-muted-foreground uppercase tracking-wide">YOY Change</span>
             <Delta value={s.rgiChange} suffix="%" />

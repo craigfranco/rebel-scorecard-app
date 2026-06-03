@@ -21,6 +21,15 @@ export function getGssStandard(parentBrand) {
   return GSS_STANDARDS[parentBrand] || GSS_STANDARDS['Independent'];
 }
 
+// Normalize a raw GSS value to a 100-point scale based on brand
+export function normalizeGssTo100(value, parentBrand) {
+  if (value == null) return null;
+  const std = getGssStandard(parentBrand);
+  if (std.scale === 10) return value * 10;   // Choice: ×10
+  if (std.scale === 5) return value * 20;    // Independent: ×20
+  return value;                              // All others: already on 100 scale
+}
+
 export function calcGOPScore(actual, target) {
   if (actual == null || target == null) return { score: 0, variance: null, pass: false, incomplete: true };
   // PASS = actual > budget (simple comparison, works for negative budgets too)

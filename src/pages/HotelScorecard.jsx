@@ -9,7 +9,7 @@ import KpiRow from '@/components/scorecard/KpiRow';
 import KickerBadge from '@/components/scorecard/KickerBadge';
 import SeedOnMount from '../components/SeedOnMount';
 
-import { calculateScorecard, MONTHS, getQuarterFromMonth, aggregateEntries, hasForecastData } from '../lib/scoring';
+import { calculateScorecard, MONTHS, getQuarterFromMonth, aggregateEntries, hasForecastData, normalizeGssTo100 } from '../lib/scoring';
 import { useTimePeriod } from '@/lib/TimePeriodContext';
 import { useUserProfile } from '@/lib/UserProfileContext';
 
@@ -128,17 +128,25 @@ export default function HotelScorecard() {
       pass: scorecard.rgi.pass,
       incomplete: scorecard.rgi.incomplete,
     },
-    {
-      measure: `GSS — ${scorecard.gssStd.label}`,
-      weight: '15%',
-      target: `+${scorecard.gssStd.target} YOY`,
-      actual: activeEntry.gss_actual != null ? `${activeEntry.gss_actual} /${scorecard.gssStd.scale}` : '—',
-      ytdActual: activeEntry.gss_prior != null ? `PY: ${activeEntry.gss_prior} /${scorecard.gssStd.scale}` : '—',
-      score: scorecard.gss.score,
-      maxScore: 15,
-      pass: scorecard.gss.pass,
-      incomplete: scorecard.gss.incomplete,
-    },
+    (() => {
+      const gssNorm = normalizeGssTo100(activeEntry.gss_actual, selectedProperty?.parent_brand);
+      const gssPriorNorm = normalizeGssTo100(activeEntry.gss_prior, selectedProperty?.parent_brand);
+      const gssVariance = (gssNorm != null && gssPriorNorm != null) ? gssNorm - gssPriorNorm : null;
+      const varColor = gssVariance != null ? (gssVariance >= 0 ? '#4CAF50' : '#ef4444') : undefined;
+      return {
+        measure: `GSS — ${scorecard.gssStd.label}`,
+        weight: '15%',
+        target: gssPriorNorm != null ? gssPriorNorm.toFixed(1) : '—',
+        actual: gssNorm != null ? gssNorm.toFixed(1) : '—',
+        ytdActual: gssVariance != null
+          ? <span style={{ color: varColor, fontWeight: 'bold' }}>{gssVariance >= 0 ? '+' : ''}{gssVariance.toFixed(1)} pts</span>
+          : '—',
+        score: scorecard.gss.score,
+        maxScore: 15,
+        pass: scorecard.gss.pass,
+        incomplete: scorecard.gss.incomplete,
+      };
+    })(),
   ] : [];
 
   return (
@@ -289,21 +297,28 @@ export default function HotelScorecard() {
               </div>
             </div>
 
-            <div className="bg-card rounded-2xl border border-border shadow-sm p-5 flex flex-col gap-3">
-              <div className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">GSS Score YOY</div>
-              <div>
-                <div className="text-2xl font-black" style={{ color: yoyGss == null ? undefined : yoyGss >= 0 ? '#4CAF50' : '#ef4444' }}>
-                  {yoyGss != null ? `${yoyGss >= 0 ? '+' : ''}${yoyGss.toFixed(1)}` : '—'}
+            {(() => {
+              const gssNorm = normalizeGssTo100(activeEntry.gss_actual, selectedProperty?.parent_brand);
+              const gssPriorNorm = normalizeGssTo100(activeEntry.gss_prior, selectedProperty?.parent_brand);
+              const gssVar = (gssNorm != null && gssPriorNorm != null) ? gssNorm - gssPriorNorm : null;
+              return (
+                <div className="bg-card rounded-2xl border border-border shadow-sm p-5 flex flex-col gap-3">
+                  <div className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">GSS Score YOY</div>
+                  <div>
+                    <div className="text-2xl font-black" style={{ color: gssVar == null ? undefined : gssVar >= 0 ? '#4CAF50' : '#ef4444' }}>
+                      {gssVar != null ? `${gssVar >= 0 ? '+' : ''}${gssVar.toFixed(1)} pts` : '—'}
+                    </div>
+                    <div className="text-xs text-muted-foreground">Point Change (100-pt scale)</div>
+                  </div>
+                  <div className="flex gap-4 pt-1 border-t border-border">
+                    <div className="flex flex-col">
+                      <span className="text-[10px] text-muted-foreground uppercase tracking-wide">TY vs PY</span>
+                      <span className="text-sm font-bold text-foreground">{gssNorm != null ? gssNorm.toFixed(1) : '—'} vs {gssPriorNorm != null ? gssPriorNorm.toFixed(1) : '—'}</span>
+                    </div>
+                  </div>
                 </div>
-                <div className="text-xs text-muted-foreground">Point Change</div>
-              </div>
-              <div className="flex gap-4 pt-1 border-t border-border">
-                <div className="flex flex-col">
-                  <span className="text-[10px] text-muted-foreground uppercase tracking-wide">TY vs PY</span>
-                  <span className="text-sm font-bold text-foreground">{activeEntry.gss_actual != null ? activeEntry.gss_actual.toFixed(1) : '—'} vs {activeEntry.gss_prior != null ? activeEntry.gss_prior.toFixed(1) : '—'}</span>
-                </div>
-              </div>
-            </div>
+              );
+            })()}
           </div>
 
           {/* Scorecard Grid */}

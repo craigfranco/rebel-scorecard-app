@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useNavigate } from 'react-router-dom';
 import { getLeadTypes } from '@/functions/getLeadTypes';
 import { ArrowUp, ArrowDown, Minus, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
-import { calculateScorecard, MONTHS, getQuarterFromMonth, hasForecastData } from '../lib/scoring';
+import { calculateScorecard, MONTHS, getQuarterFromMonth, hasForecastData, normalizeGssTo100 } from '../lib/scoring';
 import { aggregateEntries } from '../lib/aggregation';
 import { useTimePeriod } from '@/lib/TimePeriodContext';
 import { useUserProfile } from '@/lib/UserProfileContext';
@@ -153,11 +153,11 @@ export default function KpiBreakdown() {
           kpiData = sc.gss;
           score = sc.gss.score;
           pass = sc.gss.pass;
-          actual = entry.gss_actual != null ? `${Number(entry.gss_actual).toFixed(1)} /${sc.gssStd.scale}` : '—';
-          target = `+${sc.gssStd.target} YOY`;
-          entry._gss_prior = entry.gss_prior;
-          entry._gss_scale = sc.gssStd.scale;
-          entry._gss_growth = (entry.gss_actual != null && entry.gss_prior != null) ? entry.gss_actual - entry.gss_prior : null;
+          const gssNorm = normalizeGssTo100(entry.gss_actual, p.parent_brand);
+          const gssPriorNorm = normalizeGssTo100(entry.gss_prior, p.parent_brand);
+          actual = gssNorm != null ? gssNorm.toFixed(1) : '—';
+          target = gssPriorNorm != null ? gssPriorNorm.toFixed(1) : '—';
+          entry._gss_variance = (gssNorm != null && gssPriorNorm != null) ? gssNorm - gssPriorNorm : null;
         } else if (activeKpi === 'forecast') {
           pass = hasForecastData(entry) ? (entry.forecast_kicker || false) : false;
           score = pass ? 1 : 0;
@@ -295,10 +295,10 @@ export default function KpiBreakdown() {
                 )}
 
                 {activeKpi === 'gss' && (
-                  <th className="py-3 px-4 text-center font-semibold">Last Year</th>
+                  <th className="py-3 px-4 text-center font-semibold">Target (PY)</th>
                 )}
                 {activeKpi === 'gss' && (
-                  <th className="py-3 px-4 text-center font-semibold">Growth</th>
+                  <th className="py-3 px-4 text-center font-semibold">Variance</th>
                 )}
                 {activeKpi !== 'rgi' && activeKpi !== 'gopMargin' && activeKpi !== 'gop' && activeKpi !== 'forecast' && activeKpi !== 'gss' && (
                   <th className="py-3 px-4 text-center font-semibold">Target</th>
@@ -401,14 +401,14 @@ export default function KpiBreakdown() {
 
                     {activeKpi === 'gss' && (
                       <td className="py-3 px-4 text-center text-sm text-muted-foreground">
-                        {entry && entry._gss_prior != null ? `${Number(entry._gss_prior).toFixed(1)} /${entry._gss_scale}` : '—'}
+                        {entry ? target : '—'}
                       </td>
                     )}
                     {activeKpi === 'gss' && (
                       <td className="py-3 px-4 text-center text-sm font-bold">
-                        {entry && entry._gss_growth != null ? (
-                          <span style={{ color: entry._gss_growth >= 0 ? '#4CAF50' : '#ef4444' }}>
-                            {entry._gss_growth >= 0 ? '+' : ''}{entry._gss_growth.toFixed(1)}
+                        {entry && entry._gss_variance != null ? (
+                          <span style={{ color: entry._gss_variance >= 0 ? '#4CAF50' : '#ef4444' }}>
+                            {entry._gss_variance >= 0 ? '+' : ''}{entry._gss_variance.toFixed(1)} pts
                           </span>
                         ) : '—'}
                       </td>
