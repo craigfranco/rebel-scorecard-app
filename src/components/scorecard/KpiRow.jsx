@@ -18,23 +18,27 @@ export default function KpiRow({ measure, weight, target, actual, ytdActual, sco
       <td className="py-3 px-4 text-center text-sm text-muted-foreground font-medium">{weight}</td>
       <td className="py-3 px-4 text-center text-sm text-muted-foreground">{target}</td>
       <td className="py-3 px-4 text-center text-sm font-semibold">
-        {(gopActual != null || gopBudget != null) ? (
-          <div className="flex flex-col items-center gap-0.5 text-left">
-            {gopActual != null && (
-              <span className="font-bold text-foreground">${Math.round(gopActual).toLocaleString('en-US')} <span className="font-normal text-muted-foreground text-xs">actual</span></span>
-            )}
-            {gopBudget != null && (
-              <span className="font-medium text-muted-foreground text-xs">${Math.round(gopBudget).toLocaleString('en-US')} budget</span>
-            )}
-          </div>
+        {gopActual != null ? (
+          <span className="font-bold text-foreground">${Math.round(gopActual).toLocaleString('en-US')}</span>
         ) : (actual ?? '—')}
       </td>
       <td className="py-3 px-4 text-center text-sm">
         {(gopActual != null && gopBudget != null) ? (
           (() => {
-            const pct = (gopActual / gopBudget) * 100;
-            const color = pct >= 100 ? '#4CAF50' : '#ef4444';
-            return <span className="font-bold" style={{ color }}>{pct.toFixed(1)}% of budget</span>;
+            const variance = gopActual - gopBudget;
+            const pass = gopActual > gopBudget;
+            const color = pass ? '#4CAF50' : '#ef4444';
+            if (gopBudget > 0) {
+              const pct = (gopActual / gopBudget) * 100;
+              return <span className="font-bold" style={{ color }}>{pct.toFixed(1)}% of budget</span>;
+            }
+            // Negative budget: show dollar variance instead
+            const abs = Math.abs(Math.round(variance)).toLocaleString('en-US');
+            return (
+              <span className="font-bold" style={{ color }}>
+                {pass ? `Beat budget by $${abs}` : `Missed budget by $${abs}`}
+              </span>
+            );
           })()
         ) : (ytdActual ?? '—')}
       </td>

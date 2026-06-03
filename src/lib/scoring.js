@@ -22,14 +22,14 @@ export function getGssStandard(parentBrand) {
 }
 
 export function calcGOPScore(actual, target) {
-  if (actual == null || target == null) return { score: 0, pct: 0, pass: false, incomplete: true };
-  if (target === 0) return { score: 0, pct: 0, pass: false, incomplete: true };
-  // Budget achievement: (actual / target) × 100
-  const achievementPct = (actual / target) * 100;
-  const pass = achievementPct >= 100;
-  // All-or-nothing: 35 pts if pass, 0 if fail
+  if (actual == null || target == null) return { score: 0, variance: null, pass: false, incomplete: true };
+  // PASS = actual > budget (simple comparison, works for negative budgets too)
+  const pass = actual > target;
+  const variance = actual - target; // positive = beat budget, negative = missed
+  // Achievement % only meaningful when budget is positive
+  const achievementPct = target > 0 ? (actual / target) * 100 : null;
   const score = pass ? 35 : 0;
-  return { score, pct: Math.round(achievementPct * 100) / 100, pass, incomplete: false };
+  return { score, variance, achievementPct, pass, incomplete: false };
 }
 
 export function calcGOPMarginScore(actual, prior) {
