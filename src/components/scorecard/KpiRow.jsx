@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 
-export default function KpiRow({ measure, weight, target, actual, ytdActual, score, maxScore, pass, incomplete }) {
+export default function KpiRow({ measure, weight, target, actual, ytdActual, score, maxScore, pass, incomplete, gopActual, gopBudget }) {
   const [barWidth, setBarWidth] = useState(0);
 
   useEffect(() => {
@@ -17,8 +17,27 @@ export default function KpiRow({ measure, weight, target, actual, ytdActual, sco
       <td className="py-3 px-4 font-medium text-sm text-foreground">{measure}</td>
       <td className="py-3 px-4 text-center text-sm text-muted-foreground font-medium">{weight}</td>
       <td className="py-3 px-4 text-center text-sm text-muted-foreground">{target}</td>
-      <td className="py-3 px-4 text-center text-sm font-semibold">{actual ?? '—'}</td>
-      <td className="py-3 px-4 text-center text-sm">{ytdActual ?? '—'}</td>
+      <td className="py-3 px-4 text-center text-sm font-semibold">
+        {(gopActual != null || gopBudget != null) ? (
+          <div className="flex flex-col items-center gap-0.5 text-left">
+            {gopActual != null && (
+              <span className="font-bold text-foreground">${Math.round(gopActual).toLocaleString('en-US')} <span className="font-normal text-muted-foreground text-xs">actual</span></span>
+            )}
+            {gopBudget != null && (
+              <span className="font-medium text-muted-foreground text-xs">${Math.round(gopBudget).toLocaleString('en-US')} budget</span>
+            )}
+          </div>
+        ) : (actual ?? '—')}
+      </td>
+      <td className="py-3 px-4 text-center text-sm">
+        {(gopActual != null && gopBudget != null) ? (
+          (() => {
+            const pct = (gopActual / gopBudget) * 100;
+            const color = pct >= 100 ? '#4CAF50' : '#ef4444';
+            return <span className="font-bold" style={{ color }}>{pct.toFixed(1)}% of budget</span>;
+          })()
+        ) : (ytdActual ?? '—')}
+      </td>
       <td className="py-3 px-4 text-center min-w-[140px]">
         <div className="flex items-center gap-2">
           <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">

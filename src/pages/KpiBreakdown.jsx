@@ -324,6 +324,7 @@ export default function KpiBreakdown() {
                         ) : actual
                       ) : '—'}
                     </td>
+
                     {activeKpi === 'rgi' && (
                       <td className="py-3 px-4 text-center text-sm font-bold">
                         {entry && entry._rgi_change != null ? (
@@ -335,19 +336,19 @@ export default function KpiBreakdown() {
                     )}
                     {activeKpi === 'gop' && (
                       <td className="py-3 px-4 text-center text-sm text-muted-foreground">
-                        {entry && entry._gop_actual_dollars != null ? `$${(entry._gop_actual_dollars / 1000).toFixed(1)}K` : '—'}
+                        {entry && entry._gop_actual_dollars != null ? `$${Math.round(entry._gop_actual_dollars).toLocaleString('en-US')}` : '—'}
                       </td>
                     )}
                     {activeKpi === 'gop' && (
                       <td className="py-3 px-4 text-center text-sm text-muted-foreground">
-                        {entry ? target : '—'}
+                        {entry && entry.budgeted_gop_target != null ? `$${Math.round(entry.budgeted_gop_target).toLocaleString('en-US')}` : '—'}
                       </td>
                     )}
                     {activeKpi === 'gop' && (
                       <td className="py-3 px-4 text-center text-sm font-bold">
                         {entry && entry._gop_variance != null ? (
                           <span style={{ color: entry._gop_variance >= 0 ? '#4CAF50' : '#ef4444' }}>
-                            {entry._gop_variance >= 0 ? '+' : ''}${(entry._gop_variance / 1000).toFixed(1)}K
+                            {entry._gop_variance >= 0 ? '+' : '-'}${Math.abs(Math.round(entry._gop_variance)).toLocaleString('en-US')}
                           </span>
                         ) : '—'}
                       </td>

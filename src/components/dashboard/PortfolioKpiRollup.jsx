@@ -158,19 +158,16 @@ export default function PortfolioKpiRollup({ properties, allEntries, periodType,
       {/* GOP Performance */}
       <KpiCard title="GOP Performance">
         <div>
-          <div className="text-2xl font-black" style={{ color: s.gopAchievement == null ? undefined : s.gopAchievement >= 100 ? '#4CAF50' : '#ef4444' }}>
-            {s.gopAchievement != null ? s.gopAchievement.toFixed(1) + '%' : '—'}
-          </div>
-          <div className="text-xs text-muted-foreground">Budget Achievement</div>
-        </div>
-        <div className="flex gap-4">
-          <MetricRow label="Actual GOP" value={fmt$(s.gopActual)} />
-          <MetricRow label="Budget GOP" value={fmt$(s.gopBudget)} />
+          <div className="text-xl font-black text-foreground leading-tight">{fmt$(s.gopActual)}</div>
+          <div className="text-xs text-muted-foreground">actual</div>
+          <div className="text-sm font-medium text-muted-foreground mt-0.5">{fmt$(s.gopBudget)} <span className="text-xs font-normal">budget</span></div>
         </div>
         <div className="flex gap-4 pt-1 border-t border-border">
           <div className="flex flex-col">
-            <span className="text-[10px] text-muted-foreground uppercase tracking-wide">vs Budget</span>
-            <Delta value={s.gopVsBudget} suffix="%" />
+            <span className="text-[10px] text-muted-foreground uppercase tracking-wide">Achievement</span>
+            <span className="text-sm font-bold" style={{ color: s.gopAchievement == null ? undefined : s.gopAchievement >= 100 ? '#4CAF50' : '#ef4444' }}>
+              {s.gopAchievement != null ? s.gopAchievement.toFixed(1) + '%' : '—'}
+            </span>
           </div>
           <div className="flex flex-col">
             <span className="text-[10px] text-muted-foreground uppercase tracking-wide">YOY</span>

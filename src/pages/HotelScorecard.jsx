@@ -78,20 +78,10 @@ export default function HotelScorecard() {
       measure: 'Budgeted GOP',
       weight: '35%',
       target: activeEntry.budgeted_gop_target != null ? `Budget: $${(activeEntry.budgeted_gop_target / 1000).toFixed(0)}K` : 'Budget',
-      actual: (() => {
-        const a = activeEntry.budgeted_gop_actual;
-        const b = activeEntry.budgeted_gop_target;
-        return (a != null && b != null && b !== 0) ? `${(a / b * 100).toFixed(1)}% of Budget` : '—';
-      })(),
-      ytdActual: (() => {
-        const a = activeEntry.budgeted_gop_actual;
-        const b = activeEntry.budgeted_gop_target;
-        if (a != null && b != null && b !== 0) {
-          const variance = a - b;
-          return `${variance >= 0 ? '+' : ''}$${(variance / 1000).toFixed(0)}K vs Budget`;
-        }
-        return '—';
-      })(),
+      actual: null,
+      ytdActual: null,
+      gopActual: activeEntry.budgeted_gop_actual ?? null,
+      gopBudget: activeEntry.budgeted_gop_target ?? null,
       score: scorecard.gop.score,
       maxScore: 35,
       pass: scorecard.gop.pass,
