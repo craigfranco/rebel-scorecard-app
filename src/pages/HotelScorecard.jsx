@@ -281,21 +281,33 @@ export default function HotelScorecard() {
               </div>
             </div>
 
-            <div className="bg-card rounded-2xl border border-border shadow-sm p-5 flex flex-col gap-3">
-              <div className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">RevPAR Index YOY</div>
-              <div>
-                <div className="text-2xl font-black" style={{ color: yoyRpi == null ? undefined : yoyRpi >= 0 ? '#4CAF50' : '#ef4444' }}>
-                  {yoyRpi != null ? `${yoyRpi >= 0 ? '+' : ''}${yoyRpi.toFixed(1)}%` : '—'}
+            {(() => {
+              const rgiTy = activeEntry.revpar_index;
+              const rgiChg = activeEntry.revpar_index_change;
+              const rgiLy = (rgiTy != null && rgiChg != null) ? rgiTy / (1 + rgiChg / 100) : null;
+              const rgiColor = rgiChg == null ? undefined : rgiChg >= 0.1 ? '#4CAF50' : '#ef4444';
+              return (
+                <div className="bg-card rounded-2xl border border-border shadow-sm p-5 flex flex-col gap-3">
+                  <div className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">RevPAR Index YOY</div>
+                  <div>
+                    <div className="text-2xl font-black" style={{ color: rgiColor }}>
+                      {rgiChg != null ? `${rgiChg >= 0 ? '+' : ''}${rgiChg.toFixed(1)}%` : '—'}
+                    </div>
+                    <div className="text-xs text-muted-foreground">YOY Change</div>
+                  </div>
+                  <div className="flex gap-4 pt-1 border-t border-border flex-wrap">
+                    <div className="flex flex-col">
+                      <span className="text-[10px] text-muted-foreground uppercase tracking-wide">TY Index</span>
+                      <span className="text-sm font-bold text-foreground">{rgiTy != null ? rgiTy.toFixed(1) : '—'}</span>
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-[10px] text-muted-foreground uppercase tracking-wide">LY Index</span>
+                      <span className="text-sm font-bold text-foreground">{rgiLy != null ? rgiLy.toFixed(1) : '—'}</span>
+                    </div>
+                  </div>
                 </div>
-                <div className="text-xs text-muted-foreground">% Change</div>
-              </div>
-              <div className="flex gap-4 pt-1 border-t border-border">
-                <div className="flex flex-col">
-                  <span className="text-[10px] text-muted-foreground uppercase tracking-wide">TY Index</span>
-                  <span className="text-sm font-bold text-foreground">{activeEntry.revpar_index != null ? activeEntry.revpar_index.toFixed(1) : '—'}</span>
-                </div>
-              </div>
-            </div>
+              );
+            })()}
 
             {(() => {
               const gssNorm = normalizeGssTo100(activeEntry.gss_actual, selectedProperty?.parent_brand);

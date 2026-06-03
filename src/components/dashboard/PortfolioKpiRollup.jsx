@@ -212,6 +212,12 @@ export default function PortfolioKpiRollup({ properties, allEntries, periodType,
 
       {/* RevPAR Index */}
       <KpiCard title="RevPAR Index (RGI)">
+        <div>
+          <div className="text-2xl font-black" style={{ color: s.rgiChange == null ? undefined : s.rgiChange >= 0.1 ? '#4CAF50' : '#ef4444' }}>
+            {s.rgiChange != null ? `${s.rgiChange >= 0 ? '+' : ''}${s.rgiChange.toFixed(1)}%` : '—'}
+          </div>
+          <div className="text-xs text-muted-foreground">YOY Change</div>
+        </div>
         <div className="flex gap-4 pt-1 border-t border-border flex-wrap">
           <div className="flex flex-col">
             <span className="text-[10px] text-muted-foreground uppercase tracking-wide">TY Index</span>
@@ -220,10 +226,6 @@ export default function PortfolioKpiRollup({ properties, allEntries, periodType,
           <div className="flex flex-col">
             <span className="text-[10px] text-muted-foreground uppercase tracking-wide">LY Index</span>
             <span className="text-sm font-bold text-foreground">{fmtIdx(s.rgiLY)}</span>
-          </div>
-          <div className="flex flex-col">
-            <span className="text-[10px] text-muted-foreground uppercase tracking-wide">YOY Change</span>
-            <Delta value={s.rgiChange} suffix="%" />
           </div>
         </div>
       </KpiCard>
