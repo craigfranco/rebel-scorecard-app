@@ -141,6 +141,7 @@ export default function KpiBreakdown() {
           pass = sc.rgi.pass;
           actual = entry.revpar_index != null ? entry.revpar_index.toFixed(1) : '—';
           target = '≥ +0.1% YOY';
+          entry._rgi_change = entry.revpar_index_change;
         } else if (activeKpi === 'gss') {
           kpiData = sc.gss;
           score = sc.gss.score;
@@ -155,6 +156,10 @@ export default function KpiBreakdown() {
           score = pass ? 1 : 0;
           actual = entry.forecast_actual_revenue != null ? `$${(entry.forecast_actual_revenue / 1000).toFixed(0)}K` : '—';
           target = entry.forecast_primary_forecast != null ? `$${(entry.forecast_primary_forecast / 1000).toFixed(0)}K` : '—';
+          entry._forecast_variance = (entry.forecast_actual_revenue != null && entry.forecast_primary_forecast != null)
+            ? entry.forecast_actual_revenue - entry.forecast_primary_forecast : null;
+          entry._forecast_accuracy = (entry.forecast_actual_revenue != null && entry.forecast_primary_forecast != null && entry.forecast_primary_forecast !== 0)
+            ? (1 - Math.abs(entry.forecast_actual_revenue - entry.forecast_primary_forecast) / entry.forecast_primary_forecast) * 100 : null;
         } else if (activeKpi === 'redzone') {
           pass = entry.red_zone_kicker || false;
           score = pass ? 1 : 0;
@@ -277,7 +282,10 @@ export default function KpiBreakdown() {
                   <th className="py-3 px-4 text-center font-semibold">Forecast</th>
                 )}
                 {activeKpi === 'forecast' && (
-                  <th className="py-3 px-4 text-center font-semibold">Variance</th>
+                  <th className="py-3 px-4 text-center font-semibold">Variance ($)</th>
+                )}
+                {activeKpi === 'forecast' && (
+                  <th className="py-3 px-4 text-center font-semibold">Forecast Accuracy</th>
                 )}
                 {activeKpi === 'gss' && (
                   <th className="py-3 px-4 text-center font-semibold">Last Year</th>
@@ -321,9 +329,9 @@ export default function KpiBreakdown() {
                     </td>
                     {activeKpi === 'rgi' && (
                       <td className="py-3 px-4 text-center text-sm font-bold">
-                        {entry && entry.revpar_index_change != null ? (
-                          <span style={{ color: entry.revpar_index_change >= 0 ? '#4CAF50' : '#ef4444' }}>
-                            {entry.revpar_index_change >= 0 ? '+' : ''}{entry.revpar_index_change.toFixed(2)}%
+                        {entry && entry._rgi_change != null ? (
+                          <span style={{ color: entry._rgi_change >= 0 ? '#4CAF50' : '#ef4444' }}>
+                            {entry._rgi_change >= 0 ? '+' : ''}{entry._rgi_change.toFixed(1)}%
                           </span>
                         ) : '—'}
                       </td>
@@ -368,9 +376,18 @@ export default function KpiBreakdown() {
                     )}
                     {activeKpi === 'forecast' && (
                       <td className="py-3 px-4 text-center text-sm font-bold">
-                        {entry && entry.forecast_actual_revenue != null && entry.forecast_primary_forecast != null ? (
-                          <span style={{ color: entry.forecast_actual_revenue >= entry.forecast_primary_forecast ? '#4CAF50' : '#ef4444' }}>
-                            {entry.forecast_actual_revenue >= entry.forecast_primary_forecast ? '+' : ''}{((entry.forecast_actual_revenue - entry.forecast_primary_forecast) / 1000).toFixed(0)}K
+                        {entry && entry._forecast_variance != null ? (
+                          <span style={{ color: entry._forecast_variance >= 0 ? '#4CAF50' : '#ef4444' }}>
+                            {entry._forecast_variance >= 0 ? '+' : '-'}${Math.abs(entry._forecast_variance).toLocaleString('en-US', { maximumFractionDigits: 0 })}
+                          </span>
+                        ) : '—'}
+                      </td>
+                    )}
+                    {activeKpi === 'forecast' && (
+                      <td className="py-3 px-4 text-center text-sm font-bold">
+                        {entry && entry._forecast_accuracy != null ? (
+                          <span style={{ color: entry._forecast_accuracy >= 95 ? '#4CAF50' : entry._forecast_accuracy >= 90 ? '#f59e0b' : '#ef4444' }}>
+                            {entry._forecast_accuracy.toFixed(1)}%
                           </span>
                         ) : '—'}
                       </td>
