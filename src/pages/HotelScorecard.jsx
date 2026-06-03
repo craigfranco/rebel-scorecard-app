@@ -208,29 +208,37 @@ export default function HotelScorecard() {
               <div className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">GOP vs Budget</div>
               <div>
                 {(() => {
-                  const variance = activeEntry.budgeted_gop_actual != null && activeEntry.budgeted_gop_target != null
-                    ? activeEntry.budgeted_gop_actual - activeEntry.budgeted_gop_target
-                    : null;
-                  const pct = variance != null && activeEntry.budgeted_gop_target !== 0
-                    ? (activeEntry.budgeted_gop_actual / activeEntry.budgeted_gop_target) * 100
-                    : null;
+                  const gopA = activeEntry.budgeted_gop_actual;
+                  const gopB = activeEntry.budgeted_gop_target;
+                  const variance = (gopA != null && gopB != null) ? gopA - gopB : null;
+                  const pass = variance != null ? variance >= 0 : null;
+                  // Achievement %: only meaningful when budget is positive
+                  const pct = (gopA != null && gopB != null && gopB > 0) ? (gopA / gopB) * 100 : null;
+                  const color = pass == null ? undefined : pass ? '#4CAF50' : '#ef4444';
                   return (
                     <>
-                      <div className="text-2xl font-black" style={{ color: variance == null ? undefined : variance >= 0 ? '#4CAF50' : '#ef4444' }}>
-                        {variance != null ? `${variance >= 0 ? '+' : ''}$${(variance / 1000).toFixed(0)}K` : '—'}
+                      <div className="text-2xl font-black" style={{ color }}>
+                        {variance != null
+                          ? `${variance >= 0 ? '+' : '-'}$${Math.abs(Math.round(variance)).toLocaleString('en-US')}`
+                          : '—'}
                       </div>
                       <div className="text-xs text-muted-foreground">vs Budget</div>
                       <div className="flex gap-4 pt-1 border-t border-border mt-2">
                         <div className="flex flex-col">
-                          <span className="text-[10px] text-muted-foreground uppercase tracking-wide">Achievement</span>
-                          <span className="text-sm font-bold" style={{ color: pct == null ? undefined : pct >= 100 ? '#4CAF50' : '#ef4444' }}>
-                            {pct != null ? `${pct.toFixed(1)}%` : '—'}
+                          <span className="text-[10px] text-muted-foreground uppercase tracking-wide">
+                            {pct != null ? 'Achievement' : 'Result'}
+                          </span>
+                          <span className="text-sm font-bold" style={{ color }}>
+                            {pct != null
+                              ? `${pct.toFixed(1)}%`
+                              : pass == null ? '—'
+                              : pass ? 'Beat Budget' : 'Missed Budget'}
                           </span>
                         </div>
                         <div className="flex flex-col">
                           <span className="text-[10px] text-muted-foreground uppercase tracking-wide">Actual</span>
                           <span className="text-sm font-bold text-foreground">
-                            {activeEntry.budgeted_gop_actual != null ? `$${(activeEntry.budgeted_gop_actual / 1000).toFixed(0)}K` : '—'}
+                            {gopA != null ? `$${Math.round(gopA).toLocaleString('en-US')}` : '—'}
                           </span>
                         </div>
                       </div>

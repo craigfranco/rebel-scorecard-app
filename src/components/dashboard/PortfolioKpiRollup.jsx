@@ -135,13 +135,16 @@ export default function PortfolioKpiRollup({ properties, allEntries, periodType,
     const gssTY = gssCount > 0 ? gssTYSum / gssCount : null;
     const gssLY = gssCount > 0 ? gssLYSum / gssCount : null;
 
+    const gopVariance = hasGop ? gopActual - gopBudget : null;
     return {
       gopActual: hasGop ? gopActual : null,
       gopBudget,
       gopPrior,
-      gopYOY: (gopActual != null && gopPrior !== 0) ? ((gopActual - gopPrior) / Math.abs(gopPrior)) * 100 : null,
-      gopVsBudget: (gopActual != null && gopBudget !== 0) ? ((gopActual - gopBudget) / Math.abs(gopBudget)) * 100 : null,
-      gopAchievement: (gopActual != null && gopBudget !== 0) ? (gopActual / gopBudget) * 100 : null,
+      gopVariance,
+      gopPass: hasGop ? gopActual > gopBudget : null,
+      gopYOY: (hasGop && gopPrior !== 0) ? ((gopActual - gopPrior) / Math.abs(gopPrior)) * 100 : null,
+      // Achievement % only when budget is positive (meaningful)
+      gopAchievement: (hasGop && gopBudget > 0) ? (gopActual / gopBudget) * 100 : null,
       tyMargin, lyMargin, budgetMargin,
       marginYOY: tyMargin != null && lyMargin != null ? tyMargin - lyMargin : null,
       marginVsBudget: tyMargin != null && budgetMargin != null ? tyMargin - budgetMargin : null,
@@ -164,10 +167,18 @@ export default function PortfolioKpiRollup({ properties, allEntries, periodType,
         </div>
         <div className="flex gap-4 pt-1 border-t border-border">
           <div className="flex flex-col">
-            <span className="text-[10px] text-muted-foreground uppercase tracking-wide">Achievement</span>
-            <span className="text-sm font-bold" style={{ color: s.gopAchievement == null ? undefined : s.gopAchievement >= 100 ? '#4CAF50' : '#ef4444' }}>
-              {s.gopAchievement != null ? s.gopAchievement.toFixed(1) + '%' : '—'}
-            </span>
+            <span className="text-[10px] text-muted-foreground uppercase tracking-wide">vs Budget</span>
+            {s.gopAchievement != null ? (
+              // Positive budget: show %
+              <span className="text-sm font-bold" style={{ color: s.gopPass ? '#4CAF50' : '#ef4444' }}>
+                {s.gopAchievement.toFixed(1)}%
+              </span>
+            ) : s.gopVariance != null ? (
+              // Negative budget: show dollar variance
+              <span className="text-sm font-bold" style={{ color: s.gopPass ? '#4CAF50' : '#ef4444' }}>
+                {s.gopPass ? '+' : '-'}${Math.abs(Math.round(s.gopVariance)).toLocaleString('en-US')}
+              </span>
+            ) : <span className="text-sm text-muted-foreground">—</span>}
           </div>
           <div className="flex flex-col">
             <span className="text-[10px] text-muted-foreground uppercase tracking-wide">YOY</span>

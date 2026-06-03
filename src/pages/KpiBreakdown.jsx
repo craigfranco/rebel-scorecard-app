@@ -116,15 +116,17 @@ export default function KpiBreakdown() {
           kpiData = sc.gop;
           score = sc.gop.score;
           pass = sc.gop.pass;
-          // Achievement % = actual / target × 100
-          actual = (entry.budgeted_gop_actual != null && entry.budgeted_gop_target != null && entry.budgeted_gop_target !== 0)
-            ? `${((entry.budgeted_gop_actual / entry.budgeted_gop_target) * 100).toFixed(1)}%`
-            : '—';
-          target = entry.budgeted_gop_target != null ? `$${(entry.budgeted_gop_target / 1000).toFixed(1)}K` : '—';
-          entry._gop_actual_dollars = entry.budgeted_gop_actual;
-          entry._gop_variance = (entry.budgeted_gop_actual != null && entry.budgeted_gop_target != null)
-            ? entry.budgeted_gop_actual - entry.budgeted_gop_target
-            : null;
+          const gopA = entry.budgeted_gop_actual;
+          const gopB = entry.budgeted_gop_target;
+          // Show % only when budget is positive; otherwise show beat/missed label
+          actual = (gopA != null && gopB != null && gopB > 0)
+            ? `${((gopA / gopB) * 100).toFixed(1)}%`
+            : (gopA != null && gopB != null)
+              ? (gopA > gopB ? 'Beat' : 'Missed')
+              : '—';
+          target = gopB != null ? `$${Math.round(gopB).toLocaleString('en-US')}` : '—';
+          entry._gop_actual_dollars = gopA;
+          entry._gop_variance = (gopA != null && gopB != null) ? gopA - gopB : null;
         } else if (activeKpi === 'gopMargin') {
           kpiData = sc.gopMargin;
           score = sc.gopMargin.score;
@@ -320,7 +322,7 @@ export default function KpiBreakdown() {
                     <td className="py-3 px-4 text-center font-bold text-sm">
                       {entry ? (
                         activeKpi === 'gop' && actual !== '—' ? (
-                          <span style={{ color: parseFloat(actual) >= 100 ? '#4CAF50' : '#ef4444' }}>{actual}</span>
+                          <span style={{ color: pass ? '#4CAF50' : '#ef4444' }}>{actual}</span>
                         ) : actual
                       ) : '—'}
                     </td>
