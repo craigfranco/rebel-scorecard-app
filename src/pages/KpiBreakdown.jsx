@@ -132,11 +132,10 @@ export default function KpiBreakdown() {
           score = sc.gopMargin.score;
           pass = sc.gopMargin.pass;
           actual = entry.gop_margin_actual != null ? `${entry.gop_margin_actual.toFixed(1)}%` : '—';
-          // Improvement = TY margin - LY margin (always vs prior year)
           entry._margin_yoy = (entry.gop_margin_actual != null && entry.gop_margin_prior != null)
             ? entry.gop_margin_actual - entry.gop_margin_prior
             : null;
-          entry._ly_margin = entry.gop_margin_prior;
+          entry._ly_margin = entry.gop_margin_prior != null ? `${entry.gop_margin_prior.toFixed(1)}%` : null;
         } else if (activeKpi === 'rgi') {
           kpiData = sc.rgi;
           score = sc.rgi.score;
@@ -259,7 +258,7 @@ export default function KpiBreakdown() {
                   <div className="flex items-center justify-center gap-1">GM <SortIcon col="gm" /></div>
                 </th>
                 <th className="py-3 px-4 text-center font-semibold">
-                  {activeKpi === 'rgi' ? 'RevPAR Index' : activeKpi === 'gopMargin' ? 'TY Margin %' : activeKpi === 'gop' ? 'Achievement' : 'Actual'}
+                  {activeKpi === 'rgi' ? 'RevPAR Index' : activeKpi === 'gopMargin' ? 'TY Margin' : activeKpi === 'gop' ? 'Achievement' : 'Actual'}
                 </th>
                 {activeKpi === 'rgi' && (
                   <th className="py-3 px-4 text-center font-semibold">RGI % Change YOY</th>
@@ -358,7 +357,7 @@ export default function KpiBreakdown() {
                     )}
                     {activeKpi === 'gopMargin' && (
                       <td className="py-3 px-4 text-center text-sm font-medium">
-                        {entry && entry._ly_margin != null ? `${entry._ly_margin.toFixed(1)}%` : '—'}
+                        {entry && entry._ly_margin != null ? entry._ly_margin : '—'}
                       </td>
                     )}
                     {activeKpi === 'gopMargin' && (

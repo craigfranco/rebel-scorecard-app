@@ -90,9 +90,18 @@ export default function HotelScorecard() {
     {
       measure: 'GOP Margin Improvement',
       weight: '35%',
-      target: 'Margin improvement vs Prior Year',
-      actual: activeEntry.gop_margin_actual != null ? `${activeEntry.gop_margin_actual}%` : '—',
-      ytdActual: activeEntry.gop_margin_prior != null ? `PY: ${activeEntry.gop_margin_prior}%` : '—',
+      target: activeEntry.gop_margin_prior != null ? `PY: ${activeEntry.gop_margin_prior.toFixed(1)}%` : '—',
+      actual: activeEntry.gop_margin_actual != null ? `TY: ${activeEntry.gop_margin_actual.toFixed(1)}%` : '—',
+      ytdActual: (() => {
+        const a = activeEntry.gop_margin_actual;
+        const p = activeEntry.gop_margin_prior;
+        if (a != null && p != null) {
+          const diff = a - p;
+          const color = diff >= 0.1 ? '#4CAF50' : '#ef4444';
+          return <span style={{ color, fontWeight: 'bold' }}>{diff >= 0 ? '+' : ''}{diff.toFixed(1)} pts</span>;
+        }
+        return '—';
+      })(),
       score: scorecard.gopMargin.score,
       maxScore: 35,
       pass: scorecard.gopMargin.pass,
