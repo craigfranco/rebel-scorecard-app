@@ -91,7 +91,7 @@ export default function HotelScorecard() {
     {
       measure: 'GOP Margin Improvement',
       weight: '35%',
-      target: activeEntry.gop_margin_prior != null ? `${activeEntry.gop_margin_prior.toFixed(1)}%` : '—',
+      target: '≥ 0.1% vs PY',
       actual: activeEntry.gop_margin_actual != null ? `TY: ${activeEntry.gop_margin_actual.toFixed(1)}%` : '—',
       ytdActual: (() => {
         const a = activeEntry.gop_margin_actual;
@@ -111,12 +111,7 @@ export default function HotelScorecard() {
     {
       measure: 'RevPAR Index % Change (STR RGI)',
       weight: '15%',
-      target: (() => {
-        const ty = activeEntry.revpar_index;
-        const chg = activeEntry.revpar_index_change;
-        if (ty == null || chg == null) return '—';
-        return ((ty / (1 + chg / 100)) * 1.001).toFixed(1);
-      })(),
+      target: '0.1–2.0% = 7.5 pts / 2.1%+ = 15 pts',
       actual: activeEntry.revpar_index != null ? activeEntry.revpar_index.toFixed(1) : '—',
       ytdActual: (() => {
         const chg = activeEntry.revpar_index_change;
@@ -133,11 +128,11 @@ export default function HotelScorecard() {
       const gssNorm = normalizeGssTo100(activeEntry.gss_actual, selectedProperty?.parent_brand);
       const gssPriorNorm = normalizeGssTo100(activeEntry.gss_prior, selectedProperty?.parent_brand);
       const gssVariance = (gssNorm != null && gssPriorNorm != null) ? gssNorm - gssPriorNorm : null;
-      const varColor = gssVariance != null ? (gssVariance >= 0 ? '#4CAF50' : '#ef4444') : undefined;
+      const varColor = gssVariance != null ? (gssVariance > 0 ? '#4CAF50' : '#ef4444') : undefined;
       return {
         measure: `GSS — ${scorecard.gssStd.label}`,
         weight: '15%',
-        target: gssPriorNorm != null ? gssPriorNorm.toFixed(1) : '—',
+        target: 'TY > PY (any improvement)',
         actual: gssNorm != null ? gssNorm.toFixed(1) : '—',
         ytdActual: gssVariance != null
           ? <span style={{ color: varColor, fontWeight: 'bold' }}>{gssVariance >= 0 ? '+' : ''}{gssVariance.toFixed(1)} pts</span>

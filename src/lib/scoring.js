@@ -44,34 +44,36 @@ export function calcGOPScore(actual, target) {
 export function calcGOPMarginScore(actual, prior) {
   if (actual == null || prior == null) return { score: 0, diff: 0, pass: false, incomplete: true };
   const diff = actual - prior;
+  // Binary: PASS = 35 pts if improvement >= 0.1%, FAIL = 0 pts
   const pass = diff >= 0.1;
-  // Linear scale: 0.1% = 1 pt minimum, 5%+ = 35 pts capped
-  let score = 0;
-  if (diff >= 0.1) {
-    score = Math.min((diff / 5) * 35, 35);
-    score = Math.max(score, 1); // at least 1 pt when passing
-  }
-  return { score: Math.round(score * 10) / 10, diff: Math.round(diff * 100) / 100, pass, incomplete: false };
+  const score = pass ? 35 : 0;
+  return { score, diff: Math.round(diff * 100) / 100, pass, incomplete: false };
 }
 
 export function calcRGIScore(revparIndexChange) {
-  if (revparIndexChange == null) return { score: 0, diff: 0, pass: false, incomplete: true };
+  if (revparIndexChange == null) return { score: 0, diff: 0, pass: false, tier: null, incomplete: true };
   const pct = revparIndexChange;
-  const pass = pct >= 0.1;
-  // Linear scale: 0.1% = 1 pt minimum, 3%+ = 15 pts capped
+  // Two-tier: < 0.1% = 0 pts FAIL, 0.1%-2.0% = 7.5 pts PARTIAL, 2.1%+ = 15 pts FULL PASS
   let score = 0;
-  if (pct >= 0.1) {
-    score = Math.min((pct / 3) * 15, 15);
-    score = Math.max(score, 1); // at least 1 pt when passing
+  let pass = false;
+  let tier = 'fail'; // 'fail' | 'partial' | 'full'
+  if (pct >= 2.1) {
+    score = 15;
+    pass = true;
+    tier = 'full';
+  } else if (pct >= 0.1) {
+    score = 7.5;
+    pass = true;
+    tier = 'partial';
   }
-  return { score: Math.round(score * 10) / 10, diff: Math.round(pct * 100) / 100, pass, incomplete: false };
+  return { score, diff: Math.round(pct * 100) / 100, pass, tier, incomplete: false };
 }
 
-export function calcGSSScore(actual, prior, gssTarget) {
+export function calcGSSScore(actual, prior) {
   if (actual == null || prior == null) return { score: 0, diff: 0, pass: false, incomplete: true };
   const diff = actual - prior;
-  const pass = diff >= gssTarget;
-  // All-or-nothing: 15 pts if pass, 0 if fail
+  // Any YOY improvement (TY > PY) = 15 pts full, otherwise 0
+  const pass = diff > 0;
   const score = pass ? 15 : 0;
   return { score, diff: Math.round(diff * 100) / 100, pass, incomplete: false };
 }
@@ -94,8 +96,7 @@ export function calculateScorecard(entry, property) {
   const rgi = calcRGIScore(entry.revpar_index_change != null ? entry.revpar_index_change : null);
   const gss = calcGSSScore(
     entry.gss_actual != null ? entry.gss_actual : null,
-    entry.gss_prior != null ? entry.gss_prior : null,
-    gssStd.target
+    entry.gss_prior != null ? entry.gss_prior : null
   );
   const total = calcTotalScore(gop.score, gopMargin.score, rgi.score, gss.score);
   return {

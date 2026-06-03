@@ -5,34 +5,34 @@ const KPI_ROWS = [
   {
     measure: 'Budgeted GOP',
     weight: '35%',
-    pts: '0–35',
-    target: '≥ 100% of Budgeted GOP',
-    scoring: 'Budget achievement scoring: 100% of budget = full points (35 pts). Below 100% = prorated score. Pass at 100%+ of budget.',
+    pts: '35',
+    target: '100% or >',
+    scoring: 'Binary: 35 pts if Actual ≥ Budget (≥ 100% achievement). 0 pts if Actual < Budget. No prorating.',
     pass: 'GOP Actual / GOP Budget ≥ 100%',
   },
   {
-    measure: 'GOP Margin Improvement',
+    measure: 'GOP Margin Improvement*',
     weight: '35%',
-    pts: '0–35',
-    target: 'Margin Actual – Margin PY ≥ 0.1%',
-    scoring: 'Growth-based scoring: 0.1% = 1 pt (minimum), scales linearly to 5%+ = 35 pts (capped). Pass at 0.1%+ improvement.',
-    pass: 'Margin Actual – Margin PY ≥ 0.1%',
+    pts: '35',
+    target: '0.1% or >',
+    scoring: 'Binary: 35 pts if TY margin – PY margin ≥ 0.1%. 0 pts if improvement < 0.1%. No partial credit.',
+    pass: 'Margin TY – Margin PY ≥ 0.1%',
   },
   {
-    measure: 'RGI Improvement',
+    measure: 'RGI Improvement**',
     weight: '15%',
-    pts: '0–15',
-    target: 'YOY growth in RevPAR Index %',
-    scoring: 'Growth-based scoring: 0.1% = 1 pt (minimum), scales linearly to 3%+ = 15 pts (capped). Pass at 0.1%+ YOY growth.',
-    pass: 'RGI Change ≥ 0.1%',
+    pts: '0 / 7.5 / 15',
+    target: '0.1%–2.0% vs PY = 7.5 pts / 2.1%+ vs PY = 15 pts',
+    scoring: 'Two-tier: < 0.1% = 0 pts (FAIL). 0.1%–2.0% YOY = 7.5 pts (half). 2.1%+ YOY = 15 pts (full). Pass at 0.1%+.',
+    pass: 'RGI YOY Change ≥ 0.1%',
   },
   {
     measure: 'GSS Improvement',
     weight: '15%',
-    pts: '0–15',
-    target: 'YOY improvement per brand standard',
-    scoring: 'Full 15 pts if improvement meets brand threshold. Partial credit proportional to progress toward target.',
-    pass: 'GSS Actual – GSS PY ≥ Brand Target',
+    pts: '15',
+    target: 'YOY > Pays 100%',
+    scoring: 'Binary: 15 pts if TY score > PY score (any positive improvement). 0 pts if TY ≤ PY. Full points or none.',
+    pass: 'GSS TY > GSS PY',
   },
 ];
 
@@ -97,8 +97,8 @@ export default function KpiReference() {
               <tr className="bg-muted/50 text-muted-foreground text-xs uppercase tracking-wide">
                 <th className="py-3 px-4 text-left font-semibold">Measure</th>
                 <th className="py-3 px-4 text-center font-semibold">Weight</th>
-                <th className="py-3 px-4 text-center font-semibold">Max Pts</th>
-                <th className="py-3 px-4 text-left font-semibold">Target</th>
+                <th className="py-3 px-4 text-center font-semibold">Points</th>
+                <th className="py-3 px-4 text-left font-semibold">Target / Scoring Tiers</th>
                 <th className="py-3 px-4 text-left font-semibold">Pass Criteria</th>
               </tr>
             </thead>
