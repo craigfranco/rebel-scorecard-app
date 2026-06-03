@@ -93,6 +93,7 @@ export default function ImportWizard({ file, properties, onClose, onSuccess }) {
   const handleImport = async () => {
     setStep('importing');
     let ok = 0, fail = 0;
+    const unmatchedNames = [];
 
     // Upload file first
     const user = await base44.auth.me();
@@ -113,7 +114,11 @@ export default function ImportWizard({ file, properties, onClose, onSuccess }) {
     for (let i = 0; i < mappedRows.length; i++) {
       const row = mappedRows[i];
       const prop = matches[i];
-      if (!prop) { fail++; continue; }
+      if (!prop) {
+        fail++;
+        if (row.hotel_name) unmatchedNames.push(row.hotel_name);
+        continue;
+      }
 
       const patch = {};
       if (row.budgeted_gop_actual != null) patch.budgeted_gop_actual = row.budgeted_gop_actual;
@@ -159,7 +164,7 @@ export default function ImportWizard({ file, properties, onClose, onSuccess }) {
     await refreshAvailableData();
     setSelectedYear(periodYear);
     setSelectedMonth(periodMonth);
-    setImportResult({ ok, fail });
+    setImportResult({ ok, fail, unmatchedNames });
     setStep('done');
   };
 
@@ -379,14 +384,38 @@ export default function ImportWizard({ file, properties, onClose, onSuccess }) {
                   <p className="text-sm font-semibold">File saved successfully.</p>
                 </div>
               ) : (
-                <div className={`flex items-start gap-3 rounded-xl p-4 ${importResult.ok > 0 ? 'bg-green-50 border border-green-200 text-green-800' : 'bg-amber-50 border border-amber-200 text-amber-800'}`}>
-                  {importResult.ok > 0 ? <CheckCircle className="w-5 h-5 shrink-0 mt-0.5" /> : <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />}
-                  <div>
-                    <p className="font-semibold text-sm">
-                      {importResult.ok > 0 ? `✅ Imported ${importResult.ok} hotel record${importResult.ok > 1 ? 's' : ''} for ${MONTHS[periodMonth-1]} ${periodYear}` : 'No records imported'}
-                    </p>
-                    {importResult.fail > 0 && <p className="text-xs mt-1">{importResult.fail} rows skipped (unmatched or no data).</p>}
+                <div className="space-y-3">
+                  <div className={`flex items-start gap-3 rounded-xl p-4 ${importResult.ok > 0 ? 'bg-green-50 border border-green-200 text-green-800' : 'bg-amber-50 border border-amber-200 text-amber-800'}`}>
+                    {importResult.ok > 0 ? <CheckCircle className="w-5 h-5 shrink-0 mt-0.5" /> : <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />}
+                    <div>
+                      <p className="font-semibold text-sm">
+                        {importResult.ok > 0
+                          ? `✅ ${importResult.ok} hotel${importResult.ok > 1 ? 's' : ''} matched & updated for ${MONTHS[periodMonth-1]} ${periodYear}`
+                          : 'No records imported'}
+                      </p>
+                      {importResult.fail > 0 && (
+                        <p className="text-xs mt-1">
+                          {importResult.fail} row{importResult.fail > 1 ? 's' : ''} skipped (no property match or no data).
+                        </p>
+                      )}
+                    </div>
                   </div>
+                  {importResult.unmatchedNames?.length > 0 && (
+                    <div className="bg-red-50 border border-red-200 rounded-xl p-4">
+                      <p className="text-sm font-semibold text-red-800 mb-2 flex items-center gap-1.5">
+                        <AlertCircle className="w-4 h-4 shrink-0" />
+                        {importResult.unmatchedNames.length} hotel{importResult.unmatchedNames.length > 1 ? 's' : ''} NOT matched — review required:
+                      </p>
+                      <ul className="space-y-1">
+                        {importResult.unmatchedNames.map((n, i) => (
+                          <li key={i} className="text-xs text-red-700 font-mono bg-red-100 rounded px-2 py-1">
+                            {n}
+                          </li>
+                        ))}
+                      </ul>
+                      <p className="text-xs text-red-600 mt-2">These hotels were not saved. Check that their names match a property in the system.</p>
+                    </div>
+                  )}
                 </div>
               )}
               <div className="flex justify-end">

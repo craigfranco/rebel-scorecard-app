@@ -1,10 +1,18 @@
 // Client-side file parsing utilities using SheetJS for Excel and PapaParse for CSV
 
+// Location suffixes appended in upload files but not in stored property names
+// e.g. "Holiday Inn Express & Suites Moreno Valley - Riverside" → strip "- Riverside"
+const LOCATION_SUFFIX_RE = /\s*-\s*(riverside|downtown|airport|north|south|east|west|central|midtown|uptown|old town|lakefront|waterfront|beachfront|harbor|marina|strip|galleria|market|square|plaza|village|heights|hills|valley|park|gardens|meadows|landing|crossing|junction|station|gateway|corridor|loop|skyway|bay|cove|ridge|bluff|summit|pointe|point|grove|woods|forest|lake|creek|brook|springs|falls|shores|harbor)\b.*/i;
+
+// Normalize a property name for fuzzy matching
 export function normalizeName(s) {
   if (!s) return '';
-  return s.toLowerCase()
-    .replace(/\b(hotel|by|and|the|inn|suites|suite|&|at|of|an|a|center|conference|executive|meeting|express|limited service|select service|full service)\b/g, ' ')
-    .replace(/[^a-z0-9 ]/g, '')
+  return s
+    .toLowerCase()
+    .replace(LOCATION_SUFFIX_RE, '')   // strip location suffixes like "- Riverside"
+    .replace(/\s*-\s*\w+(\s+\w+){0,2}\s*$/, '')  // strip any trailing "- Xyz" or "- Xyz Abc" suffix not caught above
+    .replace(/&/g, 'and')              // normalize & → and
+    .replace(/[^a-z0-9 ]/g, ' ')      // strip punctuation
     .replace(/\s+/g, ' ')
     .trim();
 }
@@ -13,41 +21,60 @@ export function bestMatch(nameOrStrId, properties, strId = null) {
   // Always filter to active properties only — never match inactive/duplicate records
   const activeProperties = properties.filter(p => p.is_active !== false);
 
-  // Try exact str_id match first (active only)
-  const sid = strId || (nameOrStrId && String(nameOrStrId).match(/^\d+$/) ? nameOrStrId : null);
+  // 1. Exact case-insensitive name match
+  const rawName = typeof nameOrStrId === 'string' ? nameOrStrId.trim() : '';
+  if (rawName) {
+    const exactMatch = activeProperties.find(
+      p => p.name.trim().toLowerCase() === rawName.toLowerCase()
+    );
+    if (exactMatch) return exactMatch;
+  }
+
+  // 2. str_id match
+  const sid = strId || (rawName && rawName.match(/^\d+$/) ? rawName : null);
   if (sid) {
     const byStrId = activeProperties.find(p => p.str_id && String(p.str_id) === String(sid));
     if (byStrId) return byStrId;
-    // If str_id was provided but no active property matched, skip — don't fall through to name match
-    if (strId) {
+    // If an explicit strId was passed but didn't match, fall through to name matching
+    // (only skip if strId was the only identifier — no name available)
+    if (strId && !rawName) {
       console.warn(`[bestMatch] str_id="${sid}" matched no active property — skipping row`);
       return null;
     }
   }
 
-  const name = nameOrStrId;
+  // 3. Fuzzy normalized name match
+  const name = rawName || nameOrStrId;
   if (!name) return null;
   const needle = normalizeName(name);
   if (!needle) return null;
+
   let best = null, bestScore = 0;
   for (const p of activeProperties) {
     const hay = normalizeName(p.name);
-    if (hay === needle) return p;
-    // Check containment
+    if (hay === needle) return p; // normalized exact match
+
+    // Containment: one name fully contained in the other
     if (hay.includes(needle) || needle.includes(hay)) {
       const score = Math.min(needle.length, hay.length) / Math.max(needle.length, hay.length);
       if (score > bestScore) { bestScore = score; best = p; }
       continue;
     }
-    // Word overlap
+
+    // Word overlap (ignore short words)
     const needleWords = needle.split(' ').filter(w => w.length > 2);
     const hayWords = hay.split(' ').filter(w => w.length > 2);
     if (!needleWords.length || !hayWords.length) continue;
-    const matches = needleWords.filter(w => hayWords.includes(w)).length;
-    const score = matches / Math.max(needleWords.length, hayWords.length);
+    const matched = needleWords.filter(w => hayWords.includes(w)).length;
+    const score = matched / Math.max(needleWords.length, hayWords.length);
     if (score > bestScore) { bestScore = score; best = p; }
   }
-  return bestScore >= 0.2 ? best : null;
+
+  const result = bestScore >= 0.4 ? best : null;
+  if (!result) {
+    console.warn(`[bestMatch] No match found for "${name}" (normalized: "${needle}")`);
+  }
+  return result;
 }
 
 async function loadXLSX() {
