@@ -7,6 +7,7 @@ import { formatBrandLabel } from '@/lib/portfolioHelpers';
 import ScoreGauge from '@/components/scorecard/ScoreGauge';
 import KpiRow from '@/components/scorecard/KpiRow';
 import KickerBadge from '@/components/scorecard/KickerBadge';
+import ScorecardPdfExport from '@/components/scorecard/ScorecardPdfExport';
 import SeedOnMount from '../components/SeedOnMount';
 
 import { calculateScorecard, MONTHS, getQuarterFromMonth, aggregateEntries, hasForecastData, normalizeGssTo100 } from '../lib/scoring';
@@ -72,6 +73,12 @@ export default function HotelScorecard() {
       setSelectedPropertyId(properties[0].id);
     }
   }, [properties, selectedPropertyId]);
+
+  const periodLabel = periodType === 'ytd'
+    ? `YTD ${selectedYear}`
+    : periodType === 'quarter'
+    ? `Q${getQuarterFromMonth(selectedMonth)} ${selectedYear}`
+    : `${MONTHS[selectedMonth - 1]} ${selectedYear}`;
 
   const kpiRows = scorecard ? [
     {
@@ -188,21 +195,31 @@ export default function HotelScorecard() {
             )}
           </div>
 
-          <Select value={selectedPropertyId} onValueChange={setSelectedPropertyId}>
-            <SelectTrigger className="w-full sm:w-72 bg-white/10 border-white/20 text-white">
-              <SelectValue placeholder="Select property..." />
-            </SelectTrigger>
-            <SelectContent>
-              {properties.map(p => (
-                <SelectItem key={p.id} value={p.id}>
-                  <div>
-                    <div className="font-medium text-sm">{p.name}</div>
-                    <div className="text-xs text-muted-foreground">{p.city}, {p.state}</div>
-                  </div>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+            <Select value={selectedPropertyId} onValueChange={setSelectedPropertyId}>
+              <SelectTrigger className="w-full sm:w-72 bg-white/10 border-white/20 text-white">
+                <SelectValue placeholder="Select property..." />
+              </SelectTrigger>
+              <SelectContent>
+                {properties.map(p => (
+                  <SelectItem key={p.id} value={p.id}>
+                    <div>
+                      <div className="font-medium text-sm">{p.name}</div>
+                      <div className="text-xs text-muted-foreground">{p.city}, {p.state}</div>
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {selectedProperty && (
+              <ScorecardPdfExport
+                property={selectedProperty}
+                entry={activeEntry}
+                scorecard={scorecard}
+                periodLabel={periodLabel}
+              />
+            )}
+          </div>
         </div>
       </div>
 
