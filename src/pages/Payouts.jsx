@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -51,11 +51,21 @@ export default function Payouts() {
     is_active: true
   });
 
-  // Fetch data
-  const { data: properties = [] } = useQuery({
+  // Fetch data — active properties only, deduplicated by name (keep active record)
+  const { data: rawProperties = [] } = useQuery({
     queryKey: ['properties'],
-    queryFn: () => base44.entities.Property.list('name', 100),
+    queryFn: () => base44.entities.Property.filter({ is_active: true }, 'name', 100),
   });
+
+  // Deduplicate by hotel name: if same name appears twice, only keep the active one (already filtered above)
+  // Then deduplicate by name in case of multiple active records with the same name
+  const properties = useMemo(() => {
+    const seen = new Map();
+    for (const p of rawProperties) {
+      if (!seen.has(p.name)) seen.set(p.name, p);
+    }
+    return Array.from(seen.values());
+  }, [rawProperties]);
 
   const { data: jobClassifications = [] } = useQuery({
     queryKey: ['job-classifications'],
