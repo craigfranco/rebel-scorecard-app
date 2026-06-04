@@ -314,11 +314,15 @@ export default function Payouts() {
             Add Staff Member
           </Button>
 
+          {/* Period badge */}
+          <p className="text-xs text-muted-foreground">{periodBadgeLabel}</p>
+
           {/* Staff Table */}
           <StaffTable
             staff={staffMembers}
             jobClassifications={jobClassifications}
             staffVarianceMap={staffVarianceMap}
+            salaryColHeader={salaryColHeader}
             onQuarterClick={(staffId, quarter) => {
               setDrillDownStaffId(staffId);
               setDrillDownQuarter(quarter);

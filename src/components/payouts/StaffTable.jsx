@@ -19,7 +19,7 @@ const JOB_CLASS_LABELS = {
   'Department Head': 'Department Heads',
 };
 
-export default function StaffTable({ staff = [], jobClassifications = [], staffVarianceMap = {}, onQuarterClick }) {
+export default function StaffTable({ staff = [], jobClassifications = [], staffVarianceMap = {}, salaryColHeader = 'Q1 Salary', onQuarterClick }) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [editingStaffId, setEditingStaffId] = useState(null);
@@ -81,7 +81,7 @@ export default function StaffTable({ staff = [], jobClassifications = [], staffV
               <tr className="text-muted-foreground text-xs uppercase tracking-wide" style={{ backgroundColor: '#2d4b5e', color: 'white' }}>
                 <th className="py-3 px-4 text-left font-semibold">Name</th>
                 <th className="py-3 px-4 text-center font-semibold">Job Classification</th>
-                <th className="py-3 px-4 text-center font-semibold">Q1 Salary</th>
+                <th className="py-3 px-4 text-center font-semibold">{salaryColHeader}</th>
                 <th className="py-3 px-4 text-center font-semibold">Est. Annual</th>
                 <th className="py-3 px-4 text-center font-semibold">vs Target</th>
                 <th className="py-3 px-4 text-center font-semibold">Status</th>
@@ -93,7 +93,7 @@ export default function StaffTable({ staff = [], jobClassifications = [], staffV
                 <React.Fragment key={classTitle}>
                   {/* Group Header */}
                   <tr className="bg-muted/50 border-t border-border">
-                    <td colSpan={7} className="py-3 px-4 font-bold text-sm">
+                    <td colSpan={6} className="py-3 px-4 font-bold text-sm">
                       {JOB_CLASS_LABELS[classTitle] || classTitle} ({groupedStaff[classTitle].length})
                     </td>
                   </tr>
