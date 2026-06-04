@@ -2,10 +2,9 @@ import React, { useState, useMemo } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Download, Check, X } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { calculateScorecard, getQuarterFromMonth, aggregateQuarterEntries } from '@/lib/scoring';
-import { calculateEstimatedAnnualSalary, calculateActualYtdSalary, getClosedQuarters } from '@/lib/salaryCalculation';
-import { calculateQuarterlyBonus, getMetricStatus } from '@/lib/bonusCalculation';
+import { calculateActualYtdSalary } from '@/lib/salaryCalculation';
 
 const QUARTER_DATES = {
   1: { label: 'Q1 2026', range: 'Jan 1 – Mar 31', months: [1, 2, 3] },
@@ -15,8 +14,6 @@ const QUARTER_DATES = {
 };
 
 export default function BonusPayoutDrillDown({ staff, property, jobClass, quarter, onClose }) {
-  const closedQuarters = getClosedQuarters();
-
   // Fetch scorecard entries for this quarter
   const { data: entries = [] } = useQuery({
     queryKey: ['score-entries-quarterly', property?.id, quarter],
@@ -29,8 +26,6 @@ export default function BonusPayoutDrillDown({ staff, property, jobClass, quarte
   // Aggregate all entries for this quarter (same logic as AllProperties/HotelDetail)
   const quarterEntries = entries.filter(e => getQuarterFromMonth(e.month) === quarter);
   const latestEntry = aggregateQuarterEntries(quarterEntries);
-
-  const annualSalary = calculateEstimatedAnnualSalary(staff, closedQuarters);
 
   // YTD Salary: simply sum all quarters with salary entered (independent of bonus)
   const { total: ytdSalary, quarters: ytdSalaryQuarters } = calculateActualYtdSalary(staff);
@@ -97,124 +92,22 @@ export default function BonusPayoutDrillDown({ staff, property, jobClass, quarte
   };
   const ytdBonusTotal = ytdData.bonusTotal;
 
-  // Calculate bonus details
+  // Quarterly salary for the viewed quarter
+  const quarterlySalary = staff[`salary_q${quarter}`] || 0;
+
+  // Scorecard for the viewed quarter (used for KPI table display only)
   const scorecardData = latestEntry ? calculateScorecard(latestEntry, property) : null;
-  const bonusData = latestEntry && scorecardData
-    ? calculateQuarterlyBonus(
-        { ...staff, annual_salary: annualSalary },
-        scorecardData,
-        jobClass,
-        latestEntry
-      )
-    : null;
 
-  // Get quarterly salary based on quarter
-  const getQuarterlySalary = () => {
-    switch (quarter) {
-      case 1: return staff.salary_q1 || 0;
-      case 2: return staff.salary_q2 || 0;
-      case 3: return staff.salary_q3 || 0;
-      case 4: return staff.salary_q4 || 0;
-      default: return 0;
-    }
-  };
-  const quarterlySalary = getQuarterlySalary();
+  // Max bonus potential for the viewed quarter (display only)
+  const maxQuarterlyBonus = (quarterlySalary * (jobClass.max_bonus_percentage || 0)) / 100;
 
-  const metrics = useMemo(() => {
-    if (!bonusData || !scorecardData) return [];
-    const qSalary = getQuarterlySalary();
-    return [
-      {
-        key: 'gop',
-        label: 'Gross Operating Profit (GOP)',
-        percentage: jobClass.gop_bonus_percentage,
-        annual: (annualSalary * jobClass.gop_bonus_percentage) / 100,
-        quarterly: (qSalary * jobClass.gop_bonus_percentage) / 100 * 0.5,
-        status: bonusData.metricsHit.gop ? 'pass' : bonusData.gopGatekeeperPassed === false ? 'gatekeeper_fail' : 'fail',
-        note: bonusData.gopGatekeeperPassed === false ? '⚠️ GOP Gatekeeper Not Met' : null,
-        kpiResult: scorecardData.gopChange ? `${scorecardData.gopChange.toFixed(1)}% vs budget` : '—',
-        kpiTarget: latestEntry ? `$${latestEntry.budgeted_gop_target?.toLocaleString() || '—'}` : '—',
-        kpiActual: latestEntry ? `$${latestEntry.budgeted_gop_actual?.toLocaleString() || '—'}` : '—',
-        kpiVariance: latestEntry ? `${scorecardData.gopChange?.toFixed(1)}%` : '—',
-      },
-      {
-        key: 'gopMargin',
-        label: 'GOP Margin Improvement',
-        percentage: jobClass.gop_margin_bonus_percentage,
-        annual: (annualSalary * jobClass.gop_margin_bonus_percentage) / 100,
-        quarterly: (qSalary * jobClass.gop_margin_bonus_percentage) / 100 * 0.5,
-        status: bonusData.metricsHit.gopMargin ? 'pass' : bonusData.gopGatekeeperPassed === false ? 'gatekeeper_fail' : 'fail',
-        note: bonusData.gopGatekeeperPassed === false ? '⚠️ GOP Gatekeeper Not Met' : null,
-        kpiResult: scorecardData.gopMarginChange ? `${scorecardData.gopMarginChange.toFixed(2)} pts improvement` : '—',
-        kpiTarget: latestEntry ? `${latestEntry.gop_margin_prior?.toFixed(2)}% (prior)` : '—',
-        kpiActual: latestEntry ? `${latestEntry.gop_margin_actual?.toFixed(2)}%` : '—',
-        kpiVariance: latestEntry ? `${scorecardData.gopMarginChange?.toFixed(2)} pts` : '—',
-      },
-      {
-        key: 'gss',
-        label: 'GSS Improvement',
-        percentage: jobClass.gss_bonus_percentage,
-        annual: (annualSalary * jobClass.gss_bonus_percentage) / 100,
-        quarterly: (qSalary * jobClass.gss_bonus_percentage) / 100 * 0.5,
-        status: bonusData.metricsHit.gss ? 'pass' : 'fail',
-        kpiResult: scorecardData.gssChange ? `${scorecardData.gssChange.toFixed(2)} pts vs prior` : '—',
-        kpiTarget: latestEntry ? `${latestEntry.gss_prior?.toFixed(2)} (prior)` : '—',
-        kpiActual: latestEntry ? `${latestEntry.gss_actual?.toFixed(2)}` : '—',
-        kpiVariance: latestEntry ? `${scorecardData.gssChange?.toFixed(2)} pts` : '—',
-      },
-      {
-        key: 'rgi',
-        label: 'RGI Improvement',
-        percentage: scorecardData?.rgiChange >= 2.1 ? jobClass.rgi_bonus_percentage_high : jobClass.rgi_bonus_percentage_low,
-        annual: scorecardData?.rgiChange >= 2.1
-          ? (annualSalary * jobClass.rgi_bonus_percentage_high) / 100
-          : (annualSalary * jobClass.rgi_bonus_percentage_low) / 100,
-        quarterly: scorecardData?.rgiChange >= 2.1
-          ? (qSalary * jobClass.rgi_bonus_percentage_high) / 100 * 0.5
-          : (qSalary * jobClass.rgi_bonus_percentage_low) / 100 * 0.5,
-        status: bonusData.metricsHit.rgi ? 'pass' : 'fail',
-        tierNote: jobClass.title === 'General Manager'
-          ? (scorecardData?.rgiChange >= 2.1 ? `Tier 2 (${jobClass.rgi_bonus_percentage_high}%)` : `Tier 1 (${jobClass.rgi_bonus_percentage_low}%)`)
-          : null,
-        kpiResult: scorecardData?.rgiChange ? `${scorecardData.rgiChange.toFixed(2)}% YoY change` : '—',
-        kpiTarget: latestEntry ? `${latestEntry.revpar_index_prior?.toFixed(1)} (prior index)` : '—',
-        kpiActual: latestEntry ? `${latestEntry.revpar_index?.toFixed(1)}` : '—',
-        kpiVariance: latestEntry ? `${scorecardData.rgiChange?.toFixed(2)}%` : '—',
-      },
-    ];
-  }, [bonusData, scorecardData, jobClass, annualSalary, quarter, staff, latestEntry]);
-
-  const quarterlySubtotal = metrics.reduce((sum, m) => sum + (m.status === 'pass' ? m.quarterly : 0), 0);
-  const annualSubtotal = metrics.reduce((sum, m) => sum + (m.status === 'pass' ? m.annual : 0), 0);
-  const maxQuarterlyBonus = (quarterlySalary * jobClass.max_bonus_percentage) / 100;
-  const maxAnnualBonus = (annualSalary * jobClass.max_bonus_percentage) / 100;
-  const finalQuarterlyBonus = Math.min(quarterlySubtotal, maxQuarterlyBonus);
-  const finalAnnualBonus = Math.min(annualSubtotal, maxAnnualBonus);
-  const maxBonus = maxAnnualBonus;
-
-  // Target payout = full max bonus potential (100% achievement)
-  // vs Target differential helpers
-  const fmtDiff = (actual, target) => {
-    if (!target) return null;
-    const diff = actual - target;
-    const pct = ((diff / target) * 100).toFixed(0);
-    const dollarStr = diff === 0
-      ? '$0'
-      : `${diff > 0 ? '+' : '-'}$${Math.abs(Math.round(diff)).toLocaleString('en-US')}`;
-    const pctStr = `${diff > 0 ? '+' : ''}${pct}%`;
-    return { diff, dollarStr, pctStr, positive: diff > 0, zero: diff === 0 };
-  };
-
-  const qDiff = fmtDiff(finalQuarterlyBonus, maxQuarterlyBonus);
-  const totalProjected = finalQuarterlyBonus + finalAnnualBonus * 0.5;
-  const totalTarget = maxQuarterlyBonus + maxAnnualBonus * 0.5;
-  const totalDiff = fmtDiff(totalProjected, totalTarget);
-
-  const StatusBadge = ({ status }) => {
-    if (status === 'pass') return <span className="inline-flex items-center gap-1 text-pass font-semibold text-xs"><Check className="w-4 h-4" /> Pass</span>;
-    if (status === 'gatekeeper_fail') return <span className="inline-flex items-center gap-1 text-fail font-semibold text-xs"><X className="w-4 h-4" /> Gatekeeper</span>;
-    return <span className="inline-flex items-center gap-1 text-fail font-semibold text-xs"><X className="w-4 h-4" /> Fail</span>;
-  };
+  // THIS quarter's bonus from ytdData breakdown — single source of truth
+  const thisQuarterBreakdown = ytdData.quarterBreakdown.find(b => b.q === quarter);
+  // Full bonus for this quarter (before 50/50 split)
+  const thisQuarterBonusEarned = thisQuarterBreakdown?.qBonus ?? 0;
+  // 50% paid out now, 50% held
+  const thisQuarterPaidOut = thisQuarterBonusEarned * 0.5;
+  const thisQuarterHeld = thisQuarterBonusEarned * 0.5;
 
   return (
     <div className="space-y-6">
@@ -276,84 +169,72 @@ export default function BonusPayoutDrillDown({ staff, property, jobClass, quarte
 
       {/* Quarterly Breakdown Card */}
       <div className="bg-card rounded-2xl border border-border p-6 shadow-sm space-y-5">
-        <div>
-          <h3 className="font-bold text-lg">{QUARTER_DATES[quarter].label} — Quarterly Breakdown</h3>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            {quarter === 1 ? 'Period close: March 31, 2026' :
-             quarter === 2 ? 'Period close: June 30, 2026' :
-             quarter === 3 ? 'Period close: September 30, 2026' :
-             'Period close: December 31, 2026'}
-          </p>
-        </div>
-
-        {/* KPI Detail Table */}
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="bg-muted/50 text-muted-foreground text-xs uppercase tracking-wide border-b border-border">
-                <th className="py-3 px-4 text-left font-semibold">Metric</th>
-                <th className="py-3 px-4 text-center font-semibold">KPI Target</th>
-                <th className="py-3 px-4 text-center font-semibold">KPI Actual</th>
-                <th className="py-3 px-4 text-center font-semibold">Bonus %</th>
-                <th className="py-3 px-4 text-right font-semibold">Bonus Earned</th>
-                <th className="py-3 px-4 text-center font-semibold">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {metrics.map((m) => (
-                <tr key={m.key} className="border-t border-border hover:bg-muted/30">
-                  <td className="py-3 px-4 font-medium text-xs">{m.label}{m.tierNote && <span className="ml-1 text-muted-foreground">({m.tierNote})</span>}</td>
-                  <td className="py-3 px-4 text-center text-xs text-muted-foreground">{m.kpiTarget}</td>
-                  <td className="py-3 px-4 text-center text-xs font-semibold">{m.kpiActual}</td>
-                  <td className="py-3 px-4 text-center text-xs">{m.percentage}%</td>
-                  <td className="py-3 px-4 text-right text-xs font-semibold">
-                    {m.status === 'pass' ? `$${(m.quarterly * 2).toLocaleString('en-US', { maximumFractionDigits: 0 })}` : <span className="text-muted-foreground">—</span>}
-                  </td>
-                  <td className="py-3 px-4 text-center"><StatusBadge status={m.status} /></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Paid Out Now vs Rolls to Annual split */}
-        <div className="rounded-xl border border-border overflow-hidden">
-          {/* Header row */}
-          <div className="bg-muted/50 px-5 py-3 border-b border-border flex items-center justify-between">
-            <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-              {QUARTER_DATES[quarter].label} — Bonus Earned: <span className="text-foreground font-bold">${(quarterlySubtotal * 2).toLocaleString('en-US', { maximumFractionDigits: 0 })}</span>
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="font-bold text-lg">{QUARTER_DATES[quarter].label} — Quarterly Breakdown</h3>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {quarter === 1 ? 'Period close: March 31, 2026' :
+               quarter === 2 ? 'Period close: June 30, 2026' :
+               quarter === 3 ? 'Period close: September 30, 2026' :
+               'Period close: December 31, 2026'}
+            </p>
+          </div>
+          {scorecardData && (
+            <span className="text-xs font-semibold text-muted-foreground bg-muted/50 px-3 py-1.5 rounded-lg">
+              KPI Score: <span className="text-foreground font-bold">{scorecardData.total?.total ?? '—'}/{scorecardData.total?.maxPossible ?? 100}</span>
             </span>
-            {scorecardData && (
-              <span className="text-xs font-semibold text-muted-foreground">
-                KPI Score: <span className="text-foreground font-bold">{scorecardData.total?.total ?? '—'}/{scorecardData.total?.maxPossible ?? 100}</span>
-              </span>
-            )}
-          </div>
-
-          {/* Paid Out Now */}
-          <div className="flex items-center justify-between px-5 py-4 bg-green-50 border-b border-green-100">
-            <div className="flex items-center gap-3">
-              <span className="text-xl">✅</span>
-              <div>
-                <p className="font-bold text-green-800 text-sm uppercase tracking-wide">Paid Out Now</p>
-                <p className="text-green-700 text-xs mt-0.5">50% — Quarterly check issued after period close</p>
-              </div>
-            </div>
-            <p className="font-black text-2xl text-green-700">${finalQuarterlyBonus.toLocaleString('en-US', { maximumFractionDigits: 0 })}</p>
-          </div>
-
-          {/* Rolls to Annual */}
-          <div className="flex items-center justify-between px-5 py-4 bg-blue-50">
-            <div className="flex items-center gap-3">
-              <span className="text-xl">🔄</span>
-              <div>
-                <p className="font-bold text-blue-800 text-sm uppercase tracking-wide">Rolls to Annual</p>
-                <p className="text-blue-700 text-xs mt-0.5">50% — Accumulates, paid at year-end (Dec 31, 2026)</p>
-              </div>
-            </div>
-            <p className="font-black text-2xl text-blue-700">${finalQuarterlyBonus.toLocaleString('en-US', { maximumFractionDigits: 0 })}</p>
-          </div>
+          )}
         </div>
+
+        {/* Calculation formula row */}
+        {thisQuarterBreakdown && (
+          <div className="rounded-lg bg-muted/30 px-4 py-3 text-xs text-muted-foreground">
+            <span className="font-medium text-foreground">Formula: </span>
+            ${quarterlySalary.toLocaleString('en-US', { maximumFractionDigits: 0 })} (salary) × {jobClass.max_bonus_percentage}% (bonus %) × {thisQuarterBreakdown.kpiScore}/{thisQuarterBreakdown.maxPossible} pts (KPI score)
+            {' = '}
+            <span className="font-bold text-foreground">${thisQuarterBonusEarned.toLocaleString('en-US', { maximumFractionDigits: 0 })}</span>
+          </div>
+        )}
+
+        {!latestEntry || !thisQuarterBreakdown ? (
+          <div className="rounded-xl border border-border bg-muted/30 px-5 py-6 text-center">
+            <p className="text-muted-foreground text-sm">No scorecard data entered for {QUARTER_DATES[quarter].label}. Enter KPI data to calculate this quarter's bonus.</p>
+          </div>
+        ) : (
+          <div className="rounded-xl border border-border overflow-hidden">
+            {/* Bonus Earned header */}
+            <div className="bg-muted/50 px-5 py-3 border-b border-border flex items-center justify-between">
+              <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                {QUARTER_DATES[quarter].label} — Total Bonus Earned
+              </span>
+              <span className="text-foreground font-bold">${thisQuarterBonusEarned.toLocaleString('en-US', { maximumFractionDigits: 0 })}</span>
+            </div>
+
+            {/* Paid Out Now */}
+            <div className="flex items-center justify-between px-5 py-4 bg-green-50 border-b border-green-100">
+              <div className="flex items-center gap-3">
+                <span className="text-xl">✅</span>
+                <div>
+                  <p className="font-bold text-green-800 text-sm uppercase tracking-wide">Paid Out Now</p>
+                  <p className="text-green-700 text-xs mt-0.5">50% — Quarterly check issued after period close</p>
+                </div>
+              </div>
+              <p className="font-black text-2xl text-green-700">${thisQuarterPaidOut.toLocaleString('en-US', { maximumFractionDigits: 0 })}</p>
+            </div>
+
+            {/* Held for Year-End */}
+            <div className="flex items-center justify-between px-5 py-4 bg-blue-50">
+              <div className="flex items-center gap-3">
+                <span className="text-xl">🔄</span>
+                <div>
+                  <p className="font-bold text-blue-800 text-sm uppercase tracking-wide">Held for Year-End</p>
+                  <p className="text-blue-700 text-xs mt-0.5">50% — Accumulates, paid at year-end (Dec 31, 2026)</p>
+                </div>
+              </div>
+              <p className="font-black text-2xl text-blue-700">${thisQuarterHeld.toLocaleString('en-US', { maximumFractionDigits: 0 })}</p>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* YTD Running Total */}
