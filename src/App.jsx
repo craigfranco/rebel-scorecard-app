@@ -18,7 +18,7 @@ import KpiBreakdown from '@/pages/KpiBreakdown';
 import Documents from '@/pages/Documents.jsx';
 import HotelDetail from '@/pages/HotelDetail';
 import HotelScorecard from '@/pages/HotelScorecard';
-import Payouts from '@/pages/Payouts.jsx';
+import Payouts from '@/pages/Payouts';
 import JobClassifications from '@/pages/JobClassifications';
 import AdminPanel from '@/pages/AdminPanel.jsx';
 
