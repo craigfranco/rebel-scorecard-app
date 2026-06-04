@@ -32,18 +32,28 @@ export default function BonusPayoutDrillDown({ staff, property, jobClass, quarte
 
   const annualSalary = calculateEstimatedAnnualSalary(staff, closedQuarters);
 
-  // YTD: only quarters with actual salary AND scorecard data entered
+  // YTD Salary: simply sum all quarters with salary entered (independent of bonus)
   const { total: ytdSalary, quarters: ytdSalaryQuarters } = calculateActualYtdSalary(staff);
 
-  // Compute YTD running total across all quarters with actual data
+  // Whether bonus % is configured
+  const hasBonusPct = jobClass && (jobClass.max_bonus_percentage || 0) > 0;
+
+  // Compute YTD running total using: salary_q[x] × max_bonus_pct × (KPI score / maxPossible)
   const ytdData = useMemo(() => {
-    const quartersWithData = [1, 2, 3, 4].filter(q => {
-      const qSal = (staff[`salary_q${q}`] || 0) > 0;
+    // Quarters that have salary data entered (bonus calc requires salary)
+    const quartersWithSalary = [1, 2, 3, 4].filter(q => (staff[`salary_q${q}`] || 0) > 0);
+
+    // Quarters that also have scorecard entries
+    const quartersWithData = quartersWithSalary.filter(q => {
       const qEntries = entries.filter(e => getQuarterFromMonth(e.month) === q);
-      return qSal && qEntries.length > 0;
+      return qEntries.length > 0;
     });
 
+    const bonusPct = (jobClass?.max_bonus_percentage || 0) / 100;
+
     let bonusTotal = 0;
+    const quarterBreakdown = [];
+
     for (const q of quartersWithData) {
       const qSalary = staff[`salary_q${q}`] || 0;
       const qEntries = entries.filter(e => getQuarterFromMonth(e.month) === q);
@@ -51,32 +61,39 @@ export default function BonusPayoutDrillDown({ staff, property, jobClass, quarte
       if (!qEntry) continue;
       const qScorecard = calculateScorecard(qEntry, property);
       if (!qScorecard) continue;
-      const qAnnualSalary = calculateEstimatedAnnualSalary(staff, closedQuarters);
-      const qBonus = calculateQuarterlyBonus(
-        { ...staff, annual_salary: qAnnualSalary },
-        qScorecard,
-        jobClass,
-        qEntry
-      );
-      const maxQBonus = (qSalary * jobClass.max_bonus_percentage) / 100;
-      bonusTotal += Math.min(qBonus.totalBonus || 0, maxQBonus);
+
+      const kpiScore = qScorecard.total?.total ?? 0;
+      const maxPossible = qScorecard.total?.maxPossible ?? 100;
+      const kpiRatio = maxPossible > 0 ? kpiScore / maxPossible : 0;
+
+      // Quarterly Bonus = salary × max_bonus_pct × (kpi score / max possible)
+      const qBonus = qSalary * bonusPct * kpiRatio;
+      bonusTotal += qBonus;
+      quarterBreakdown.push({ q, qSalary, kpiScore, maxPossible, kpiRatio, qBonus });
     }
 
     return {
+      quartersWithSalary,
       quartersWithData,
+      quarterBreakdown,
       bonusTotal,
       paidOut: bonusTotal * 0.5,
       rolling: bonusTotal * 0.5,
-      quarterLabel: quartersWithData.length === 0 ? 'No data yet' : quartersWithData.map(q => `Q${q}`).join(' + '),
+      quarterLabel: quartersWithData.length === 0
+        ? (quartersWithSalary.length > 0 ? quartersWithSalary.map(q => `Q${q}`).join(' + ') : 'No data yet')
+        : quartersWithData.map(q => `Q${q}`).join(' + '),
+      salaryLabel: quartersWithSalary.length === 0 ? 'No data yet' : quartersWithSalary.map(q => `Q${q}`).join(' + '),
     };
-  }, [entries, staff, property, jobClass, closedQuarters]);
+  }, [entries, staff, property, jobClass]);
 
-  const { quartersWithData, ytdBonusTotal: _ytd, ytdPaidOut, ytdRolling, ytdQuarterLabel } = {
+  const { quartersWithSalary, quartersWithData, quarterBreakdown, ytdPaidOut, ytdRolling, ytdQuarterLabel, ytdSalaryLabel } = {
+    quartersWithSalary: ytdData.quartersWithSalary,
     quartersWithData: ytdData.quartersWithData,
-    ytdBonusTotal: ytdData.bonusTotal,
+    quarterBreakdown: ytdData.quarterBreakdown,
     ytdPaidOut: ytdData.paidOut,
     ytdRolling: ytdData.rolling,
     ytdQuarterLabel: ytdData.quarterLabel,
+    ytdSalaryLabel: ytdData.salaryLabel,
   };
   const ytdBonusTotal = ytdData.bonusTotal;
 
@@ -339,63 +356,94 @@ export default function BonusPayoutDrillDown({ staff, property, jobClass, quarte
         </div>
       </div>
 
-      {/* Annual Running Total */}
+      {/* YTD Running Total */}
       <div className="bg-card rounded-2xl border-2 border-border p-6 shadow-sm space-y-5">
         <div>
           <h3 className="font-bold text-lg">
-            {quartersWithData.length === 4 ? 'Annual Running Total' : `YTD Running Total`}
-            {quartersWithData.length > 0 && (
-              <span className="ml-2 text-sm font-normal text-muted-foreground">({ytdQuarterLabel})</span>
-            )}
+            {quartersWithSalary.length === 4 ? 'Annual Running Total' : 'YTD Running Total'}
           </h3>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Only quarters with actual salary and KPI data entered — no projections or estimates
+            Salary totals based on entered quarters only — no extrapolation
           </p>
         </div>
 
-        {quartersWithData.length === 0 ? (
+        {/* 1. YTD Salary Running Total — always shown */}
+        <div className="rounded-xl border border-border overflow-hidden">
+          <div className="flex items-center justify-between px-5 py-4 bg-muted/30">
+            <div>
+              <p className="font-bold text-sm">YTD Salary: {ytdSalaryLabel}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Sum of {quartersWithSalary.map(q => `Q${q}`).join(' + ')} salaries
+              </p>
+            </div>
+            <p className="font-black text-2xl">
+              {ytdSalary > 0 ? `$${ytdSalary.toLocaleString('en-US', { maximumFractionDigits: 0 })}` : '—'}
+            </p>
+          </div>
+        </div>
+
+        {/* 2 & 3. Payout + Holdback — only if bonus % is configured */}
+        {!hasBonusPct ? (
+          <div className="rounded-xl border border-yellow-200 bg-yellow-50 px-5 py-4">
+            <p className="text-sm text-yellow-800 font-medium">
+              ⚠ Set bonus target % to calculate payouts
+            </p>
+            <p className="text-xs text-yellow-700 mt-1">
+              No max bonus percentage is configured for the <strong>{jobClass?.title}</strong> classification. Edit the job classification to enable payout calculations.
+            </p>
+          </div>
+        ) : quartersWithData.length === 0 ? (
           <div className="rounded-xl border border-border bg-muted/30 px-5 py-6 text-center">
-            <p className="text-muted-foreground text-sm">No completed quarters with data yet. Running total will appear once salary and scorecard data are entered.</p>
+            <p className="text-muted-foreground text-sm">
+              No scorecard data entered yet for quarters with salary.
+              Payout totals will appear once KPI data is entered.
+            </p>
           </div>
         ) : (
           <div className="divide-y divide-border rounded-xl border border-border overflow-hidden">
-            <div className="flex items-center justify-between px-5 py-3 bg-muted/30">
-              <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+            {/* Per-quarter breakdown */}
+            {quarterBreakdown.map(({ q, qSalary, kpiScore, maxPossible, kpiRatio, qBonus }) => (
+              <div key={q} className="flex items-center justify-between px-5 py-3 bg-muted/20 text-sm">
+                <div className="flex items-center gap-3">
+                  <span className="text-xs font-bold text-muted-foreground w-6">Q{q}</span>
+                  <span className="text-xs text-muted-foreground">
+                    ${qSalary.toLocaleString('en-US', { maximumFractionDigits: 0 })} × {jobClass.max_bonus_percentage}% × {kpiScore}/{maxPossible} pts
+                  </span>
+                </div>
+                <span className="font-semibold text-xs">${qBonus.toLocaleString('en-US', { maximumFractionDigits: 0 })}</span>
+              </div>
+            ))}
+
+            {/* Total Bonus Earned */}
+            <div className="flex items-center justify-between px-5 py-3 bg-muted/40">
+              <span className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
                 Total Bonus Earned ({ytdQuarterLabel})
               </span>
               <span className="font-bold text-sm">${ytdBonusTotal.toLocaleString('en-US', { maximumFractionDigits: 0 })}</span>
             </div>
 
+            {/* Paid Out */}
             <div className="flex items-center justify-between px-5 py-4 bg-green-50">
               <div className="flex items-center gap-3">
                 <span className="text-lg">✅</span>
                 <div>
-                  <p className="font-bold text-green-800 text-sm">Paid Out ({ytdQuarterLabel})</p>
-                  <p className="text-green-700 text-xs">50% quarterly checks issued after each period close</p>
+                  <p className="font-bold text-green-800 text-sm">Total Paid Out</p>
+                  <p className="text-green-700 text-xs">50% per quarter — checks issued after each period close</p>
                 </div>
               </div>
               <p className="font-black text-xl text-green-700">${ytdPaidOut.toLocaleString('en-US', { maximumFractionDigits: 0 })}</p>
             </div>
 
+            {/* Held for Year-End */}
             <div className="flex items-center justify-between px-5 py-4 bg-blue-50">
               <div className="flex items-center gap-3">
                 <span className="text-lg">🔄</span>
                 <div>
-                  <p className="font-bold text-blue-800 text-sm">Rolling to Year-End ({ytdQuarterLabel})</p>
-                  <p className="text-blue-700 text-xs">50% accumulated · Paid at year-end Dec 31, 2026</p>
+                  <p className="font-bold text-blue-800 text-sm">Held for Year-End</p>
+                  <p className="text-blue-700 text-xs">50% accumulated · Paid Dec 31, 2026</p>
                 </div>
               </div>
               <p className="font-black text-xl text-blue-700">${ytdRolling.toLocaleString('en-US', { maximumFractionDigits: 0 })}</p>
-            </div>
-
-            <div className="flex items-center justify-between px-5 py-4" style={{ backgroundColor: '#2d4b5e' }}>
-              <div>
-                <p className="font-bold text-white text-sm uppercase tracking-wide">
-                  {quartersWithData.length === 4 ? 'Annual Total Payout' : 'YTD Total Payout'}
-                </p>
-                <p className="text-white/60 text-xs">Based on {quartersWithData.length} of 4 quarters with actual data</p>
-              </div>
-              <p className="font-black text-2xl text-white">${ytdBonusTotal.toLocaleString('en-US', { maximumFractionDigits: 0 })}</p>
             </div>
           </div>
         )}
