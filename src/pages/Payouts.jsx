@@ -321,6 +321,7 @@ export default function Payouts() {
           <StaffTable
             staff={staffMembers}
             jobClassifications={jobClassifications}
+            properties={properties}
             salaryColHeader={salaryColHeader}
             onQuarterClick={(staffId, quarter) => {
               setDrillDownStaffId(staffId);

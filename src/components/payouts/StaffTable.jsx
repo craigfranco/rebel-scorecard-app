@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Button } from '@/components/ui/button';
-import { Edit2, Trash2 } from 'lucide-react';
+import { Edit2, Trash2, ChevronDown, ChevronRight } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { getClosedQuarters, calculateActualYtdSalary } from '@/lib/salaryCalculation';
 import StaffEditModal from './StaffEditModal';
+import StaffExpandedRow from './StaffExpandedRow';
 
 const JOB_CLASS_ORDER = {
   'General Manager': 0,
@@ -19,10 +19,11 @@ const JOB_CLASS_LABELS = {
   'Department Head': 'Department Heads',
 };
 
-export default function StaffTable({ staff = [], jobClassifications = [], salaryColHeader = 'Q1 Salary', onQuarterClick }) {
+export default function StaffTable({ staff = [], jobClassifications = [], properties = [], salaryColHeader = 'Q1 Salary', onQuarterClick }) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [editingStaffId, setEditingStaffId] = useState(null);
+  const [expandedStaffId, setExpandedStaffId] = useState(null);
   const closedQuarters = getClosedQuarters();
 
   // Dynamic header: "Annual Total" if all 4 quarters have salary data (for any staff), else "YTD Salary"
@@ -108,60 +109,81 @@ export default function StaffTable({ staff = [], jobClassifications = [], salary
                   </tr>
                   {/* Group Rows */}
                   {groupedStaff[classTitle].map((s, idx) => {
+                    const isExpanded = expandedStaffId === s.id;
+                    const property = properties.find(p => p.id === s.property_id);
+                    const jobClass = jobClassifications.find(jc => jc.id === s.job_classification_id);
                     return (
-                      <tr
-                        key={s.id}
-                        className={`border-t border-border ${
-                          (groupIndex + idx) % 2 === 0 ? 'bg-white' : 'bg-muted/20'
-                        } hover:bg-muted/40`}
-                      >
-                        <td className="py-3 px-4 font-medium">{s.name}</td>
-                        <td className="py-3 px-4 text-center text-muted-foreground text-xs">{classTitle}</td>
-                        <td className="py-3 px-4 text-center">
-                          {closedQuarters.includes(1) ? (
-                            <button
-                              onClick={() => onQuarterClick?.(s.id, 1)}
-                              className="text-primary hover:text-primary/80 hover:underline font-medium"
+                      <React.Fragment key={s.id}>
+                        <tr
+                          className={`border-t border-border cursor-pointer ${
+                            isExpanded ? 'bg-slate-100' : (groupIndex + idx) % 2 === 0 ? 'bg-white' : 'bg-muted/20'
+                          } hover:bg-slate-100`}
+                          onClick={() => setExpandedStaffId(isExpanded ? null : s.id)}
+                        >
+                          <td className="py-3 px-4 font-medium">
+                            <div className="flex items-center gap-2">
+                              {isExpanded
+                                ? <ChevronDown className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                                : <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                              }
+                              {s.name}
+                            </div>
+                          </td>
+                          <td className="py-3 px-4 text-center text-muted-foreground text-xs">{classTitle}</td>
+                          <td className="py-3 px-4 text-center">
+                            {closedQuarters.includes(1) ? (
+                              <button
+                                onClick={(e) => { e.stopPropagation(); onQuarterClick?.(s.id, 1); }}
+                                className="text-primary hover:text-primary/80 hover:underline font-medium"
+                              >
+                                {getDisplayedQ1(s)}
+                              </button>
+                            ) : (
+                              <span className="text-muted-foreground">{getDisplayedQ1(s)}</span>
+                            )}
+                          </td>
+                          <td className="py-3 px-4 text-center font-semibold">
+                            {formatYtdSalary(s)}
+                          </td>
+                          <td className="py-3 px-4 text-center">
+                            <span
+                              className={`inline-block px-2 py-1 rounded text-xs font-semibold ${
+                                s.is_active
+                                  ? 'bg-pass text-white'
+                                  : 'bg-muted text-muted-foreground'
+                              }`}
                             >
-                              {getDisplayedQ1(s)}
-                            </button>
-                          ) : (
-                            <span className="text-muted-foreground">{getDisplayedQ1(s)}</span>
-                          )}
-                        </td>
-                        <td className="py-3 px-4 text-center font-semibold">
-                          {formatYtdSalary(s)}
-                        </td>
-                        <td className="py-3 px-4 text-center">
-                          <span
-                            className={`inline-block px-2 py-1 rounded text-xs font-semibold ${
-                              s.is_active
-                                ? 'bg-pass text-white'
-                                : 'bg-muted text-muted-foreground'
-                            }`}
-                          >
-                            {s.is_active ? 'Active' : 'Inactive'}
-                          </span>
-                        </td>
-                        <td className="py-3 px-4 text-center">
-                          <div className="flex gap-2 justify-center">
-                            <button
-                              onClick={() => setEditingStaffId(s.id)}
-                              className="text-primary hover:text-primary/80"
-                              title="Edit"
-                            >
-                              <Edit2 className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => handleDelete(s)}
-                              className="text-destructive hover:text-destructive/80"
-                              title="Delete"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
+                              {s.is_active ? 'Active' : 'Inactive'}
+                            </span>
+                          </td>
+                          <td className="py-3 px-4 text-center" onClick={e => e.stopPropagation()}>
+                            <div className="flex gap-2 justify-center">
+                              <button
+                                onClick={() => setEditingStaffId(s.id)}
+                                className="text-primary hover:text-primary/80"
+                                title="Edit"
+                              >
+                                <Edit2 className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => handleDelete(s)}
+                                className="text-destructive hover:text-destructive/80"
+                                title="Delete"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                        {isExpanded && (
+                          <StaffExpandedRow
+                            staff={s}
+                            property={property}
+                            jobClass={jobClass}
+                            colSpan={6}
+                          />
+                        )}
+                      </React.Fragment>
                     );
                   })}
                 </React.Fragment>
