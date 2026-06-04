@@ -46,11 +46,14 @@ export default function PayoutDetailCard({ staff, jobClass, bonus, salary, score
   const quarterlyPayout = finalTotal * 0.5;
   const annualPayout = finalTotal * 0.5;
 
+  // variance = actual − target (positive = earned more, negative = earned less)
   const diff = finalTotal - maxBonus;
   const diffPct = maxBonus > 0 ? ((diff / maxBonus) * 100).toFixed(0) : null;
-  const diffColor = diff >= 0 ? '#16a34a' : '#dc2626';
-  const diffStr = `${diff >= 0 ? '+' : '-'}$${Math.abs(Math.round(diff)).toLocaleString('en-US')}`;
-  const diffPctStr = diffPct != null ? `${diff >= 0 ? '+' : ''}${diffPct}%` : null;
+  const diffColor = diff > 0 ? '#16a34a' : diff < 0 ? '#dc2626' : '#64748b';
+  const diffStr = diff === 0
+    ? '$0'
+    : `${diff > 0 ? '+' : '-'}$${Math.abs(Math.round(diff)).toLocaleString('en-US')}`;
+  const diffPctStr = diffPct != null ? `${diff > 0 ? '+' : ''}${diffPct}%` : null;
 
   return (
     <div className="bg-card rounded-2xl border border-border p-6 shadow-sm space-y-6">
@@ -176,8 +179,8 @@ export default function PayoutDetailCard({ staff, jobClass, bonus, salary, score
             </div>
             <div>
               <p className="text-white/70 text-xs mb-1">VS TARGET</p>
-              <p className="font-bold text-2xl" style={{ color: diff >= 0 ? '#86efac' : '#fca5a5' }}>{diffStr}</p>
-              {diffPctStr && <p className="text-xs mt-0.5" style={{ color: diff >= 0 ? '#86efac' : '#fca5a5' }}>{diffPctStr} of target</p>}
+              <p className="font-bold text-2xl" style={{ color: diff > 0 ? '#86efac' : diff < 0 ? '#fca5a5' : '#cbd5e1' }}>{diffStr}</p>
+              {diffPctStr && <p className="text-xs mt-0.5" style={{ color: diff > 0 ? '#86efac' : diff < 0 ? '#fca5a5' : '#cbd5e1' }}>{diffPctStr} of target</p>}
             </div>
           </div>
         </div>

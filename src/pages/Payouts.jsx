@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Plus, Save, ChevronRight, Check, X } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
-import { calculateQuarterlyBonus, calculateAnnualBonus, getMetricStatus } from '@/lib/bonusCalculation';
+import { calculateQuarterlyBonus, calculateAnnualBonus, calculateBonusForMetric, getMetricStatus } from '@/lib/bonusCalculation';
 import { calculateScorecard } from '@/lib/scoring';
 import { getClosedQuarters, calculateEstimatedAnnualSalary } from '@/lib/salaryCalculation';
 import StaffTable from '@/components/payouts/StaffTable';
@@ -31,7 +31,7 @@ const Switch = ({ checked, onChange }) => (
 export default function Payouts() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { selectedYear } = useTimePeriod();
+  const { selectedYear, selectedMonth, periodType, getPeriodLabel } = useTimePeriod();
   const closedQuarters = getClosedQuarters();
 
   const [selectedPropertyId, setSelectedPropertyId] = useState('');
@@ -144,6 +144,28 @@ export default function Payouts() {
   const selectedProperty = properties.find(p => p.id === selectedPropertyId);
   const selectedStaff = allStaff.find(s => s.id === selectedStaffId);
 
+  // Compute vs-target variance for each staff member in the current property
+  const staffVarianceMap = useMemo(() => {
+    if (!entries.length || !staffMembers.length) return {};
+    const map = {};
+    for (const s of staffMembers) {
+      const jobClass = jobClassifications.find(jc => jc.id === s.job_classification_id);
+      if (!jobClass) continue;
+      const prop = properties.find(p => p.id === s.property_id);
+      if (!prop) continue;
+      const latestEntry = entries[entries.length - 1];
+      if (!latestEntry) continue;
+      const scorecard = calculateScorecard(latestEntry, prop);
+      const annualSalary = calculateEstimatedAnnualSalary(s, closedQuarters);
+      const bonus = calculateBonusForMetric({ ...s, annual_salary: annualSalary }, scorecard, jobClass, latestEntry);
+      const maxBonus = (annualSalary * jobClass.max_bonus_percentage) / 100;
+      const actual = Math.min(bonus.total, maxBonus);
+      const diff = actual - maxBonus;
+      map[s.id] = { actual, target: maxBonus, diff };
+    }
+    return map;
+  }, [staffMembers, entries, jobClassifications, properties, closedQuarters]);
+
   // Calculate bonus for selected staff
   const selectedStaffBonus = selectedStaff && selectedProperty ? (() => {
     const jobClass = jobClassifications.find(jc => jc.id === selectedStaff.job_classification_id);
@@ -180,6 +202,21 @@ export default function Payouts() {
     }
     addStaffMutation.mutate(newStaff);
   };
+
+  // Derive salary column header and period badge from global time period
+  const salaryColHeader = (() => {
+    if (periodType === 'ytd') return 'YTD Salary';
+    if (periodType === 'quarter') {
+      const q = selectedMonth <= 3 ? 1 : selectedMonth <= 6 ? 2 : selectedMonth <= 9 ? 3 : 4;
+      return `Q${q} Salary`;
+    }
+    if (periodType === 'month') {
+      const q = selectedMonth <= 3 ? 1 : selectedMonth <= 6 ? 2 : selectedMonth <= 9 ? 3 : 4;
+      return `Q${q} Salary`;
+    }
+    return 'Annual Salary';
+  })();
+  const periodBadgeLabel = `Showing: ${getPeriodLabel()}`;
 
   // Auto-select first property
   React.useEffect(() => {
@@ -281,6 +318,7 @@ export default function Payouts() {
           <StaffTable
             staff={staffMembers}
             jobClassifications={jobClassifications}
+            staffVarianceMap={staffVarianceMap}
             onQuarterClick={(staffId, quarter) => {
               setDrillDownStaffId(staffId);
               setDrillDownQuarter(quarter);

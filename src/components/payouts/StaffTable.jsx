@@ -19,7 +19,7 @@ const JOB_CLASS_LABELS = {
   'Department Head': 'Department Heads',
 };
 
-export default function StaffTable({ staff = [], jobClassifications = [], onQuarterClick }) {
+export default function StaffTable({ staff = [], jobClassifications = [], staffVarianceMap = {}, onQuarterClick }) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [editingStaffId, setEditingStaffId] = useState(null);
@@ -83,6 +83,7 @@ export default function StaffTable({ staff = [], jobClassifications = [], onQuar
                 <th className="py-3 px-4 text-center font-semibold">Job Classification</th>
                 <th className="py-3 px-4 text-center font-semibold">Q1 Salary</th>
                 <th className="py-3 px-4 text-center font-semibold">Est. Annual</th>
+                <th className="py-3 px-4 text-center font-semibold">vs Target</th>
                 <th className="py-3 px-4 text-center font-semibold">Status</th>
                 <th className="py-3 px-4 text-center font-semibold"></th>
               </tr>
@@ -92,7 +93,7 @@ export default function StaffTable({ staff = [], jobClassifications = [], onQuar
                 <React.Fragment key={classTitle}>
                   {/* Group Header */}
                   <tr className="bg-muted/50 border-t border-border">
-                    <td colSpan={6} className="py-3 px-4 font-bold text-sm">
+                    <td colSpan={7} className="py-3 px-4 font-bold text-sm">
                       {JOB_CLASS_LABELS[classTitle] || classTitle} ({groupedStaff[classTitle].length})
                     </td>
                   </tr>
@@ -121,6 +122,24 @@ export default function StaffTable({ staff = [], jobClassifications = [], onQuar
                         </td>
                         <td className="py-3 px-4 text-center font-semibold">
                           {formatEstimatedAnnual(s)}
+                        </td>
+                        <td className="py-3 px-4 text-center text-xs font-bold">
+                          {(() => {
+                            const v = staffVarianceMap[s.id];
+                            if (!v) return <span className="text-muted-foreground">—</span>;
+                            const { diff, target } = v;
+                            const pct = target > 0 ? Math.round((diff / target) * 100) : 0;
+                            const color = diff > 0 ? '#16a34a' : diff < 0 ? '#dc2626' : '#64748b';
+                            const dollarStr = diff === 0
+                              ? '$0'
+                              : `${diff > 0 ? '+' : '-'}$${Math.abs(Math.round(diff)).toLocaleString('en-US')}`;
+                            return (
+                              <span style={{ color }}>
+                                {dollarStr}
+                                <span className="block text-[10px] font-normal opacity-80">{diff > 0 ? '+' : ''}{pct}%</span>
+                              </span>
+                            );
+                          })()}
                         </td>
                         <td className="py-3 px-4 text-center">
                           <span

@@ -94,10 +94,13 @@ export default function PayoutBreakdownCard({ staff, jobClass, bonus, salary, sc
   const quarterlyPayoutTotal = finalTotal * 0.5;
   const annualPayoutTotal = finalTotal * 0.5;
 
+  // variance = actual − target (positive = earned more, negative = earned less)
   const totalDiff = finalTotal - maxBonus;
   const totalDiffPct = maxBonus > 0 ? ((totalDiff / maxBonus) * 100).toFixed(0) : null;
-  const totalDiffStr = `${totalDiff >= 0 ? '+' : '-'}$${Math.abs(Math.round(totalDiff)).toLocaleString('en-US')}`;
-  const totalDiffPctStr = totalDiffPct != null ? `${totalDiff >= 0 ? '+' : ''}${totalDiffPct}%` : null;
+  const totalDiffStr = totalDiff === 0
+    ? '$0'
+    : `${totalDiff > 0 ? '+' : '-'}$${Math.abs(Math.round(totalDiff)).toLocaleString('en-US')}`;
+  const totalDiffPctStr = totalDiffPct != null ? `${totalDiff > 0 ? '+' : ''}${totalDiffPct}%` : null;
 
   // Render metric table
   const renderMetricTable = () => {
@@ -242,8 +245,8 @@ export default function PayoutBreakdownCard({ staff, jobClass, bonus, salary, sc
           </div>
           <div>
             <p className="text-white/70 text-xs mb-1">vs Target</p>
-            <p className="font-bold text-lg" style={{ color: totalDiff >= 0 ? '#86efac' : '#fca5a5' }}>{totalDiffStr}</p>
-            {totalDiffPctStr && <p className="text-xs mt-0.5" style={{ color: totalDiff >= 0 ? '#86efac' : '#fca5a5' }}>{totalDiffPctStr} of target</p>}
+            <p className="font-bold text-lg" style={{ color: totalDiff > 0 ? '#86efac' : totalDiff < 0 ? '#fca5a5' : '#cbd5e1' }}>{totalDiffStr}</p>
+            {totalDiffPctStr && <p className="text-xs mt-0.5" style={{ color: totalDiff > 0 ? '#86efac' : totalDiff < 0 ? '#fca5a5' : '#cbd5e1' }}>{totalDiffPctStr} of target</p>}
           </div>
         </div>
       </div>

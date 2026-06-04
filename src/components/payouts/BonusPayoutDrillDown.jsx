@@ -133,10 +133,11 @@ export default function BonusPayoutDrillDown({ staff, property, jobClass, quarte
     if (!target) return null;
     const diff = actual - target;
     const pct = ((diff / target) * 100).toFixed(0);
-    const sign = diff >= 0 ? '+' : '';
-    const dollarStr = `${sign}$${Math.abs(Math.round(diff)).toLocaleString('en-US')}`;
-    const pctStr = `${sign}${pct}%`;
-    return { diff, dollarStr, pctStr, color: diff >= 0 ? '#16a34a' : '#dc2626' };
+    const dollarStr = diff === 0
+      ? '$0'
+      : `${diff > 0 ? '+' : '-'}$${Math.abs(Math.round(diff)).toLocaleString('en-US')}`;
+    const pctStr = `${diff > 0 ? '+' : ''}${pct}%`;
+    return { diff, dollarStr, pctStr, positive: diff > 0, zero: diff === 0 };
   };
 
   const qDiff = fmtDiff(finalQuarterlyBonus, maxQuarterlyBonus);
@@ -262,7 +263,7 @@ export default function BonusPayoutDrillDown({ staff, property, jobClass, quarte
               {qDiff && (
                 <tr className="border-t border-white/10 font-bold" style={{ backgroundColor: '#2d4b5e' }}>
                   <td colSpan="6" className="py-2 px-4 text-right text-white/80 text-xs">vs Target</td>
-                  <td className="py-2 px-4 text-right text-xs font-bold" style={{ color: qDiff.color === '#16a34a' ? '#86efac' : '#fca5a5' }}>
+                  <td className="py-2 px-4 text-right text-xs font-bold" style={{ color: qDiff.zero ? '#cbd5e1' : qDiff.positive ? '#86efac' : '#fca5a5' }}>
                     {qDiff.dollarStr} ({qDiff.pctStr})
                   </td>
                   <td></td>
@@ -323,7 +324,7 @@ export default function BonusPayoutDrillDown({ staff, property, jobClass, quarte
                 return (
                   <tr className="border-t border-white/10 font-bold" style={{ backgroundColor: '#2d4b5e' }}>
                     <td colSpan="6" className="py-2 px-4 text-right text-white/80 text-xs">vs Target</td>
-                    <td className="py-2 px-4 text-right text-xs font-bold" style={{ color: d.color === '#16a34a' ? '#86efac' : '#fca5a5' }}>
+                    <td className="py-2 px-4 text-right text-xs font-bold" style={{ color: d.zero ? '#cbd5e1' : d.positive ? '#86efac' : '#fca5a5' }}>
                       {d.dollarStr} ({d.pctStr})
                     </td>
                     <td></td>
@@ -349,11 +350,11 @@ export default function BonusPayoutDrillDown({ staff, property, jobClass, quarte
           <div>
             <p className="text-white/70 text-xs mb-1">vs Target</p>
             {qDiff ? (
-              <p className="font-bold text-2xl" style={{ color: qDiff.color === '#16a34a' ? '#86efac' : '#fca5a5' }}>
+              <p className="font-bold text-2xl" style={{ color: qDiff.zero ? '#cbd5e1' : qDiff.positive ? '#86efac' : '#fca5a5' }}>
                 {qDiff.dollarStr}
               </p>
             ) : <p className="font-bold text-2xl">—</p>}
-            {qDiff && <p className="text-xs mt-0.5" style={{ color: qDiff.color === '#16a34a' ? '#86efac' : '#fca5a5' }}>{qDiff.pctStr} of target</p>}
+            {qDiff && <p className="text-xs mt-0.5" style={{ color: qDiff.zero ? '#cbd5e1' : qDiff.positive ? '#86efac' : '#fca5a5' }}>{qDiff.pctStr} of target</p>}
           </div>
           <div>
             <p className="text-white/70 text-xs mb-1">Total Projected Bonus</p>
@@ -366,11 +367,11 @@ export default function BonusPayoutDrillDown({ staff, property, jobClass, quarte
           <div>
             <p className="text-white/70 text-xs mb-1">Total vs Target</p>
             {totalDiff ? (
-              <p className="font-bold text-2xl" style={{ color: totalDiff.color === '#16a34a' ? '#86efac' : '#fca5a5' }}>
+              <p className="font-bold text-2xl" style={{ color: totalDiff.zero ? '#cbd5e1' : totalDiff.positive ? '#86efac' : '#fca5a5' }}>
                 {totalDiff.dollarStr}
               </p>
             ) : <p className="font-bold text-2xl">—</p>}
-            {totalDiff && <p className="text-xs mt-0.5" style={{ color: totalDiff.color === '#16a34a' ? '#86efac' : '#fca5a5' }}>{totalDiff.pctStr} of target</p>}
+            {totalDiff && <p className="text-xs mt-0.5" style={{ color: totalDiff.zero ? '#cbd5e1' : totalDiff.positive ? '#86efac' : '#fca5a5' }}>{totalDiff.pctStr} of target</p>}
           </div>
         </div>
       </div>
