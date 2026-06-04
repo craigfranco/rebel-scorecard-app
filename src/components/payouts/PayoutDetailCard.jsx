@@ -46,6 +46,12 @@ export default function PayoutDetailCard({ staff, jobClass, bonus, salary, score
   const quarterlyPayout = finalTotal * 0.5;
   const annualPayout = finalTotal * 0.5;
 
+  const diff = finalTotal - maxBonus;
+  const diffPct = maxBonus > 0 ? ((diff / maxBonus) * 100).toFixed(0) : null;
+  const diffColor = diff >= 0 ? '#16a34a' : '#dc2626';
+  const diffStr = `${diff >= 0 ? '+' : '-'}$${Math.abs(Math.round(diff)).toLocaleString('en-US')}`;
+  const diffPctStr = diffPct != null ? `${diff >= 0 ? '+' : ''}${diffPct}%` : null;
+
   return (
     <div className="bg-card rounded-2xl border border-border p-6 shadow-sm space-y-6">
       {/* Header */}
@@ -157,11 +163,21 @@ export default function PayoutDetailCard({ staff, jobClass, bonus, salary, score
 
         {/* Total */}
         <div className="rounded-lg p-4 mt-4" style={{ backgroundColor: '#2d4b5e' }}>
-          <div className="flex justify-between items-center">
-            <span className="text-white font-bold text-lg">TOTAL BONUS</span>
-            <div className="text-right">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <p className="text-white/70 text-xs mb-1">ACTUAL BONUS</p>
               <p className="text-white font-bold text-2xl">${finalTotal.toLocaleString('en-US', { maximumFractionDigits: 0 })}</p>
-              <p className="text-white/80 text-sm">{((finalTotal / salary) * 100).toFixed(2)}% of salary</p>
+              <p className="text-white/80 text-xs mt-0.5">{((finalTotal / salary) * 100).toFixed(2)}% of salary</p>
+            </div>
+            <div>
+              <p className="text-white/70 text-xs mb-1">TARGET BONUS (Max)</p>
+              <p className="text-white font-bold text-2xl">${maxBonus.toLocaleString('en-US', { maximumFractionDigits: 0 })}</p>
+              <p className="text-white/80 text-xs mt-0.5">{jobClass.max_bonus_percentage}% of salary</p>
+            </div>
+            <div>
+              <p className="text-white/70 text-xs mb-1">VS TARGET</p>
+              <p className="font-bold text-2xl" style={{ color: diff >= 0 ? '#86efac' : '#fca5a5' }}>{diffStr}</p>
+              {diffPctStr && <p className="text-xs mt-0.5" style={{ color: diff >= 0 ? '#86efac' : '#fca5a5' }}>{diffPctStr} of target</p>}
             </div>
           </div>
         </div>

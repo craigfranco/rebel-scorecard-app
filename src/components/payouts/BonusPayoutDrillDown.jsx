@@ -127,6 +127,23 @@ export default function BonusPayoutDrillDown({ staff, property, jobClass, quarte
   const finalAnnualBonus = Math.min(annualSubtotal, maxAnnualBonus);
   const maxBonus = maxAnnualBonus;
 
+  // Target payout = full max bonus potential (100% achievement)
+  // vs Target differential helpers
+  const fmtDiff = (actual, target) => {
+    if (!target) return null;
+    const diff = actual - target;
+    const pct = ((diff / target) * 100).toFixed(0);
+    const sign = diff >= 0 ? '+' : '';
+    const dollarStr = `${sign}$${Math.abs(Math.round(diff)).toLocaleString('en-US')}`;
+    const pctStr = `${sign}${pct}%`;
+    return { diff, dollarStr, pctStr, color: diff >= 0 ? '#16a34a' : '#dc2626' };
+  };
+
+  const qDiff = fmtDiff(finalQuarterlyBonus, maxQuarterlyBonus);
+  const totalProjected = finalQuarterlyBonus + finalAnnualBonus * 0.5;
+  const totalTarget = maxQuarterlyBonus + maxAnnualBonus * 0.5;
+  const totalDiff = fmtDiff(totalProjected, totalTarget);
+
   const StatusBadge = ({ status }) => {
     if (status === 'pass') return <span className="inline-flex items-center gap-1 text-pass font-semibold text-xs"><Check className="w-4 h-4" /> Pass</span>;
     if (status === 'gatekeeper_fail') return <span className="inline-flex items-center gap-1 text-fail font-semibold text-xs"><X className="w-4 h-4" /> Gatekeeper</span>;
@@ -231,10 +248,26 @@ export default function BonusPayoutDrillDown({ staff, property, jobClass, quarte
                    <td className="py-3 px-4 text-center"><StatusBadge status={m.status} /></td>
                  </tr>
                ))}
-              <tr className="border-t border-border font-bold text-white" style={{ backgroundColor: '#2d4b5e' }}>
-                <td colSpan="7" className="py-3 px-4 text-right">QUARTERLY SUBTOTAL (50%)</td>
-                <td className="py-3 px-4 text-right">${quarterlySubtotal.toLocaleString('en-US', { maximumFractionDigits: 0 })}</td>
+              <tr className="border-t-2 border-white/20 font-bold" style={{ backgroundColor: '#1e3547' }}>
+                <td colSpan="5" className="py-3 px-4 text-right text-white text-xs">TARGET (Max Potential)</td>
+                <td className="py-3 px-4 text-center text-white/70 text-xs">${quarterlySalary.toLocaleString('en-US', { maximumFractionDigits: 0 })}</td>
+                <td className="py-3 px-4 text-right text-white font-bold">${maxQuarterlyBonus.toLocaleString('en-US', { maximumFractionDigits: 0 })}</td>
+                <td></td>
               </tr>
+              <tr className="border-t border-white/20 font-bold text-white" style={{ backgroundColor: '#2d4b5e' }}>
+                <td colSpan="6" className="py-3 px-4 text-right">QUARTERLY ACTUAL (50%)</td>
+                <td className="py-3 px-4 text-right">${quarterlySubtotal.toLocaleString('en-US', { maximumFractionDigits: 0 })}</td>
+                <td></td>
+              </tr>
+              {qDiff && (
+                <tr className="border-t border-white/10 font-bold" style={{ backgroundColor: '#2d4b5e' }}>
+                  <td colSpan="6" className="py-2 px-4 text-right text-white/80 text-xs">vs Target</td>
+                  <td className="py-2 px-4 text-right text-xs font-bold" style={{ color: qDiff.color === '#16a34a' ? '#86efac' : '#fca5a5' }}>
+                    {qDiff.dollarStr} ({qDiff.pctStr})
+                  </td>
+                  <td></td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
@@ -274,10 +307,29 @@ export default function BonusPayoutDrillDown({ staff, property, jobClass, quarte
                    <td className="py-3 px-4 text-center"><StatusBadge status={m.status} /></td>
                  </tr>
                ))}
-              <tr className="border-t border-border font-bold text-white" style={{ backgroundColor: '#2d4b5e' }}>
-                <td colSpan="7" className="py-3 px-4 text-right">ANNUAL SUBTOTAL (50%)</td>
-                <td className="py-3 px-4 text-right">${annualSubtotal.toLocaleString('en-US', { maximumFractionDigits: 0 })}</td>
+              <tr className="border-t-2 border-white/20 font-bold" style={{ backgroundColor: '#1e3547' }}>
+                <td colSpan="5" className="py-3 px-4 text-right text-white text-xs">TARGET (Max Potential)</td>
+                <td className="py-3 px-4 text-center text-white/70 text-xs">${annualSalary.toLocaleString('en-US', { maximumFractionDigits: 0 })}</td>
+                <td className="py-3 px-4 text-right text-white font-bold">${maxAnnualBonus.toLocaleString('en-US', { maximumFractionDigits: 0 })}</td>
+                <td></td>
               </tr>
+              <tr className="border-t border-white/20 font-bold text-white" style={{ backgroundColor: '#2d4b5e' }}>
+                <td colSpan="6" className="py-3 px-4 text-right">ANNUAL ACTUAL (50%)</td>
+                <td className="py-3 px-4 text-right">${annualSubtotal.toLocaleString('en-US', { maximumFractionDigits: 0 })}</td>
+                <td></td>
+              </tr>
+              {fmtDiff(annualSubtotal, maxAnnualBonus) && (() => {
+                const d = fmtDiff(annualSubtotal, maxAnnualBonus);
+                return (
+                  <tr className="border-t border-white/10 font-bold" style={{ backgroundColor: '#2d4b5e' }}>
+                    <td colSpan="6" className="py-2 px-4 text-right text-white/80 text-xs">vs Target</td>
+                    <td className="py-2 px-4 text-right text-xs font-bold" style={{ color: d.color === '#16a34a' ? '#86efac' : '#fca5a5' }}>
+                      {d.dollarStr} ({d.pctStr})
+                    </td>
+                    <td></td>
+                  </tr>
+                );
+              })()}
             </tbody>
           </table>
         </div>
@@ -287,28 +339,38 @@ export default function BonusPayoutDrillDown({ staff, property, jobClass, quarte
       <div className="rounded-lg p-6" style={{ backgroundColor: '#2d4b5e' }}>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-6 text-white text-sm">
           <div>
-            <p className="text-white/70 text-xs mb-1">Q{quarter} Quarterly Payout</p>
+            <p className="text-white/70 text-xs mb-1">Q{quarter} Actual Payout</p>
             <p className="font-bold text-2xl">${finalQuarterlyBonus.toLocaleString('en-US', { maximumFractionDigits: 0 })}</p>
           </div>
           <div>
-            <p className="text-white/70 text-xs mb-1">Projected Annual Payout (50%)</p>
-            <p className="font-bold text-2xl">${(finalAnnualBonus * 0.5).toLocaleString('en-US', { maximumFractionDigits: 0 })}</p>
-          </div>
-          <div>
-            <p className="text-white/70 text-xs mb-1">TOTAL PROJECTED BONUS</p>
-            <p className="font-bold text-2xl">${(finalQuarterlyBonus + finalAnnualBonus * 0.5).toLocaleString('en-US', { maximumFractionDigits: 0 })}</p>
-          </div>
-          <div>
-            <p className="text-white/70 text-xs mb-1">As % of Q{quarter} Salary</p>
-            <p className="font-bold text-2xl">{quarterlySalary > 0 ? ((finalQuarterlyBonus / quarterlySalary) * 100).toFixed(2) : '0'}%</p>
-          </div>
-          <div>
-            <p className="text-white/70 text-xs mb-1">Max Q{quarter} Bonus</p>
+            <p className="text-white/70 text-xs mb-1">Q{quarter} Target Payout (Max)</p>
             <p className="font-bold text-2xl">${maxQuarterlyBonus.toLocaleString('en-US', { maximumFractionDigits: 0 })}</p>
           </div>
           <div>
-            <p className="text-white/70 text-xs mb-1">Achievement</p>
-            <p className="font-bold text-2xl">{maxQuarterlyBonus > 0 ? ((finalQuarterlyBonus / maxQuarterlyBonus) * 100).toFixed(0) : '0'}% of max</p>
+            <p className="text-white/70 text-xs mb-1">vs Target</p>
+            {qDiff ? (
+              <p className="font-bold text-2xl" style={{ color: qDiff.color === '#16a34a' ? '#86efac' : '#fca5a5' }}>
+                {qDiff.dollarStr}
+              </p>
+            ) : <p className="font-bold text-2xl">—</p>}
+            {qDiff && <p className="text-xs mt-0.5" style={{ color: qDiff.color === '#16a34a' ? '#86efac' : '#fca5a5' }}>{qDiff.pctStr} of target</p>}
+          </div>
+          <div>
+            <p className="text-white/70 text-xs mb-1">Total Projected Bonus</p>
+            <p className="font-bold text-2xl">${totalProjected.toLocaleString('en-US', { maximumFractionDigits: 0 })}</p>
+          </div>
+          <div>
+            <p className="text-white/70 text-xs mb-1">Total Target Bonus</p>
+            <p className="font-bold text-2xl">${totalTarget.toLocaleString('en-US', { maximumFractionDigits: 0 })}</p>
+          </div>
+          <div>
+            <p className="text-white/70 text-xs mb-1">Total vs Target</p>
+            {totalDiff ? (
+              <p className="font-bold text-2xl" style={{ color: totalDiff.color === '#16a34a' ? '#86efac' : '#fca5a5' }}>
+                {totalDiff.dollarStr}
+              </p>
+            ) : <p className="font-bold text-2xl">—</p>}
+            {totalDiff && <p className="text-xs mt-0.5" style={{ color: totalDiff.color === '#16a34a' ? '#86efac' : '#fca5a5' }}>{totalDiff.pctStr} of target</p>}
           </div>
         </div>
       </div>

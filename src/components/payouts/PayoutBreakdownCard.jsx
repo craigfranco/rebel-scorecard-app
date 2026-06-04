@@ -94,6 +94,11 @@ export default function PayoutBreakdownCard({ staff, jobClass, bonus, salary, sc
   const quarterlyPayoutTotal = finalTotal * 0.5;
   const annualPayoutTotal = finalTotal * 0.5;
 
+  const totalDiff = finalTotal - maxBonus;
+  const totalDiffPct = maxBonus > 0 ? ((totalDiff / maxBonus) * 100).toFixed(0) : null;
+  const totalDiffStr = `${totalDiff >= 0 ? '+' : '-'}$${Math.abs(Math.round(totalDiff)).toLocaleString('en-US')}`;
+  const totalDiffPctStr = totalDiffPct != null ? `${totalDiff >= 0 ? '+' : ''}${totalDiffPct}%` : null;
+
   // Render metric table
   const renderMetricTable = () => {
     const isQuarterly = selectedPeriod.match(/q\d/);
@@ -224,22 +229,21 @@ export default function PayoutBreakdownCard({ staff, jobClass, bonus, salary, sc
 
       {/* Summary Bar */}
       <div className="rounded-lg p-4" style={{ backgroundColor: '#2d4b5e' }}>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-white text-sm">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-white text-sm">
           <div>
-            <p className="text-white/70 text-xs mb-1">Quarterly Payout (50%)</p>
-            <p className="font-bold text-lg">${quarterlyPayoutTotal.toLocaleString('en-US', { maximumFractionDigits: 0 })}</p>
-          </div>
-          <div>
-            <p className="text-white/70 text-xs mb-1">Annual Payout (50%)</p>
-            <p className="font-bold text-lg">${annualPayoutTotal.toLocaleString('en-US', { maximumFractionDigits: 0 })}</p>
-          </div>
-          <div>
-            <p className="text-white/70 text-xs mb-1">Total Bonus</p>
+            <p className="text-white/70 text-xs mb-1">Actual Bonus</p>
             <p className="font-bold text-lg">${finalTotal.toLocaleString('en-US', { maximumFractionDigits: 0 })}</p>
+            <p className="text-white/60 text-xs mt-0.5">{((finalTotal / annualSalary) * 100).toFixed(2)}% of salary</p>
           </div>
           <div>
-            <p className="text-white/70 text-xs mb-1">As % of Salary</p>
-            <p className="font-bold text-lg">{((finalTotal / annualSalary) * 100).toFixed(2)}%</p>
+            <p className="text-white/70 text-xs mb-1">Target Bonus (Max)</p>
+            <p className="font-bold text-lg">${maxBonus.toLocaleString('en-US', { maximumFractionDigits: 0 })}</p>
+            <p className="text-white/60 text-xs mt-0.5">{jobClass.max_bonus_percentage}% of salary</p>
+          </div>
+          <div>
+            <p className="text-white/70 text-xs mb-1">vs Target</p>
+            <p className="font-bold text-lg" style={{ color: totalDiff >= 0 ? '#86efac' : '#fca5a5' }}>{totalDiffStr}</p>
+            {totalDiffPctStr && <p className="text-xs mt-0.5" style={{ color: totalDiff >= 0 ? '#86efac' : '#fca5a5' }}>{totalDiffPctStr} of target</p>}
           </div>
         </div>
       </div>
