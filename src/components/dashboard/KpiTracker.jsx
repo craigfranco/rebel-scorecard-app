@@ -93,7 +93,7 @@ export default function KpiTracker({ title, icon, iconColor, subtitle, hotels })
             return (
               <div key={prop.id} className="flex items-center gap-2 py-1">
                 <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: brandColor }} />
-                <Link to={`/hotel/${prop.id}`} className="text-xs text-foreground hover:underline truncate flex-1">
+                <Link to={`/hotel-scorecard?propertyId=${prop.id}`} className="text-xs text-foreground hover:underline truncate flex-1">
                   {prop.name}
                 </Link>
                 <div className="flex items-center gap-1 shrink-0">
