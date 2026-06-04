@@ -54,7 +54,7 @@ function QuarterRow({ qData }) {
       <td className="py-2 px-4 text-center font-semibold" style={{ color: qData.quarterlyPayout > 0 ? '#2d4b5e' : undefined }}>
         {qData.quarterlyPayout > 0 ? fmt$(qData.quarterlyPayout) : '—'}
       </td>
-      <td className="py-2 px-4" colSpan={3} />
+      <td className="py-2 px-4" colSpan={4} />
     </tr>
   );
 }
@@ -90,6 +90,9 @@ function StaffRow({ staff, property, entries, year, jobClassTitle, onEdit, onDel
             <span className="font-medium text-sm">{staff.name}</span>
           </div>
         </td>
+
+        {/* Job Classification */}
+        <td className="py-3 px-4 text-center text-xs text-muted-foreground">{jobClassTitle}</td>
 
         {/* Q Salary — show the current/latest available quarter salary */}
         <td className="py-3 px-4 text-center text-sm">
@@ -160,6 +163,7 @@ function StaffRow({ staff, property, entries, year, jobClassTitle, onEdit, onDel
       {expanded && (
         <tr className="border-t border-primary/20 bg-primary/5 text-xs font-semibold">
           <td className="py-2 px-4 pl-14 text-primary">Annual Total</td>
+          <td className="py-2 px-4" />
           <td className="py-2 px-4 text-center text-muted-foreground">
             {estAnnual > 0 ? (
               <span>{fmt$(estAnnual)}{isEstimate && <span className="ml-1 text-[10px] font-normal text-muted-foreground">Est.</span>}</span>
@@ -255,6 +259,7 @@ export default function StaffPayoutTable({ staff = [], property, entries = [], y
             <thead>
               <tr style={{ backgroundColor: '#2d4b5e', color: 'white' }} className="text-xs uppercase tracking-wide">
                 <th className="py-3 px-4 text-left font-semibold">Name</th>
+                <th className="py-3 px-4 text-center font-semibold">Job Classification</th>
                 <th className="py-3 px-4 text-center font-semibold">Q Salary</th>
                 <th className="py-3 px-4 text-center font-semibold">KPI Score</th>
                 <th className="py-3 px-4 text-center font-semibold">Bonus Earned</th>
@@ -268,7 +273,7 @@ export default function StaffPayoutTable({ staff = [], property, entries = [], y
               {grouped.map(([classTitle, groupStaff]) => (
                 <React.Fragment key={classTitle}>
                   <tr className="bg-muted/50 border-t border-border">
-                    <td colSpan={8} className="py-2 px-4 font-bold text-xs uppercase tracking-wider text-muted-foreground">
+                    <td colSpan={9} className="py-2 px-4 font-bold text-xs uppercase tracking-wider text-muted-foreground">
                       {classTitle} <span className="font-normal">({groupStaff.length})</span>
                     </td>
                   </tr>
@@ -292,7 +297,7 @@ export default function StaffPayoutTable({ staff = [], property, entries = [], y
             {/* Portfolio Total Row */}
             <tfoot>
               <tr style={{ backgroundColor: '#1e3547', color: 'white' }}>
-                <td colSpan={3} className="py-3 px-4 font-bold text-sm">Portfolio Totals</td>
+                <td colSpan={4} className="py-3 px-4 font-bold text-sm">Portfolio Totals</td>
                 <td className="py-3 px-4 text-center font-bold text-sm">{fmt$(portfolioTotals.totalBonus)}</td>
                 <td className="py-3 px-4 text-center font-bold text-sm">{fmt$(portfolioTotals.totalPayouts)}</td>
                 <td colSpan={3} className="py-3 px-4 text-right text-xs text-white/60 pr-6">
