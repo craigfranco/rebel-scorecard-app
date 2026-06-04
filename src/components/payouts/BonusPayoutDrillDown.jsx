@@ -210,168 +210,129 @@ export default function BonusPayoutDrillDown({ staff, property, jobClass, quarte
         </div>
       )}
 
-      {/* Quarterly Bonus Table */}
-      <div className="bg-card rounded-2xl border border-border p-6 shadow-sm space-y-4">
+      {/* Quarterly Breakdown Card */}
+      <div className="bg-card rounded-2xl border border-border p-6 shadow-sm space-y-5">
         <div>
-          <h3 className="font-bold text-lg mb-2">{QUARTER_DATES[quarter].label} Quarterly Payout — 50% Component</h3>
-          <p className="text-xs text-muted-foreground">
-            {quarter === 1 ? 'Paid after the close of Q1 (March 31, 2026)' :
-             quarter === 2 ? 'Paid after the close of Q2 (June 30, 2026)' :
-             quarter === 3 ? 'Paid after the close of Q3 (September 30, 2026)' :
-             'Paid after the close of Q4 (December 31, 2026)'}
+          <h3 className="font-bold text-lg">{QUARTER_DATES[quarter].label} — Quarterly Breakdown</h3>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            {quarter === 1 ? 'Period close: March 31, 2026' :
+             quarter === 2 ? 'Period close: June 30, 2026' :
+             quarter === 3 ? 'Period close: September 30, 2026' :
+             'Period close: December 31, 2026'}
           </p>
         </div>
 
+        {/* KPI Detail Table */}
         <div className="overflow-x-auto">
-           <table className="w-full text-sm">
-             <thead>
-               <tr className="bg-muted/50 text-muted-foreground text-xs uppercase tracking-wide border-b border-border">
-                 <th className="py-3 px-4 text-left font-semibold">Metric</th>
-                 <th className="py-3 px-4 text-center font-semibold">KPI Target</th>
-                 <th className="py-3 px-4 text-center font-semibold">KPI Actual</th>
-                 <th className="py-3 px-4 text-center font-semibold">vs Target</th>
-                 <th className="py-3 px-4 text-center font-semibold">Bonus %</th>
-                 <th className="py-3 px-4 text-center font-semibold">Salary Base</th>
-                 <th className="py-3 px-4 text-right font-semibold">Bonus $</th>
-                 <th className="py-3 px-4 text-center font-semibold">Status</th>
-               </tr>
-             </thead>
-             <tbody>
-               {metrics.map((m) => (
-                 <tr key={m.key} className="border-t border-border hover:bg-muted/30">
-                   <td className="py-3 px-4 font-medium text-xs">{m.label}</td>
-                   <td className="py-3 px-4 text-center text-xs text-muted-foreground">{m.kpiTarget}</td>
-                   <td className="py-3 px-4 text-center text-xs text-muted-foreground font-semibold">{m.kpiActual}</td>
-                   <td className="py-3 px-4 text-center text-xs text-muted-foreground">{m.kpiVariance}</td>
-                   <td className="py-3 px-4 text-center text-xs">{m.percentage}%</td>
-                   <td className="py-3 px-4 text-center text-xs">${quarterlySalary.toLocaleString('en-US', { maximumFractionDigits: 0 })}</td>
-                   <td className="py-3 px-4 text-right text-xs font-semibold">${m.quarterly.toLocaleString('en-US', { maximumFractionDigits: 0 })}</td>
-                   <td className="py-3 px-4 text-center"><StatusBadge status={m.status} /></td>
-                 </tr>
-               ))}
-              <tr className="border-t-2 border-white/20 font-bold" style={{ backgroundColor: '#1e3547' }}>
-                <td colSpan="5" className="py-3 px-4 text-right text-white text-xs">TARGET (Max Potential)</td>
-                <td className="py-3 px-4 text-center text-white/70 text-xs">${quarterlySalary.toLocaleString('en-US', { maximumFractionDigits: 0 })}</td>
-                <td className="py-3 px-4 text-right text-white font-bold">${maxQuarterlyBonus.toLocaleString('en-US', { maximumFractionDigits: 0 })}</td>
-                <td></td>
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-muted/50 text-muted-foreground text-xs uppercase tracking-wide border-b border-border">
+                <th className="py-3 px-4 text-left font-semibold">Metric</th>
+                <th className="py-3 px-4 text-center font-semibold">KPI Target</th>
+                <th className="py-3 px-4 text-center font-semibold">KPI Actual</th>
+                <th className="py-3 px-4 text-center font-semibold">Bonus %</th>
+                <th className="py-3 px-4 text-right font-semibold">Bonus Earned</th>
+                <th className="py-3 px-4 text-center font-semibold">Status</th>
               </tr>
-              <tr className="border-t border-white/20 font-bold text-white" style={{ backgroundColor: '#2d4b5e' }}>
-                <td colSpan="6" className="py-3 px-4 text-right">QUARTERLY ACTUAL (50%)</td>
-                <td className="py-3 px-4 text-right">${quarterlySubtotal.toLocaleString('en-US', { maximumFractionDigits: 0 })}</td>
-                <td></td>
-              </tr>
-              {qDiff && (
-                <tr className="border-t border-white/10 font-bold" style={{ backgroundColor: '#2d4b5e' }}>
-                  <td colSpan="6" className="py-2 px-4 text-right text-white/80 text-xs">vs Target</td>
-                  <td className="py-2 px-4 text-right text-xs font-bold" style={{ color: qDiff.zero ? '#cbd5e1' : qDiff.positive ? '#86efac' : '#fca5a5' }}>
-                    {qDiff.dollarStr} ({qDiff.pctStr})
+            </thead>
+            <tbody>
+              {metrics.map((m) => (
+                <tr key={m.key} className="border-t border-border hover:bg-muted/30">
+                  <td className="py-3 px-4 font-medium text-xs">{m.label}{m.tierNote && <span className="ml-1 text-muted-foreground">({m.tierNote})</span>}</td>
+                  <td className="py-3 px-4 text-center text-xs text-muted-foreground">{m.kpiTarget}</td>
+                  <td className="py-3 px-4 text-center text-xs font-semibold">{m.kpiActual}</td>
+                  <td className="py-3 px-4 text-center text-xs">{m.percentage}%</td>
+                  <td className="py-3 px-4 text-right text-xs font-semibold">
+                    {m.status === 'pass' ? `$${(m.quarterly * 2).toLocaleString('en-US', { maximumFractionDigits: 0 })}` : <span className="text-muted-foreground">—</span>}
                   </td>
-                  <td></td>
+                  <td className="py-3 px-4 text-center"><StatusBadge status={m.status} /></td>
                 </tr>
-              )}
+              ))}
             </tbody>
           </table>
         </div>
+
+        {/* Paid Out Now vs Rolls to Annual split */}
+        <div className="rounded-xl border border-border overflow-hidden">
+          {/* Header row */}
+          <div className="bg-muted/50 px-5 py-3 border-b border-border flex items-center justify-between">
+            <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+              {QUARTER_DATES[quarter].label} — Bonus Earned: <span className="text-foreground font-bold">${(quarterlySubtotal * 2).toLocaleString('en-US', { maximumFractionDigits: 0 })}</span>
+            </span>
+            {scorecardData && (
+              <span className="text-xs font-semibold text-muted-foreground">
+                KPI Score: <span className="text-foreground font-bold">{scorecardData.total?.total ?? '—'}/{scorecardData.total?.maxPossible ?? 100}</span>
+              </span>
+            )}
+          </div>
+
+          {/* Paid Out Now */}
+          <div className="flex items-center justify-between px-5 py-4 bg-green-50 border-b border-green-100">
+            <div className="flex items-center gap-3">
+              <span className="text-xl">✅</span>
+              <div>
+                <p className="font-bold text-green-800 text-sm uppercase tracking-wide">Paid Out Now</p>
+                <p className="text-green-700 text-xs mt-0.5">50% — Quarterly check issued after period close</p>
+              </div>
+            </div>
+            <p className="font-black text-2xl text-green-700">${finalQuarterlyBonus.toLocaleString('en-US', { maximumFractionDigits: 0 })}</p>
+          </div>
+
+          {/* Rolls to Annual */}
+          <div className="flex items-center justify-between px-5 py-4 bg-blue-50">
+            <div className="flex items-center gap-3">
+              <span className="text-xl">🔄</span>
+              <div>
+                <p className="font-bold text-blue-800 text-sm uppercase tracking-wide">Rolls to Annual</p>
+                <p className="text-blue-700 text-xs mt-0.5">50% — Accumulates, paid at year-end (Dec 31, 2026)</p>
+              </div>
+            </div>
+            <p className="font-black text-2xl text-blue-700">${finalQuarterlyBonus.toLocaleString('en-US', { maximumFractionDigits: 0 })}</p>
+          </div>
+        </div>
       </div>
 
-      {/* Annual Bonus Table */}
-      <div className="bg-card rounded-2xl border border-border p-6 shadow-sm space-y-4">
+      {/* Annual Payout Summary */}
+      <div className="bg-card rounded-2xl border-2 border-border p-6 shadow-sm space-y-5">
         <div>
-          <h3 className="font-bold text-lg mb-2">Full Year Annual Payout — 50% Component (Projected)</h3>
-          <p className="text-xs text-muted-foreground">Annual component paid at year-end after the close of Q4 (December 31, 2026)</p>
+          <h3 className="font-bold text-lg">Annual Payout Summary</h3>
+          <p className="text-xs text-muted-foreground mt-0.5">Projected based on {QUARTER_DATES[quarter].label} performance · Year-end payout: Dec 31, 2026</p>
         </div>
 
-        <div className="overflow-x-auto">
-           <table className="w-full text-sm">
-             <thead>
-               <tr className="bg-muted/50 text-muted-foreground text-xs uppercase tracking-wide border-b border-border">
-                 <th className="py-3 px-4 text-left font-semibold">Metric</th>
-                 <th className="py-3 px-4 text-center font-semibold">KPI Target</th>
-                 <th className="py-3 px-4 text-center font-semibold">KPI Actual</th>
-                 <th className="py-3 px-4 text-center font-semibold">vs Target</th>
-                 <th className="py-3 px-4 text-center font-semibold">Bonus %</th>
-                 <th className="py-3 px-4 text-center font-semibold">Salary Base</th>
-                 <th className="py-3 px-4 text-right font-semibold">Bonus $</th>
-                 <th className="py-3 px-4 text-center font-semibold">Status</th>
-               </tr>
-             </thead>
-             <tbody>
-               {metrics.map((m) => (
-                 <tr key={m.key} className="border-t border-border hover:bg-muted/30">
-                   <td className="py-3 px-4 font-medium text-xs">{m.label}</td>
-                   <td className="py-3 px-4 text-center text-xs text-muted-foreground">{m.kpiTarget}</td>
-                   <td className="py-3 px-4 text-center text-xs text-muted-foreground font-semibold">{m.kpiActual}</td>
-                   <td className="py-3 px-4 text-center text-xs text-muted-foreground">{m.kpiVariance}</td>
-                   <td className="py-3 px-4 text-center text-xs">{m.percentage}%</td>
-                   <td className="py-3 px-4 text-center text-xs">${annualSalary.toLocaleString('en-US', { maximumFractionDigits: 0 })}</td>
-                   <td className="py-3 px-4 text-right text-xs font-semibold">${m.annual.toLocaleString('en-US', { maximumFractionDigits: 0 })}</td>
-                   <td className="py-3 px-4 text-center"><StatusBadge status={m.status} /></td>
-                 </tr>
-               ))}
-              <tr className="border-t-2 border-white/20 font-bold" style={{ backgroundColor: '#1e3547' }}>
-                <td colSpan="5" className="py-3 px-4 text-right text-white text-xs">TARGET (Max Potential)</td>
-                <td className="py-3 px-4 text-center text-white/70 text-xs">${annualSalary.toLocaleString('en-US', { maximumFractionDigits: 0 })}</td>
-                <td className="py-3 px-4 text-right text-white font-bold">${maxAnnualBonus.toLocaleString('en-US', { maximumFractionDigits: 0 })}</td>
-                <td></td>
-              </tr>
-              <tr className="border-t border-white/20 font-bold text-white" style={{ backgroundColor: '#2d4b5e' }}>
-                <td colSpan="6" className="py-3 px-4 text-right">ANNUAL ACTUAL (50%)</td>
-                <td className="py-3 px-4 text-right">${annualSubtotal.toLocaleString('en-US', { maximumFractionDigits: 0 })}</td>
-                <td></td>
-              </tr>
-              {fmtDiff(annualSubtotal, maxAnnualBonus) && (() => {
-                const d = fmtDiff(annualSubtotal, maxAnnualBonus);
-                return (
-                  <tr className="border-t border-white/10 font-bold" style={{ backgroundColor: '#2d4b5e' }}>
-                    <td colSpan="6" className="py-2 px-4 text-right text-white/80 text-xs">vs Target</td>
-                    <td className="py-2 px-4 text-right text-xs font-bold" style={{ color: d.zero ? '#cbd5e1' : d.positive ? '#86efac' : '#fca5a5' }}>
-                      {d.dollarStr} ({d.pctStr})
-                    </td>
-                    <td></td>
-                  </tr>
-                );
-              })()}
-            </tbody>
-          </table>
-        </div>
-      </div>
+        <div className="divide-y divide-border rounded-xl border border-border overflow-hidden">
+          <div className="flex items-center justify-between px-5 py-3 bg-muted/30">
+            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Total Bonus Earned (this quarter)</span>
+            <span className="font-bold text-sm">${(quarterlySubtotal * 2).toLocaleString('en-US', { maximumFractionDigits: 0 })}</span>
+          </div>
 
-      {/* Summary Bar */}
-      <div className="rounded-lg p-6" style={{ backgroundColor: '#2d4b5e' }}>
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-6 text-white text-sm">
-          <div>
-            <p className="text-white/70 text-xs mb-1">Q{quarter} Actual Payout</p>
-            <p className="font-bold text-2xl">${finalQuarterlyBonus.toLocaleString('en-US', { maximumFractionDigits: 0 })}</p>
+          <div className="flex items-center justify-between px-5 py-4 bg-green-50">
+            <div className="flex items-center gap-3">
+              <span className="text-lg">✅</span>
+              <div>
+                <p className="font-bold text-green-800 text-sm">Already Paid Out (Quarterly 50%)</p>
+                <p className="text-green-700 text-xs">Check issued after {QUARTER_DATES[quarter].label} close</p>
+              </div>
+            </div>
+            <p className="font-black text-xl text-green-700">${finalQuarterlyBonus.toLocaleString('en-US', { maximumFractionDigits: 0 })}</p>
           </div>
-          <div>
-            <p className="text-white/70 text-xs mb-1">Q{quarter} Target Payout (Max)</p>
-            <p className="font-bold text-2xl">${maxQuarterlyBonus.toLocaleString('en-US', { maximumFractionDigits: 0 })}</p>
+
+          <div className="flex items-center justify-between px-5 py-4 bg-blue-50">
+            <div className="flex items-center gap-3">
+              <span className="text-lg">🔄</span>
+              <div>
+                <p className="font-bold text-blue-800 text-sm">Rolling to Year-End (Annual 50%)</p>
+                <p className="text-blue-700 text-xs">Accumulates across all quarters · Paid Dec 31, 2026</p>
+              </div>
+            </div>
+            <p className="font-black text-xl text-blue-700">${finalQuarterlyBonus.toLocaleString('en-US', { maximumFractionDigits: 0 })}</p>
           </div>
-          <div>
-            <p className="text-white/70 text-xs mb-1">vs Target</p>
-            {qDiff ? (
-              <p className="font-bold text-2xl" style={{ color: qDiff.zero ? '#cbd5e1' : qDiff.positive ? '#86efac' : '#fca5a5' }}>
-                {qDiff.dollarStr}
-              </p>
-            ) : <p className="font-bold text-2xl">—</p>}
-            {qDiff && <p className="text-xs mt-0.5" style={{ color: qDiff.zero ? '#cbd5e1' : qDiff.positive ? '#86efac' : '#fca5a5' }}>{qDiff.pctStr} of target</p>}
-          </div>
-          <div>
-            <p className="text-white/70 text-xs mb-1">Total Projected Bonus</p>
-            <p className="font-bold text-2xl">${totalProjected.toLocaleString('en-US', { maximumFractionDigits: 0 })}</p>
-          </div>
-          <div>
-            <p className="text-white/70 text-xs mb-1">Total Target Bonus</p>
-            <p className="font-bold text-2xl">${totalTarget.toLocaleString('en-US', { maximumFractionDigits: 0 })}</p>
-          </div>
-          <div>
-            <p className="text-white/70 text-xs mb-1">Total vs Target</p>
-            {totalDiff ? (
-              <p className="font-bold text-2xl" style={{ color: totalDiff.zero ? '#cbd5e1' : totalDiff.positive ? '#86efac' : '#fca5a5' }}>
-                {totalDiff.dollarStr}
-              </p>
-            ) : <p className="font-bold text-2xl">—</p>}
-            {totalDiff && <p className="text-xs mt-0.5" style={{ color: totalDiff.zero ? '#cbd5e1' : totalDiff.positive ? '#86efac' : '#fca5a5' }}>{totalDiff.pctStr} of target</p>}
+
+          <div className="flex items-center justify-between px-5 py-4" style={{ backgroundColor: '#2d4b5e' }}>
+            <div>
+              <p className="font-bold text-white text-sm uppercase tracking-wide">Est. Annual Total Payout</p>
+              <p className="text-white/60 text-xs">Quarterly (50%) + Annual rollover (50%)</p>
+            </div>
+            <p className="font-black text-2xl text-white">${(finalQuarterlyBonus * 2).toLocaleString('en-US', { maximumFractionDigits: 0 })}</p>
           </div>
         </div>
       </div>
