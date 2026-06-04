@@ -1,64 +1,59 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Plus, Save, ChevronRight, Check, X } from 'lucide-react';
+import { Plus, Save, ChevronRight, X } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
-import { calculateQuarterlyBonus, calculateAnnualBonus, calculateBonusForMetric, getMetricStatus } from '@/lib/bonusCalculation';
-import { calculateScorecard } from '@/lib/scoring';
-import { getClosedQuarters, calculateEstimatedAnnualSalary } from '@/lib/salaryCalculation';
-import StaffTable from '@/components/payouts/StaffTable';
-import BonusSummaryTable from '@/components/payouts/BonusSummaryTable';
-import PayoutBreakdownCard from '@/components/payouts/PayoutBreakdownCard';
-import BonusPayoutDrillDown from '@/components/payouts/BonusPayoutDrillDown';
 import { useTimePeriod } from '@/lib/TimePeriodContext';
+import StaffPayoutTable from '@/components/payouts/StaffPayoutTable';
+import { calcEstimatedAnnualSalary } from '@/lib/payoutsCalculation';
 
 const Switch = ({ checked, onChange }) => (
   <button
     onClick={() => onChange(!checked)}
-    className={`w-10 h-6 rounded-full transition-colors ${
-      checked ? 'bg-pass' : 'bg-muted'
-    } flex items-center px-1`}
+    className={`w-10 h-6 rounded-full transition-colors ${checked ? 'bg-pass' : 'bg-muted'} flex items-center px-1`}
   >
-    <div className={`w-4 h-4 rounded-full bg-white transition-transform ${
-      checked ? 'translate-x-4' : 'translate-x-0'
-    }`} />
+    <div className={`w-4 h-4 rounded-full bg-white transition-transform ${checked ? 'translate-x-4' : 'translate-x-0'}`} />
   </button>
 );
+
+const QUARTER_LABELS = [
+  { q: 1, label: 'Q1 (Jan–Mar)' },
+  { q: 2, label: 'Q2 (Apr–Jun)' },
+  { q: 3, label: 'Q3 (Jul–Sep)' },
+  { q: 4, label: 'Q4 (Oct–Dec)' },
+];
+
+const EMPTY_FORM = (propertyId, year) => ({
+  name: '',
+  property_id: propertyId || '',
+  job_classification_id: '',
+  bonus_target_pct: '',
+  salary_q1: '',
+  salary_q2: '',
+  salary_q3: '',
+  salary_q4: '',
+  year: year,
+  is_active: true,
+});
 
 export default function Payouts() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { selectedYear, selectedMonth, periodType, getPeriodLabel } = useTimePeriod();
-  const closedQuarters = getClosedQuarters();
+  const { selectedYear } = useTimePeriod();
 
   const [selectedPropertyId, setSelectedPropertyId] = useState('');
-  const [selectedStaffId, setSelectedStaffId] = useState('');
   const [showAddForm, setShowAddForm] = useState(false);
-  const [drillDownStaffId, setDrillDownStaffId] = useState(null);
-  const [drillDownQuarter, setDrillDownQuarter] = useState(null);
-  const [newStaff, setNewStaff] = useState({ 
-    name: '', 
-    property_id: '', 
-    job_classification_id: '', 
-    salary_q1: '',
-    salary_q2: '',
-    salary_q3: '',
-    salary_q4: '',
-    year: selectedYear,
-    is_active: true
-  });
+  const [newStaff, setNewStaff] = useState(EMPTY_FORM('', selectedYear));
 
-  // Fetch data — active properties only, deduplicated by name (keep active record)
+  // Active properties — deduplicated by name
   const { data: rawProperties = [] } = useQuery({
     queryKey: ['properties'],
     queryFn: () => base44.entities.Property.filter({ is_active: true }, 'name', 100),
   });
 
-  // Deduplicate by hotel name: if same name appears twice, only keep the active one (already filtered above)
-  // Then deduplicate by name in case of multiple active records with the same name
   const properties = useMemo(() => {
     const seen = new Map();
     for (const p of rawProperties) {
@@ -81,11 +76,6 @@ export default function Payouts() {
     enabled: !!selectedPropertyId,
   });
 
-  const { data: allStaff = [] } = useQuery({
-    queryKey: ['all-staff'],
-    queryFn: () => base44.entities.Staff.list('name', 500),
-  });
-
   const { data: entries = [] } = useQuery({
     queryKey: ['score-entries', selectedPropertyId, selectedYear],
     queryFn: () =>
@@ -95,162 +85,59 @@ export default function Payouts() {
     enabled: !!selectedPropertyId,
   });
 
-  const { data: bonusPayouts = [] } = useQuery({
-    queryKey: ['bonus-payouts', selectedPropertyId, selectedYear],
-    queryFn: () =>
-      selectedPropertyId
-        ? base44.entities.BonusPayout.filter({ year: selectedYear })
-        : Promise.resolve([]),
-    enabled: !!selectedPropertyId,
-  });
-
-  // Mutations
   const addStaffMutation = useMutation({
-    mutationFn: (data) => {
-      const createData = {
-        name: data.name,
-        property_id: data.property_id,
-        job_classification_id: data.job_classification_id,
-        year: data.year,
-        is_active: data.is_active,
-      };
-      
-      // Only save salaries for closed quarters
-      for (const q of closedQuarters) {
-        createData[`salary_q${q}`] = parseFloat(data[`salary_q${q}`]) || 0;
-      }
-      
-      return base44.entities.Staff.create(createData);
-    },
+    mutationFn: (data) => base44.entities.Staff.create({
+      name: data.name,
+      property_id: data.property_id,
+      job_classification_id: data.job_classification_id,
+      bonus_target_pct: parseFloat(data.bonus_target_pct) || 0,
+      salary_q1: parseFloat(data.salary_q1) || 0,
+      salary_q2: parseFloat(data.salary_q2) || 0,
+      salary_q3: parseFloat(data.salary_q3) || 0,
+      salary_q4: parseFloat(data.salary_q4) || 0,
+      year: data.year,
+      is_active: data.is_active,
+    }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['staff', selectedPropertyId, selectedYear] });
-      queryClient.invalidateQueries({ queryKey: ['all-staff'] });
-      setNewStaff({ 
-        name: '', 
-        property_id: selectedPropertyId, 
-        job_classification_id: '', 
-        salary_q1: '',
-        salary_q2: '',
-        salary_q3: '',
-        salary_q4: '',
-        year: selectedYear,
-        is_active: true
-      });
       setShowAddForm(false);
+      setNewStaff(EMPTY_FORM(selectedPropertyId, selectedYear));
       toast({ title: 'Staff added', description: 'New staff member added successfully.' });
     },
   });
 
-  const selectedProperty = properties.find(p => p.id === selectedPropertyId);
-  const selectedStaff = allStaff.find(s => s.id === selectedStaffId);
-
-  // Compute vs-target variance for each staff member in the current property
-  const staffVarianceMap = useMemo(() => {
-    if (!entries.length || !staffMembers.length) return {};
-    const map = {};
-    for (const s of staffMembers) {
-      const jobClass = jobClassifications.find(jc => jc.id === s.job_classification_id);
-      if (!jobClass) continue;
-      const prop = properties.find(p => p.id === s.property_id);
-      if (!prop) continue;
-      const latestEntry = entries[entries.length - 1];
-      if (!latestEntry) continue;
-      const scorecard = calculateScorecard(latestEntry, prop);
-      const annualSalary = calculateEstimatedAnnualSalary(s, closedQuarters);
-      const bonus = calculateBonusForMetric({ ...s, annual_salary: annualSalary }, scorecard, jobClass, latestEntry);
-      const maxBonus = (annualSalary * jobClass.max_bonus_percentage) / 100;
-      const actual = Math.min(bonus.total, maxBonus);
-      const diff = actual - maxBonus;
-      map[s.id] = { actual, target: maxBonus, diff };
-    }
-    return map;
-  }, [staffMembers, entries, jobClassifications, properties, closedQuarters]);
-
-  // Calculate bonus for selected staff
-  const selectedStaffBonus = selectedStaff && selectedProperty ? (() => {
-    const jobClass = jobClassifications.find(jc => jc.id === selectedStaff.job_classification_id);
-    if (!jobClass) return null;
-
-    const staffEntries = entries.filter(e => e.property_id === selectedPropertyId);
-    if (staffEntries.length === 0) return null;
-
-    const entry = staffEntries[staffEntries.length - 1];
-    const scorecard = calculateScorecard(entry, selectedProperty);
-    const estimatedAnnualSalary = calculateEstimatedAnnualSalary(selectedStaff, closedQuarters);
-
-    const quarterlyBonus = calculateQuarterlyBonus(
-      { ...selectedStaff, annual_salary: estimatedAnnualSalary },
-      scorecard,
-      jobClass,
-      entry
-    );
-
-    return {
-      ...selectedStaff,
-      jobClass,
-      quarterlyBonus,
-      scorecard,
-      entry,
-      estimatedAnnualSalary,
-    };
-  })() : null;
-
   const handleAddStaff = () => {
-    if (!newStaff.name || !newStaff.job_classification_id) {
-      toast({ title: 'Error', description: 'Name and Job Classification are required.' });
+    if (!newStaff.name.trim()) {
+      toast({ title: 'Error', description: 'Name is required.', variant: 'destructive' });
+      return;
+    }
+    if (!newStaff.job_classification_id) {
+      toast({ title: 'Error', description: 'Job Classification is required.', variant: 'destructive' });
+      return;
+    }
+    if (!newStaff.property_id) {
+      toast({ title: 'Error', description: 'Hotel is required.', variant: 'destructive' });
       return;
     }
     addStaffMutation.mutate(newStaff);
   };
 
-  // Derive salary column header and period badge from global time period
-  const salaryColHeader = (() => {
-    if (periodType === 'ytd') return 'YTD Salary';
-    if (periodType === 'quarter') {
-      const q = selectedMonth <= 3 ? 1 : selectedMonth <= 6 ? 2 : selectedMonth <= 9 ? 3 : 4;
-      return `Q${q} Salary`;
-    }
-    if (periodType === 'month') {
-      const q = selectedMonth <= 3 ? 1 : selectedMonth <= 6 ? 2 : selectedMonth <= 9 ? 3 : 4;
-      return `Q${q} Salary`;
-    }
-    return 'Annual Salary';
-  })();
-  const periodBadgeLabel = `Showing: ${getPeriodLabel()}`;
+  const selectedProperty = properties.find(p => p.id === selectedPropertyId);
 
   // Auto-select first property
-  React.useEffect(() => {
+  useEffect(() => {
     if (properties.length && !selectedPropertyId) {
       setSelectedPropertyId(properties[0].id);
     }
   }, [properties]);
 
-  // Reset staff selection when property changes
-  React.useEffect(() => {
-    setSelectedStaffId('');
-  }, [selectedPropertyId]);
+  const { value: previewAnnual, isEstimate: previewIsEst } = calcEstimatedAnnualSalary(newStaff);
 
-  // Get drill-down staff and property for detail view
-  const drillDownStaff = drillDownStaffId ? allStaff.find(s => s.id === drillDownStaffId) : null;
-  const drillDownProperty = drillDownStaff ? properties.find(p => p.id === drillDownStaff.property_id) : null;
-  const drillDownJobClass = drillDownStaff ? jobClassifications.find(jc => jc.id === drillDownStaff.job_classification_id) : null;
-
-  if (drillDownStaffId && drillDownQuarter && drillDownStaff && drillDownProperty && drillDownJobClass) {
-    return (
-      <div className="p-4 lg:p-8 max-w-7xl mx-auto">
-        <BonusPayoutDrillDown
-          staff={drillDownStaff}
-          property={drillDownProperty}
-          jobClass={drillDownJobClass}
-          quarter={drillDownQuarter}
-          onClose={() => {
-            setDrillDownStaffId(null);
-            setDrillDownQuarter(null);
-          }}
-        />
-      </div>
-    );
-  }
+  const sortedJC = useMemo(() => [...jobClassifications].sort((a, b) => {
+    if (a.title === 'General Manager') return -1;
+    if (b.title === 'General Manager') return 1;
+    return a.title.localeCompare(b.title);
+  }), [jobClassifications]);
 
   return (
     <div className="p-4 lg:p-8 space-y-6 max-w-7xl mx-auto">
@@ -263,29 +150,25 @@ export default function Payouts() {
               <ChevronRight className="w-3 h-3" />
               <span>Payouts</span>
             </div>
-            <h1 className="text-2xl font-bold">Operations Bonuses</h1>
-            {selectedProperty && (
-              <p className="text-white/70 text-sm mt-1">{selectedProperty.city}, {selectedProperty.state}</p>
-            )}
+            <h1 className="text-2xl font-bold">Bonus Payouts</h1>
+            <p className="text-white/60 text-xs mt-0.5">Quarterly KPI-based bonus calculations per staff member</p>
           </div>
 
-          <div className="flex flex-col sm:flex-row gap-3">
-            <Select value={selectedPropertyId} onValueChange={setSelectedPropertyId}>
-              <SelectTrigger className="w-full sm:w-72 bg-white/10 border-white/20 text-white">
-                <SelectValue placeholder="Select property..." />
-              </SelectTrigger>
-              <SelectContent>
-                {properties.map(p => (
-                  <SelectItem key={p.id} value={p.id}>
-                    <div>
-                      <div className="font-medium text-sm">{p.name}</div>
-                      <div className="text-xs text-muted-foreground">{p.city}, {p.state}</div>
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          <Select value={selectedPropertyId} onValueChange={setSelectedPropertyId}>
+            <SelectTrigger className="w-full sm:w-72 bg-white/10 border-white/20 text-white">
+              <SelectValue placeholder="Select property..." />
+            </SelectTrigger>
+            <SelectContent>
+              {properties.map(p => (
+                <SelectItem key={p.id} value={p.id}>
+                  <div>
+                    <div className="font-medium text-sm">{p.name}</div>
+                    <div className="text-xs text-muted-foreground">{p.city}, {p.state}</div>
+                  </div>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
@@ -295,198 +178,159 @@ export default function Payouts() {
         </div>
       ) : (
         <>
-          {/* Add Staff Button */}
-          <Button onClick={() => {
-            setNewStaff({ 
-              name: '', 
-              property_id: selectedPropertyId, 
-              job_classification_id: '', 
-              salary_q1: '',
-              salary_q2: '',
-              salary_q3: '',
-              salary_q4: '',
-              year: selectedYear,
-              is_active: true
-            });
-            setShowAddForm(true);
-          }} className="gap-2" style={{ backgroundColor: '#2d4b5e' }}>
-            <Plus className="w-4 h-4" />
-            Add Staff Member
-          </Button>
+          {/* Toolbar */}
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="font-semibold text-foreground">{selectedProperty.name}</p>
+              <p className="text-xs text-muted-foreground">{staffMembers.length} staff member{staffMembers.length !== 1 ? 's' : ''} · {selectedYear}</p>
+            </div>
+            <Button
+              onClick={() => {
+                setNewStaff(EMPTY_FORM(selectedPropertyId, selectedYear));
+                setShowAddForm(true);
+              }}
+              className="gap-2"
+              style={{ backgroundColor: '#2d4b5e' }}
+            >
+              <Plus className="w-4 h-4" />
+              Add Staff Member
+            </Button>
+          </div>
 
-          {/* Period badge */}
-          <p className="text-xs text-muted-foreground">{periodBadgeLabel}</p>
-
-          {/* Staff Table */}
-          <StaffTable
+          {/* Staff Payout Table */}
+          <StaffPayoutTable
             staff={staffMembers}
+            property={selectedProperty}
+            entries={entries}
+            year={selectedYear}
             jobClassifications={jobClassifications}
-            staffVarianceMap={staffVarianceMap}
-            salaryColHeader={salaryColHeader}
-            onQuarterClick={(staffId, quarter) => {
-              setDrillDownStaffId(staffId);
-              setDrillDownQuarter(quarter);
-            }}
           />
+        </>
+      )}
 
-          {/* Bonus Summary Table */}
-          <BonusSummaryTable jobClassifications={jobClassifications} />
+      {/* Add Staff Modal */}
+      {showAddForm && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-card rounded-2xl border border-border p-6 shadow-lg max-w-lg w-full max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-5">
+              <h3 className="font-bold text-lg">Add Staff Member</h3>
+              <button onClick={() => setShowAddForm(false)} className="text-muted-foreground hover:text-foreground">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
 
-          {/* Add Staff Form Modal */}
-          {showAddForm && (
-            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-              <div className="bg-card rounded-2xl border border-border p-8 shadow-lg max-w-2xl w-full">
-                <h3 className="font-bold mb-6 text-lg">Add New Staff Member</h3>
-                <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-xs text-muted-foreground font-semibold mb-2 block">Name *</label>
-                      <Input
-                        placeholder="Staff name"
-                        value={newStaff.name}
-                        onChange={e => setNewStaff({ ...newStaff, name: e.target.value })}
-                      />
-                    </div>
-                    <div>
-                      <label className="text-xs text-muted-foreground font-semibold mb-2 block">Job Classification *</label>
-                      <Select value={newStaff.job_classification_id} onValueChange={id => setNewStaff({ ...newStaff, job_classification_id: id })}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select classification..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                           {jobClassifications.filter(jc => !jc.title.toLowerCase().includes('supervisor')).sort((a, b) => {
-                             if (a.title === 'General Manager') return -1;
-                             if (b.title === 'General Manager') return 1;
-                             return a.title.localeCompare(b.title);
-                           }).map(jc => (
-                             <SelectItem key={jc.id} value={jc.id}>{jc.title}</SelectItem>
-                           ))}
-                         </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
+            <div className="space-y-4">
+              {/* Name */}
+              <div>
+                <label className="text-xs text-muted-foreground font-semibold mb-1.5 block">Full Name *</label>
+                <Input
+                  placeholder="Staff member name"
+                  value={newStaff.name}
+                  onChange={e => setNewStaff({ ...newStaff, name: e.target.value })}
+                />
+              </div>
 
-                  <div>
-                    <label className="text-xs text-muted-foreground font-semibold mb-2 block">Property</label>
-                    <Select value={newStaff.property_id} onValueChange={pid => setNewStaff({ ...newStaff, property_id: pid })}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select property..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {properties.map(p => (
-                          <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+              {/* Job Classification */}
+              <div>
+                <label className="text-xs text-muted-foreground font-semibold mb-1.5 block">Job Classification *</label>
+                <Select value={newStaff.job_classification_id} onValueChange={id => setNewStaff({ ...newStaff, job_classification_id: id })}>
+                  <SelectTrigger><SelectValue placeholder="Select classification..." /></SelectTrigger>
+                  <SelectContent>
+                    {sortedJC.map(jc => <SelectItem key={jc.id} value={jc.id}>{jc.title}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
 
-                  <div>
-                    <div className="space-y-3">
-                      {closedQuarters.includes(1) && (
-                        <div>
-                          <label className="text-xs text-muted-foreground font-semibold mb-2 block">Q1 Salary (Jan–Mar 2026)</label>
-                          <Input
-                            placeholder="$0"
-                            type="number"
-                            value={newStaff.salary_q1 || ''}
-                            onChange={e => setNewStaff({ ...newStaff, salary_q1: e.target.value })}
-                          />
-                        </div>
-                      )}
+              {/* Hotel */}
+              <div>
+                <label className="text-xs text-muted-foreground font-semibold mb-1.5 block">Hotel *</label>
+                <Select value={newStaff.property_id} onValueChange={pid => setNewStaff({ ...newStaff, property_id: pid })}>
+                  <SelectTrigger><SelectValue placeholder="Select hotel..." /></SelectTrigger>
+                  <SelectContent>
+                    {properties.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
 
-                      {closedQuarters.includes(2) && (
-                        <div>
-                          <label className="text-xs text-muted-foreground font-semibold mb-2 block">Q2 Salary (Apr–Jun 2026)</label>
-                          <Input
-                            placeholder="$0"
-                            type="number"
-                            value={newStaff.salary_q2 || ''}
-                            onChange={e => setNewStaff({ ...newStaff, salary_q2: e.target.value })}
-                          />
-                        </div>
-                      )}
-
-                      {closedQuarters.includes(3) && (
-                        <div>
-                          <label className="text-xs text-muted-foreground font-semibold mb-2 block">Q3 Salary (Jul–Sep 2026)</label>
-                          <Input
-                            placeholder="$0"
-                            type="number"
-                            value={newStaff.salary_q3 || ''}
-                            onChange={e => setNewStaff({ ...newStaff, salary_q3: e.target.value })}
-                          />
-                        </div>
-                      )}
-
-                      {closedQuarters.includes(4) && (
-                        <div>
-                          <label className="text-xs text-muted-foreground font-semibold mb-2 block">Q4 Salary (Oct–Dec 2026)</label>
-                          <Input
-                            placeholder="$0"
-                            type="number"
-                            value={newStaff.salary_q4 || ''}
-                            onChange={e => setNewStaff({ ...newStaff, salary_q4: e.target.value })}
-                          />
-                        </div>
-                      )}
-
-                      <div>
-                        <label className="text-xs text-muted-foreground font-semibold mb-2 block">Estimated Annual Salary</label>
-                        <div className="p-3 bg-muted/30 rounded">
-                          <p className="text-sm font-semibold text-foreground">
-                            ${calculateEstimatedAnnualSalary(newStaff, closedQuarters).toLocaleString('en-US', { maximumFractionDigits: 0 })}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-xs text-muted-foreground font-semibold mb-2 block">Year</label>
-                      <Input
-                        type="number"
-                        value={newStaff.year}
-                        onChange={e => setNewStaff({ ...newStaff, year: parseInt(e.target.value) })}
-                      />
-                    </div>
-                    <div>
-                      <label className="text-xs text-muted-foreground font-semibold mb-2 block">Active</label>
-                      <div className="flex items-center gap-2">
-                        <Switch checked={newStaff.is_active} onChange={val => setNewStaff({ ...newStaff, is_active: val })} />
-                        <span className="text-sm text-muted-foreground">{newStaff.is_active ? 'Yes' : 'No'}</span>
-                      </div>
-                    </div>
-                  </div>
+              {/* Bonus Target % */}
+              <div>
+                <label className="text-xs text-muted-foreground font-semibold mb-1.5 block">Bonus Target % (of quarterly salary)</label>
+                <div className="relative">
+                  <Input
+                    type="number"
+                    placeholder="e.g. 20"
+                    min="0"
+                    max="100"
+                    value={newStaff.bonus_target_pct}
+                    onChange={e => setNewStaff({ ...newStaff, bonus_target_pct: e.target.value })}
+                    className="pr-8"
+                  />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">%</span>
                 </div>
+              </div>
 
-                <div className="flex gap-2 mt-6">
-                  <Button onClick={handleAddStaff} disabled={addStaffMutation.isPending} style={{ backgroundColor: '#2d4b5e' }}>
-                    <Save className="w-4 h-4 mr-2" />
-                    Create Staff Member
-                  </Button>
-                  <Button onClick={() => setShowAddForm(false)} variant="outline">
-                    Cancel
-                  </Button>
+              {/* Quarterly Salaries */}
+              <div>
+                <label className="text-xs text-muted-foreground font-semibold mb-1.5 block">Quarterly Salaries</label>
+                <div className="grid grid-cols-2 gap-3">
+                  {QUARTER_LABELS.map(({ q, label }) => (
+                    <div key={q}>
+                      <label className="text-[11px] text-muted-foreground mb-1 block">{label}</label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">$</span>
+                        <Input
+                          type="number"
+                          placeholder="0"
+                          value={newStaff[`salary_q${q}`]}
+                          onChange={e => setNewStaff({ ...newStaff, [`salary_q${q}`]: e.target.value })}
+                          className="pl-6"
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Annual preview */}
+              {previewAnnual > 0 && (
+                <div className="p-3 bg-muted/30 rounded-lg flex items-center justify-between">
+                  <span className="text-xs text-muted-foreground font-semibold">Est. Annual Salary</span>
+                  <span className="text-sm font-bold text-foreground">
+                    ${previewAnnual.toLocaleString('en-US', { maximumFractionDigits: 0 })}
+                    {previewIsEst && <span className="ml-1.5 text-xs font-normal text-muted-foreground">Est.</span>}
+                  </span>
+                </div>
+              )}
+
+              {/* Year */}
+              <div>
+                <label className="text-xs text-muted-foreground font-semibold mb-1.5 block">Year</label>
+                <Input
+                  type="number"
+                  value={newStaff.year}
+                  onChange={e => setNewStaff({ ...newStaff, year: parseInt(e.target.value) })}
+                />
+              </div>
+
+              {/* Status */}
+              <div className="flex items-center justify-between">
+                <label className="text-xs text-muted-foreground font-semibold">Status</label>
+                <div className="flex items-center gap-2">
+                  <Switch checked={newStaff.is_active} onChange={val => setNewStaff({ ...newStaff, is_active: val })} />
+                  <span className="text-sm text-muted-foreground">{newStaff.is_active ? 'Active' : 'Inactive'}</span>
                 </div>
               </div>
             </div>
-          )}
 
-          {/* Payout Breakdown Card */}
-          {selectedStaffBonus && (
-            <PayoutBreakdownCard
-              staff={selectedStaffBonus}
-              jobClass={selectedStaffBonus.jobClass}
-              bonus={selectedStaffBonus.quarterlyBonus}
-              salary={selectedStaffBonus.projectedAnnualSalary}
-              scorecard={selectedStaffBonus.scorecard}
-              entry={selectedStaffBonus.entry}
-            />
-          )}
-
-
-        </>
+            <div className="flex gap-2 mt-6">
+              <Button onClick={handleAddStaff} disabled={addStaffMutation.isPending} style={{ backgroundColor: '#2d4b5e' }}>
+                <Save className="w-4 h-4 mr-2" />
+                Add Staff Member
+              </Button>
+              <Button onClick={() => setShowAddForm(false)} variant="outline">Cancel</Button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

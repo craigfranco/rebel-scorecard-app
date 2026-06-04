@@ -18,6 +18,10 @@
       "type": "string",
       "description": "Reference to JobClassification"
     },
+    "bonus_target_pct": {
+      "type": "number",
+      "description": "Quarterly bonus target as % of quarterly salary (e.g. 20 = 20%)"
+    },
     "salary_q1": {
       "type": "number",
       "description": "Q1 salary"
