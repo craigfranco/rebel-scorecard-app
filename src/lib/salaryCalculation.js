@@ -36,7 +36,7 @@ export function getClosedQuarters(currentDate = new Date()) {
 }
 
 /**
- * Calculates estimated annual salary based on closed quarters.
+ * Calculates estimated annual salary based on closed quarters (extrapolates if < 4 quarters).
  * If only Q1 is closed: Q1 × 4
  * If Q1+Q2 are closed: (Q1 + Q2) / 2 × 4
  * If Q1+Q2+Q3 are closed: (Q1 + Q2 + Q3) / 3 × 4
@@ -60,4 +60,23 @@ export function calculateEstimatedAnnualSalary(staff, closedQuarters = null) {
   } else {
     return (sum / closed.length) * 4; // Extrapolate to full year
   }
+}
+
+/**
+ * Returns the sum of only the quarters that have actual salary data entered.
+ * No extrapolation — only counts quarters where salary > 0.
+ * Also returns which quarters contributed and the count.
+ */
+export function calculateActualYtdSalary(staff) {
+  if (!staff) return { total: 0, quarters: [], count: 0 };
+  const quarters = [];
+  let total = 0;
+  for (let q = 1; q <= 4; q++) {
+    const salary = parseFloat(staff[`salary_q${q}`]) || 0;
+    if (salary > 0) {
+      quarters.push(q);
+      total += salary;
+    }
+  }
+  return { total, quarters, count: quarters.length };
 }

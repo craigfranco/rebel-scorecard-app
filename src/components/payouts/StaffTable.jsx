@@ -4,7 +4,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Edit2, Trash2 } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
-import { getClosedQuarters, calculateEstimatedAnnualSalary } from '@/lib/salaryCalculation';
+import { getClosedQuarters, calculateActualYtdSalary } from '@/lib/salaryCalculation';
 import StaffEditModal from './StaffEditModal';
 
 const JOB_CLASS_ORDER = {
@@ -24,6 +24,15 @@ export default function StaffTable({ staff = [], jobClassifications = [], salary
   const queryClient = useQueryClient();
   const [editingStaffId, setEditingStaffId] = useState(null);
   const closedQuarters = getClosedQuarters();
+
+  // Dynamic header: "Annual Total" if all 4 quarters have salary data (for any staff), else "YTD Salary"
+  const ytdColHeader = (() => {
+    const maxQtrsWithData = staff.reduce((max, s) => {
+      const { count } = calculateActualYtdSalary(s);
+      return Math.max(max, count);
+    }, 0);
+    return maxQtrsWithData === 4 ? 'Annual Total' : 'YTD Salary';
+  })();
 
   const deleteMutation = useMutation({
     mutationFn: (id) => base44.entities.Staff.delete(id),
@@ -59,9 +68,10 @@ export default function StaffTable({ staff = [], jobClassifications = [], salary
     return s.salary_q1 ? `$${s.salary_q1.toLocaleString()}` : '—';
   };
 
-  const formatEstimatedAnnual = (s) => {
-    const estimated = calculateEstimatedAnnualSalary(s, closedQuarters);
-    return estimated > 0 ? `$${estimated.toLocaleString('en-US', { maximumFractionDigits: 0 })}` : '—';
+  const formatYtdSalary = (s) => {
+    const { total, quarters } = calculateActualYtdSalary(s);
+    if (total === 0) return '—';
+    return `$${total.toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
   };
 
   if (staff.length === 0) {
@@ -82,7 +92,7 @@ export default function StaffTable({ staff = [], jobClassifications = [], salary
                 <th className="py-3 px-4 text-left font-semibold">Name</th>
                 <th className="py-3 px-4 text-center font-semibold">Job Classification</th>
                 <th className="py-3 px-4 text-center font-semibold">{salaryColHeader}</th>
-                <th className="py-3 px-4 text-center font-semibold">Est. Annual</th>
+                <th className="py-3 px-4 text-center font-semibold">{ytdColHeader}</th>
                 <th className="py-3 px-4 text-center font-semibold">Status</th>
                 <th className="py-3 px-4 text-center font-semibold"></th>
               </tr>
@@ -120,7 +130,7 @@ export default function StaffTable({ staff = [], jobClassifications = [], salary
                           )}
                         </td>
                         <td className="py-3 px-4 text-center font-semibold">
-                          {formatEstimatedAnnual(s)}
+                          {formatYtdSalary(s)}
                         </td>
                         <td className="py-3 px-4 text-center">
                           <span

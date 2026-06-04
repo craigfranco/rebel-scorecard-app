@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Download, Check, X } from 'lucide-react';
 import { calculateScorecard, getQuarterFromMonth, aggregateQuarterEntries } from '@/lib/scoring';
-import { calculateEstimatedAnnualSalary, getClosedQuarters } from '@/lib/salaryCalculation';
+import { calculateEstimatedAnnualSalary, calculateActualYtdSalary, getClosedQuarters } from '@/lib/salaryCalculation';
 import { calculateQuarterlyBonus, getMetricStatus } from '@/lib/bonusCalculation';
 
 const QUARTER_DATES = {
@@ -252,90 +252,106 @@ export default function BonusPayoutDrillDown({ staff, property, jobClass, quarte
           </table>
         </div>
 
-        {/* Paid Out Now vs Rolls to Annual split */}
-        <div className="rounded-xl border border-border overflow-hidden">
-          {/* Header row */}
-          <div className="bg-muted/50 px-5 py-3 border-b border-border flex items-center justify-between">
-            <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-              {QUARTER_DATES[quarter].label} — Bonus Earned: <span className="text-foreground font-bold">${(quarterlySubtotal * 2).toLocaleString('en-US', { maximumFractionDigits: 0 })}</span>
-            </span>
-            {scorecardData && (
-              <span className="text-xs font-semibold text-muted-foreground">
-                KPI Score: <span className="text-foreground font-bold">{scorecardData.total?.total ?? '—'}/{scorecardData.total?.maxPossible ?? 100}</span>
-              </span>
-            )}
-          </div>
-
-          {/* Paid Out Now */}
-          <div className="flex items-center justify-between px-5 py-4 bg-green-50 border-b border-green-100">
-            <div className="flex items-center gap-3">
-              <span className="text-xl">✅</span>
-              <div>
-                <p className="font-bold text-green-800 text-sm uppercase tracking-wide">Paid Out Now</p>
-                <p className="text-green-700 text-xs mt-0.5">50% — Quarterly check issued after period close</p>
-              </div>
+        {/* Payout Split Box */}
+        <div className="rounded-xl border-2 border-border overflow-hidden">
+          {/* Context row */}
+          <div className="bg-muted/40 px-5 py-3 border-b border-border flex items-center justify-between flex-wrap gap-2">
+            <div className="flex items-center gap-4 text-xs text-muted-foreground">
+              <span>Quarterly Salary: <strong className="text-foreground">${quarterlySalary.toLocaleString('en-US', { maximumFractionDigits: 0 })}</strong></span>
+              <span>Bonus Target: <strong className="text-foreground">${maxQuarterlyBonus.toLocaleString('en-US', { maximumFractionDigits: 0 })}</strong> ({jobClass.max_bonus_percentage}% of salary)</span>
+              {scorecardData && <span>KPI Score: <strong className="text-foreground">{scorecardData.total?.total ?? '—'}/{scorecardData.total?.maxPossible ?? 100}</strong></span>}
             </div>
-            <p className="font-black text-2xl text-green-700">${finalQuarterlyBonus.toLocaleString('en-US', { maximumFractionDigits: 0 })}</p>
           </div>
 
-          {/* Rolls to Annual */}
-          <div className="flex items-center justify-between px-5 py-4 bg-blue-50">
-            <div className="flex items-center gap-3">
-              <span className="text-xl">🔄</span>
-              <div>
-                <p className="font-bold text-blue-800 text-sm uppercase tracking-wide">Rolls to Annual</p>
-                <p className="text-blue-700 text-xs mt-0.5">50% — Accumulates, paid at year-end (Dec 31, 2026)</p>
-              </div>
-            </div>
-            <p className="font-black text-2xl text-blue-700">${finalQuarterlyBonus.toLocaleString('en-US', { maximumFractionDigits: 0 })}</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Annual Payout Summary */}
-      <div className="bg-card rounded-2xl border-2 border-border p-6 shadow-sm space-y-5">
-        <div>
-          <h3 className="font-bold text-lg">Annual Payout Summary</h3>
-          <p className="text-xs text-muted-foreground mt-0.5">Projected based on {QUARTER_DATES[quarter].label} performance · Year-end payout: Dec 31, 2026</p>
-        </div>
-
-        <div className="divide-y divide-border rounded-xl border border-border overflow-hidden">
-          <div className="flex items-center justify-between px-5 py-3 bg-muted/30">
-            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Total Bonus Earned (this quarter)</span>
-            <span className="font-bold text-sm">${(quarterlySubtotal * 2).toLocaleString('en-US', { maximumFractionDigits: 0 })}</span>
-          </div>
-
-          <div className="flex items-center justify-between px-5 py-4 bg-green-50">
-            <div className="flex items-center gap-3">
-              <span className="text-lg">✅</span>
-              <div>
-                <p className="font-bold text-green-800 text-sm">Already Paid Out (Quarterly 50%)</p>
-                <p className="text-green-700 text-xs">Check issued after {QUARTER_DATES[quarter].label} close</p>
-              </div>
-            </div>
-            <p className="font-black text-xl text-green-700">${finalQuarterlyBonus.toLocaleString('en-US', { maximumFractionDigits: 0 })}</p>
-          </div>
-
-          <div className="flex items-center justify-between px-5 py-4 bg-blue-50">
-            <div className="flex items-center gap-3">
-              <span className="text-lg">🔄</span>
-              <div>
-                <p className="font-bold text-blue-800 text-sm">Rolling to Year-End (Annual 50%)</p>
-                <p className="text-blue-700 text-xs">Accumulates across all quarters · Paid Dec 31, 2026</p>
-              </div>
-            </div>
-            <p className="font-black text-xl text-blue-700">${finalQuarterlyBonus.toLocaleString('en-US', { maximumFractionDigits: 0 })}</p>
-          </div>
-
-          <div className="flex items-center justify-between px-5 py-4" style={{ backgroundColor: '#2d4b5e' }}>
+          {/* Full payout — most prominent */}
+          <div className="flex items-center justify-between px-5 py-5 bg-foreground/5 border-b border-border">
             <div>
-              <p className="font-bold text-white text-sm uppercase tracking-wide">Est. Annual Total Payout</p>
-              <p className="text-white/60 text-xs">Quarterly (50%) + Annual rollover (50%)</p>
+              <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-0.5">Full Bonus Earned</p>
+              <p className="text-xs text-muted-foreground">100% of bonus for this quarter</p>
             </div>
-            <p className="font-black text-2xl text-white">${(finalQuarterlyBonus * 2).toLocaleString('en-US', { maximumFractionDigits: 0 })}</p>
+            <p className="font-black text-3xl text-foreground">${(finalQuarterlyBonus * 2).toLocaleString('en-US', { maximumFractionDigits: 0 })}</p>
+          </div>
+
+          {/* 50/50 split — indented below the full amount */}
+          <div className="grid grid-cols-2 divide-x divide-border">
+            <div className="flex flex-col justify-between px-5 py-4 bg-green-50 gap-1">
+              <div className="flex items-center gap-2">
+                <span className="text-base">✅</span>
+                <p className="font-bold text-green-800 text-sm uppercase tracking-wide">Paid This Quarter</p>
+              </div>
+              <p className="text-green-700 text-xs">50% — quarterly payment now</p>
+              <p className="font-black text-2xl text-green-700 mt-1">${finalQuarterlyBonus.toLocaleString('en-US', { maximumFractionDigits: 0 })}</p>
+            </div>
+            <div className="flex flex-col justify-between px-5 py-4 bg-blue-50 gap-1">
+              <div className="flex items-center gap-2">
+                <span className="text-base">🔄</span>
+                <p className="font-bold text-blue-800 text-sm uppercase tracking-wide">Held to Year-End</p>
+              </div>
+              <p className="text-blue-700 text-xs">50% — paid Dec 31, 2026</p>
+              <p className="font-black text-2xl text-blue-700 mt-1">${finalQuarterlyBonus.toLocaleString('en-US', { maximumFractionDigits: 0 })}</p>
+            </div>
           </div>
         </div>
       </div>
+
+      {/* Annual Running Total */}
+      {(() => {
+        // Only sum quarters that actually have salary AND scorecard data entered
+        const completedQBonus = finalQuarterlyBonus; // this quarter's earned bonus (full, pre-split)
+        const fullBonusEarned = finalQuarterlyBonus * 2; // full (100%) for this quarter
+        const paidOutQuarterly = finalQuarterlyBonus;    // 50% already out
+        const heldForYearEnd = finalQuarterlyBonus;      // 50% held
+
+        return (
+          <div className="bg-card rounded-2xl border-2 border-border shadow-sm overflow-hidden">
+            {/* Header */}
+            <div className="px-6 py-4 border-b border-border" style={{ backgroundColor: '#1e3547' }}>
+              <h3 className="font-bold text-white text-base uppercase tracking-wide">
+                Annual Running Total — {QUARTER_DATES[quarter].label}
+              </h3>
+              <p className="text-white/60 text-xs mt-0.5">Based only on completed quarters with actual data entered</p>
+            </div>
+
+            {/* Total earned — most prominent */}
+            <div className="flex items-center justify-between px-6 py-5 border-b border-border bg-foreground/5">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-0.5">Total Bonus Earned (Full)</p>
+                <p className="text-xs text-muted-foreground">100% of bonus earned this quarter</p>
+              </div>
+              <p className="font-black text-3xl text-foreground">${fullBonusEarned.toLocaleString('en-US', { maximumFractionDigits: 0 })}</p>
+            </div>
+
+            {/* Split rows */}
+            <div className="grid grid-cols-2 divide-x divide-border border-b border-border">
+              <div className="px-6 py-4 bg-green-50">
+                <div className="flex items-center gap-2 mb-1">
+                  <span>✅</span>
+                  <p className="font-bold text-green-800 text-sm">Paid Out Quarterly</p>
+                </div>
+                <p className="text-green-700 text-xs mb-2">50% — quarterly payments already issued</p>
+                <p className="font-black text-2xl text-green-700">${paidOutQuarterly.toLocaleString('en-US', { maximumFractionDigits: 0 })}</p>
+              </div>
+              <div className="px-6 py-4 bg-blue-50">
+                <div className="flex items-center gap-2 mb-1">
+                  <span>🔄</span>
+                  <p className="font-bold text-blue-800 text-sm">Held for Year-End</p>
+                </div>
+                <p className="text-blue-700 text-xs mb-2">50% — accumulates, paid Dec 31, 2026</p>
+                <p className="font-black text-2xl text-blue-700">${heldForYearEnd.toLocaleString('en-US', { maximumFractionDigits: 0 })}</p>
+              </div>
+            </div>
+
+            {/* Year-end payment due */}
+            <div className="flex items-center justify-between px-6 py-4" style={{ backgroundColor: '#2d4b5e' }}>
+              <div>
+                <p className="font-bold text-white text-sm uppercase tracking-wide">Year-End Payment Due</p>
+                <p className="text-white/60 text-xs">50% rollover · Paid Dec 31, 2026</p>
+              </div>
+              <p className="font-black text-2xl text-white">${heldForYearEnd.toLocaleString('en-US', { maximumFractionDigits: 0 })}</p>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }
