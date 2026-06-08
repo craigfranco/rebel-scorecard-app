@@ -76,13 +76,16 @@ export function calcRGIScore(revparIndexChange) {
   return { score, diff: Math.round(pct * 100) / 100, pass, tier, incomplete: false };
 }
 
-export function calcGSSScore(actual, prior) {
+export function calcGSSScore(actual, prior, parentBrand = 'Independent') {
   if (actual == null || prior == null) return { score: 0, diff: 0, pass: false, incomplete: true };
-  const diff = actual - prior;
-  // Any YOY improvement (TY > PY) = 15 pts full, otherwise 0
+  // Normalize both values to the same 100-pt equivalent scale before comparing
+  const normActual = normalizeGssTo100(actual, parentBrand);
+  const normPrior  = normalizeGssTo100(prior,  parentBrand);
+  const diff = normActual - normPrior;
+  // Any YOY improvement (TY > PY after normalization) = 15 pts full, otherwise 0
   const pass = diff > 0;
   const score = pass ? 15 : 0;
-  return { score, diff: Math.round(diff * 100) / 100, pass, incomplete: false };
+  return { score, diff: Math.round(diff * 100) / 100, normActual, normPrior, pass, incomplete: false };
 }
 
 /**
@@ -117,7 +120,8 @@ export function calculateScorecard(entry, property) {
   const rgi = calcRGIScore(entry.revpar_index_change != null ? entry.revpar_index_change : null);
   const gss = calcGSSScore(
     entry.gss_actual != null ? entry.gss_actual : null,
-    entry.gss_prior != null ? entry.gss_prior : null
+    entry.gss_prior != null ? entry.gss_prior : null,
+    property?.parent_brand || 'Independent'
   );
   const total = calcTotalScore(gop.score, gopMargin.score, rgi.score, gss.score, gss.incomplete);
   return {

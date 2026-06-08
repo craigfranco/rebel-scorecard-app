@@ -138,9 +138,9 @@ export function aggregateEntries(entries, periodType, selectedMonth, selectedYea
     revpar_index: avgField('revpar_index'),
     revpar_index_change: avgField('revpar_index_change'),
     revpar_index_prior: avgField('revpar_index_prior'),
-    // GSS: use most recent month that has both gss_actual and gss_prior
-    gss_actual: (() => { const e = [...sorted].reverse().find(e => e.gss_actual != null); return e?.gss_actual ?? null; })(),
-    gss_prior: (() => { const e = [...sorted].reverse().find(e => e.gss_prior != null); return e?.gss_prior ?? null; })(),
+    // GSS: most recent month where BOTH gss_actual and gss_prior are non-null and non-zero
+    gss_actual: (() => { const e = [...sorted].reverse().find(e => e.gss_actual != null && e.gss_actual !== 0 && e.gss_prior != null && e.gss_prior !== 0); return e?.gss_actual ?? null; })(),
+    gss_prior:  (() => { const e = [...sorted].reverse().find(e => e.gss_actual != null && e.gss_actual !== 0 && e.gss_prior != null && e.gss_prior !== 0); return e?.gss_prior  ?? null; })(),
     
     // ALL: Boolean kickers
     forecast_kicker: allField('forecast_kicker'),
@@ -220,9 +220,9 @@ export function aggregateQuarterEntries(arr) {
     revpar_index: avgField('revpar_index'),
     revpar_index_change: avgField('revpar_index_change'),
     revpar_index_prior: avgField('revpar_index_prior'),
-    // GSS: most recent month with data
-    gss_actual: (() => { const e = [...sorted].reverse().find(e => e.gss_actual != null); return e?.gss_actual ?? null; })(),
-    gss_prior: (() => { const e = [...sorted].reverse().find(e => e.gss_prior != null); return e?.gss_prior ?? null; })(),
+    // GSS: most recent month where BOTH gss_actual and gss_prior are non-null and non-zero
+    gss_actual: (() => { const e = [...sorted].reverse().find(e => e.gss_actual != null && e.gss_actual !== 0 && e.gss_prior != null && e.gss_prior !== 0); return e?.gss_actual ?? null; })(),
+    gss_prior:  (() => { const e = [...sorted].reverse().find(e => e.gss_actual != null && e.gss_actual !== 0 && e.gss_prior != null && e.gss_prior !== 0); return e?.gss_prior  ?? null; })(),
     forecast_kicker: allField('forecast_kicker'),
     red_zone_kicker: allField('red_zone_kicker'),
     forecast_result: forecastResult,
