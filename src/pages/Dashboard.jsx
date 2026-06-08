@@ -5,21 +5,13 @@ import { ChevronRight, Target, TrendingUp, BarChart3, Smile, Zap } from 'lucide-
 import SeedOnMount from '../components/SeedOnMount';
 
 import { useTimePeriod } from '@/lib/TimePeriodContext';
-import { normalizeGssTo100 } from '@/lib/scoring';
-import { getBrandColor } from '@/lib/portfolioHelpers';
+import { calculateScorecard, normalizeGssTo100 } from '@/lib/scoring';
+import { aggregateEntries } from '@/lib/aggregation';
 
 import KpiTracker from '@/components/dashboard/KpiTracker';
 
 export default function Dashboard() {
-  const { selectedMonth, selectedYear, periodType, getPeriodMonths } = useTimePeriod();
-  
-  // Helper to map status labels
-  const getStatusLabel = (status) => {
-    if (status === 'pass') return 'PASS';
-    if (status === 'partial') return 'PARTIAL';
-    if (status === 'na') return 'N/A';
-    return 'FAIL';
-  };
+  const { selectedMonth, selectedYear, periodType } = useTimePeriod();
 
   const { data: properties = [] } = useQuery({
     queryKey: ['properties'],
@@ -31,114 +23,86 @@ export default function Dashboard() {
     queryFn: () => base44.entities.ScoreEntry.filter({ year: selectedYear }),
   });
 
-  // Build tracker data for each KPI
-  const periodMonths = getPeriodMonths();
+  // For each property, get the properly aggregated entry for the current period.
+  // This ensures quarterly/YTD GSS (and all other KPIs) use averaged values, not just the latest month.
+  const getAggregatedEntry = (prop) => {
+    const propEntries = allEntries.filter(e => e.property_id === prop.id);
+    if (!propEntries.length) return null;
+    return aggregateEntries(propEntries, periodType, selectedMonth, selectedYear);
+  };
 
   // BUDGETED GOP TRACKER
   const gopHotels = properties.map(prop => {
-    const propEntries = allEntries.filter(e => e.property_id === prop.id && periodMonths.includes(e.month) && e.year === selectedYear);
-    if (!propEntries.length) return { prop, hasData: false };
-    
-    const latest = propEntries[propEntries.length - 1];
-    const gopActual = latest.budgeted_gop_actual;
-    const gopTarget = latest.budgeted_gop_target;
-    
-    // Exclude if either value is null, or if actual=0 and target>0
+    const entry = getAggregatedEntry(prop);
+    if (!entry) return { prop, hasData: false };
+    const gopActual = entry.budgeted_gop_actual;
+    const gopTarget = entry.budgeted_gop_target;
     if (gopActual == null || gopTarget == null || (gopActual === 0 && gopTarget > 0)) {
       return { prop, hasData: false };
     }
-    
     const pass = gopActual > gopTarget;
     const details = `$${Math.round(gopActual / 1000)}K vs $${Math.round(gopTarget / 1000)}K`;
-    
-    return {
-      prop,
-      hasData: true,
-      status: pass ? 'pass' : 'fail',
-      details,
-    };
+    return { prop, hasData: true, status: pass ? 'pass' : 'fail', details };
   });
 
   // GOP MARGIN IMPROVEMENT TRACKER
+  // Uses gop_margin_improvement (avg of monthly actual−prior) from aggregation, consistent with scoring.js
   const marginHotels = properties.map(prop => {
-    const propEntries = allEntries.filter(e => e.property_id === prop.id && periodMonths.includes(e.month) && e.year === selectedYear);
-    if (!propEntries.length) return { prop, hasData: false };
-    
-    const latest = propEntries[propEntries.length - 1];
-    const ty = latest.gop_margin_actual;
-    const ly = latest.gop_margin_prior;
-    const improvement = (ty != null && ly != null) ? ty - ly : null;
-    const pass = improvement != null && improvement >= 0.1;
-    const details = (ty != null && ly != null) ? `${ty.toFixed(1)}% vs ${ly.toFixed(1)}%` : '';
-    
-    return {
-      prop,
-      hasData: true,
-      status: pass ? 'pass' : 'fail',
-      details,
-    };
+    const entry = getAggregatedEntry(prop);
+    if (!entry) return { prop, hasData: false };
+    const improvement = entry.gop_margin_improvement ?? (
+      entry.gop_margin_actual != null && entry.gop_margin_prior != null
+        ? entry.gop_margin_actual - entry.gop_margin_prior
+        : null
+    );
+    if (improvement == null) return { prop, hasData: false };
+    const pass = improvement >= 0.1;
+    const ty = entry.gop_margin_actual;
+    const ly = entry.gop_margin_prior;
+    const details = ty != null && ly != null ? `${ty.toFixed(1)}% vs ${ly.toFixed(1)}%` : '';
+    return { prop, hasData: true, status: pass ? 'pass' : 'fail', details };
   });
 
   // RGI IMPROVEMENT TRACKER (three tiers)
   const rgiHotels = properties.map(prop => {
-    const propEntries = allEntries.filter(e => e.property_id === prop.id && periodMonths.includes(e.month) && e.year === selectedYear);
-    if (!propEntries.length) return { prop, hasData: false };
-    
-    const latest = propEntries[propEntries.length - 1];
-    const change = latest.revpar_index_change;
-    
+    const entry = getAggregatedEntry(prop);
+    if (!entry) return { prop, hasData: false };
+    const change = entry.revpar_index_change;
     let status = 'fail';
     if (change != null) {
       if (change > 2.0) status = 'pass';
       else if (change >= 0.1) status = 'partial';
     }
     const details = change != null ? `${change >= 0 ? '+' : ''}${change.toFixed(1)}%` : '';
-    
-    return {
-      prop,
-      hasData: true,
-      status,
-      details,
-    };
+    return { prop, hasData: true, status, details };
   });
 
   // GSS IMPROVEMENT TRACKER
+  // Uses aggregated (averaged) gss_actual/gss_prior, then normalizes by brand — consistent everywhere.
   const gssHotels = properties.map(prop => {
-    const propEntries = allEntries.filter(e => e.property_id === prop.id && periodMonths.includes(e.month) && e.year === selectedYear);
-    if (!propEntries.length) return { prop, hasData: false };
-    
-    const latest = propEntries[propEntries.length - 1];
-    const tyNorm = normalizeGssTo100(latest.gss_actual, prop.parent_brand);
-    const lyNorm = normalizeGssTo100(latest.gss_prior, prop.parent_brand);
-    
+    const entry = getAggregatedEntry(prop);
+    if (!entry) return { prop, hasData: false };
+    const tyNorm = normalizeGssTo100(entry.gss_actual, prop.parent_brand);
+    const lyNorm = normalizeGssTo100(entry.gss_prior, prop.parent_brand);
     if (tyNorm == null || lyNorm == null) {
       return { prop, hasData: true, status: 'na', details: '' };
     }
-    
     const pass = tyNorm > lyNorm;
     const details = `${tyNorm.toFixed(1)} vs ${lyNorm.toFixed(1)}`;
-    
+    return { prop, hasData: true, status: pass ? 'pass' : 'fail', details };
+  });
+
+  // FORECAST KICKER TRACKER
+  const forecastHotels = properties.map(prop => {
+    const entry = getAggregatedEntry(prop);
+    if (!entry) return { prop, hasData: false };
     return {
       prop,
       hasData: true,
-      status: pass ? 'pass' : 'fail',
-      details,
+      status: entry.forecast_kicker ? 'pass' : 'fail',
+      details: '',
     };
   });
-
-  // FORECAST KICKER TRACKER (existing logic)
-  const forecastHotels = properties.map(prop => {
-    const propEntries = allEntries.filter(e => e.property_id === prop.id && periodMonths.includes(e.month) && e.year === selectedYear);
-    const latest = propEntries[propEntries.length - 1];
-    const hit = latest && latest.forecast_kicker === true;
-    const hasData = !!latest;
-    return { prop, hit, hasData };
-  }).filter(r => r.hasData).map(({ prop, hit }) => ({
-    prop,
-    hasData: true,
-    status: hit ? 'pass' : 'fail',
-    details: '',
-  }));
 
   return (
     <div className="p-4 lg:p-8 space-y-6 max-w-7xl mx-auto">
