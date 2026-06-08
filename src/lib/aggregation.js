@@ -82,27 +82,18 @@ export function aggregateEntries(entries, periodType, selectedMonth, selectedYea
     return Math.round((sum / values.length) * 100) / 100;
   };
 
-  // RECALCULATE margins as weighted average across months (weighted by revenue)
-  // Fall back to simple average of stored margins if revenue data is unavailable
-  const marginActualValues = sorted.filter(e => e.gop_margin_actual != null);
-  const marginPriorValues = sorted.filter(e => e.gop_margin_prior != null);
+  // GOP MARGIN: compute per-month improvement (actual - prior), then average those improvements.
+  // This is the correct method per spec: avg improvement ≥ 0.1% → PASS.
+  const monthlyMarginImprovements = sorted
+    .filter(e => e.gop_margin_actual != null && e.gop_margin_prior != null)
+    .map(e => e.gop_margin_actual - e.gop_margin_prior);
+  const avgMarginImprovement = monthlyMarginImprovements.length > 0
+    ? Math.round((monthlyMarginImprovements.reduce((s, v) => s + v, 0) / monthlyMarginImprovements.length) * 10000) / 10000
+    : null;
 
-  // Weighted by forecast_actual_revenue for TY, by budgeted_gop_prior-equivalent for PY
-  const calcWeightedMargin = (entries, marginField, weightField) => {
-    const withWeight = entries.filter(e => e[weightField] != null && e[weightField] !== 0 && e[marginField] != null);
-    if (withWeight.length > 0) {
-      const weightSum = withWeight.reduce((s, e) => s + Math.abs(e[weightField]), 0);
-      const weightedSum = withWeight.reduce((s, e) => s + e[marginField] * Math.abs(e[weightField]), 0);
-      return Math.round((weightedSum / weightSum) * 100) / 100;
-    }
-    // fallback: simple average
-    const vals = entries.filter(e => e[marginField] != null).map(e => e[marginField]);
-    if (vals.length === 0) return null;
-    return Math.round((vals.reduce((s, v) => s + v, 0) / vals.length) * 100) / 100;
-  };
-
-  const calculatedActualMargin = calcWeightedMargin(sorted, 'gop_margin_actual', 'forecast_actual_revenue');
-  const calculatedPriorMargin = calcWeightedMargin(sorted, 'gop_margin_prior', 'budgeted_gop_prior');
+  // For display: keep actual/prior as simple averages so variance columns still show reasonable values
+  const calculatedActualMargin = avgField('gop_margin_actual');
+  const calculatedPriorMargin = avgField('gop_margin_prior');
 
   const totalBudgetGOP = sumField('budgeted_gop_target');
   const totalBudgetRevenue = sumField('forecast_primary_forecast');
@@ -137,11 +128,12 @@ export function aggregateEntries(entries, periodType, selectedMonth, selectedYea
     forecast_actual_revenue: sumField('forecast_actual_revenue'),
     forecast_primary_forecast: sumField('forecast_primary_forecast'),
     
-    // RECALCULATED: GOP margins — weighted average across months
+    // GOP margins — averages for display; improvement = avg of monthly (actual - prior)
     gop_margin_actual: calculatedActualMargin,
     gop_margin_prior: calculatedPriorMargin,
     gop_margin_budget: calculatedBudgetMargin,
     gop_margin_variance: calculatedVariance,
+    gop_margin_improvement: avgMarginImprovement,
     // RGI: average of monthly values
     revpar_index: avgField('revpar_index'),
     revpar_index_change: avgField('revpar_index_change'),
@@ -185,18 +177,6 @@ export function aggregateQuarterEntries(arr) {
     return Math.round((vals.reduce((s, v) => s + v, 0) / vals.length) * 100) / 100;
   };
 
-  // Weighted margin: weighted by revenue field, fallback to simple average
-  const weightedMargin = (marginField, weightField) => {
-    const withWeight = sorted.filter(e => e[weightField] != null && e[weightField] !== 0 && e[marginField] != null);
-    if (withWeight.length > 0) {
-      const wSum = withWeight.reduce((s, e) => s + Math.abs(e[weightField]), 0);
-      const wVal = withWeight.reduce((s, e) => s + e[marginField] * Math.abs(e[weightField]), 0);
-      return Math.round((wVal / wSum) * 100) / 100;
-    }
-    const vals = sorted.filter(e => e[marginField] != null).map(e => e[marginField]);
-    return vals.length ? Math.round((vals.reduce((s, v) => s + v, 0) / vals.length) * 100) / 100 : null;
-  };
-
   const allField = (field) => {
     const vals = sorted.filter(e => e[field] != null).map(e => e[field]);
     return vals.length > 0 && vals.every(v => v === true);
@@ -205,8 +185,16 @@ export function aggregateQuarterEntries(arr) {
   const forecastResults = sorted.filter(e => e.forecast_result).map(e => e.forecast_result);
   const forecastResult = forecastResults.length > 0 && forecastResults.every(r => r === 'Hit') ? 'Hit' : 'Miss';
 
-  const calculatedActualMargin = weightedMargin('gop_margin_actual', 'forecast_actual_revenue');
-  const calculatedPriorMargin = weightedMargin('gop_margin_prior', 'budgeted_gop_prior');
+  // GOP MARGIN: per-month improvement average (correct method per spec)
+  const qMonthlyImprovements = sorted
+    .filter(e => e.gop_margin_actual != null && e.gop_margin_prior != null)
+    .map(e => e.gop_margin_actual - e.gop_margin_prior);
+  const qAvgMarginImprovement = qMonthlyImprovements.length > 0
+    ? Math.round((qMonthlyImprovements.reduce((s, v) => s + v, 0) / qMonthlyImprovements.length) * 10000) / 10000
+    : null;
+
+  const calculatedActualMargin = avgField('gop_margin_actual');
+  const calculatedPriorMargin = avgField('gop_margin_prior');
   const totalBudgetGOP = sumField('budgeted_gop_target');
   const totalBudgetRevenue = sumField('forecast_primary_forecast');
   const calculatedBudgetMargin = (totalBudgetGOP != null && totalBudgetRevenue != null && totalBudgetRevenue !== 0)
@@ -227,6 +215,7 @@ export function aggregateQuarterEntries(arr) {
     gop_margin_prior: calculatedPriorMargin,
     gop_margin_budget: calculatedBudgetMargin,
     gop_margin_variance: calculatedVariance,
+    gop_margin_improvement: qAvgMarginImprovement,
     // RGI: AVERAGE of monthly revpar_index_change across all months in quarter
     revpar_index: avgField('revpar_index'),
     revpar_index_change: avgField('revpar_index_change'),

@@ -41,7 +41,14 @@ export function calcGOPScore(actual, target) {
   return { score, variance, achievementPct, pass, incomplete: false };
 }
 
-export function calcGOPMarginScore(actual, prior) {
+export function calcGOPMarginScore(actual, prior, precomputedImprovement = null) {
+  // If a pre-aggregated improvement is available (avg of monthly actual-prior), use it directly.
+  // This is the correct quarterly method per spec.
+  if (precomputedImprovement != null) {
+    const pass = precomputedImprovement >= 0.1;
+    const score = pass ? 35 : 0;
+    return { score, diff: Math.round(precomputedImprovement * 100) / 100, pass, incomplete: false };
+  }
   if (actual == null || prior == null) return { score: 0, diff: 0, pass: false, incomplete: true };
   const diff = actual - prior;
   // Binary: PASS = 35 pts if improvement >= 0.1%, FAIL = 0 pts
@@ -104,7 +111,8 @@ export function calculateScorecard(entry, property) {
   );
   const gopMargin = calcGOPMarginScore(
     entry.gop_margin_actual != null ? entry.gop_margin_actual : null,
-    entry.gop_margin_prior != null ? entry.gop_margin_prior : null
+    entry.gop_margin_prior != null ? entry.gop_margin_prior : null,
+    entry.gop_margin_improvement != null ? entry.gop_margin_improvement : null
   );
   const rgi = calcRGIScore(entry.revpar_index_change != null ? entry.revpar_index_change : null);
   const gss = calcGSSScore(
