@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link, useLocation, Outlet } from 'react-router-dom';
 import {
   LayoutDashboard, BookOpen, Building2, Menu, PieChart,
-  FolderOpen, DollarSign, ChevronDown, ClipboardList, Shield, LogOut, User,
+  FolderOpen, DollarSign, ChevronDown, ClipboardList, Shield, LogOut, User, HelpCircle,
 } from 'lucide-react';
 import TimePeriodSelector from '@/components/layout/TimePeriodSelector';
 import { useUserProfile } from '@/lib/UserProfileContext';
@@ -23,6 +23,7 @@ export default function AppLayout() {
     { path: '/kpi-breakdown', icon: PieChart, label: 'KPI Breakdown' },
     { path: '/payouts', icon: DollarSign, label: 'Payouts' },
     { path: '/kpi-reference', icon: BookOpen, label: 'KPI Reference' },
+    { path: '/help', icon: HelpCircle, label: 'Help & Guide' },
   ];
 
   const adminItems = [

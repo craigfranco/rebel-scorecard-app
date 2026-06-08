@@ -21,6 +21,7 @@ import HotelScorecard from '@/pages/HotelScorecard';
 import Payouts from '@/pages/Payouts';
 import JobClassifications from '@/pages/JobClassifications';
 import AdminPanel from '@/pages/AdminPanel.jsx';
+import HelpGuide from '@/pages/HelpGuide';
 
 const LoadingScreen = () => (
   <div className="fixed inset-0 flex items-center justify-center" style={{ backgroundColor: '#f0f4f7' }}>
@@ -74,6 +75,7 @@ const AuthenticatedApp = () => {
         <Route path="/documents" element={<Documents />} />
         <Route path="/job-classifications" element={<JobClassifications />} />
         <Route path="/hotel/:id" element={<HotelDetail />} />
+        <Route path="/help" element={<HelpGuide />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>
