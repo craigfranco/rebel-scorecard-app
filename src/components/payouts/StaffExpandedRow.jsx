@@ -19,7 +19,7 @@ function kpiRows(scorecard, salary, jobClass) {
   if (!scorecard || !jobClass) return [];
   const highRgiPct = jobClass.rgi_bonus_percentage_high || 0;
 
-  const row = (name, result, pts, max, bonusPct) => {
+  const row = (name, result, pts, max, bonusPct, detailLabel = null) => {
     let icon = '—';
     if (!result?.incomplete) {
       if (result?.tier === 'partial') icon = '⚡';
@@ -29,15 +29,30 @@ function kpiRows(scorecard, salary, jobClass) {
     const earned = (!result?.incomplete && result?.pass && salary > 0)
       ? salary * bonusPct / 100
       : 0;
-    return { name, icon, pts: result?.incomplete ? null : pts, max, bonusPct, earned };
+    return { name, icon, pts: result?.incomplete ? null : pts, max, bonusPct, earned, detailLabel };
   };
 
-  const rgiPct = scorecard.rgi?.tier === 'full' ? highRgiPct : (highRgiPct / 2);
+  // RGI: always use rgi_bonus_percentage_high as max; partial = 50% of max
+  const rgiMax = salary * highRgiPct / 100;
+  let rgiPct, rgiDetail;
+  if (scorecard.rgi?.incomplete) {
+    rgiPct = highRgiPct;
+    rgiDetail = null;
+  } else if (scorecard.rgi?.tier === 'full') {
+    rgiPct = highRgiPct;
+    rgiDetail = `15/15 pts — ${fmt(rgiMax)}`;
+  } else if (scorecard.rgi?.tier === 'partial') {
+    rgiPct = highRgiPct / 2;
+    rgiDetail = `7.5/15 pts — ${fmt(rgiMax * 0.5)} (50% of ${fmt(rgiMax)} max)`;
+  } else {
+    rgiPct = highRgiPct;
+    rgiDetail = `0/15 pts — $0`;
+  }
 
   return [
     row('Budgeted GOP',    scorecard.gop,       scorecard.gop?.score,       35, jobClass.gop_bonus_percentage || 0),
     row('GOP Margin',      scorecard.gopMargin, scorecard.gopMargin?.score, 35, jobClass.gop_margin_bonus_percentage || 0),
-    row('RGI',             scorecard.rgi,       scorecard.rgi?.score,       15, rgiPct),
+    row('RGI',             scorecard.rgi,       scorecard.rgi?.score,       15, rgiPct, rgiDetail),
     row('GSS',             scorecard.gss,       scorecard.gss?.score,       15, jobClass.gss_bonus_percentage || 0),
   ];
 }
@@ -132,17 +147,21 @@ export default function StaffExpandedRow({ staff, property, jobClass, colSpan = 
                       {/* KPI rows */}
                       {rows.length > 0 ? (
                         <div className="space-y-0.5 border-t border-border/40 pt-2">
-                          {rows.map(({ name, icon, pts, max, bonusPct, earned }) => (
+                          {rows.map(({ name, icon, pts, max, bonusPct, earned, detailLabel }) => (
                             <div key={name} className="flex items-center justify-between gap-1 text-xs">
                               <span className="flex items-center gap-1 min-w-0">
                                 <span className="text-sm leading-none">{icon}</span>
                                 <span className="text-muted-foreground truncate">{name}</span>
                               </span>
-                              <span className="flex items-center gap-2 whitespace-nowrap text-right">
-                                <span className="text-muted-foreground w-10 text-right">{pts != null ? `${pts}/${max}` : '—'}</span>
-                                <span className="text-muted-foreground w-8 text-right">{bonusPct}%</span>
-                                <span className="font-semibold text-foreground w-14 text-right">{fmt(earned)}</span>
-                              </span>
+                              {detailLabel ? (
+                                <span className="text-muted-foreground text-right whitespace-nowrap">{detailLabel}</span>
+                              ) : (
+                                <span className="flex items-center gap-2 whitespace-nowrap text-right">
+                                  <span className="text-muted-foreground w-10 text-right">{pts != null ? `${pts}/${max}` : '—'}</span>
+                                  <span className="text-muted-foreground w-8 text-right">{bonusPct}%</span>
+                                  <span className="font-semibold text-foreground w-14 text-right">{fmt(earned)}</span>
+                                </span>
+                              )}
                             </div>
                           ))}
                           {/* Total row */}
