@@ -49,11 +49,12 @@ function buildKpiRows(scorecard, entry) {
     return null;
   })();
 
+  // weight = max pts / 100 (fraction of total score)
   return [
-    { name: 'Budgeted GOP',    status: getStatus(gop),       pts: gop.score,       max: 35,  value: gopValue },
-    { name: 'GOP Margin',      status: getStatus(gopMargin), pts: gopMargin.score, max: 35,  value: marginValue },
-    { name: 'RGI Improvement', status: getStatus(rgi),       pts: rgi.score,       max: 15,  value: rgiValue },
-    { name: 'GSS Improvement', status: getStatus(gss),       pts: gss.score,       max: 15,  value: gssValue },
+    { name: 'Budgeted GOP',    status: getStatus(gop),       pts: gop.score,       max: 35,  weight: 0.35, value: gopValue },
+    { name: 'GOP Margin',      status: getStatus(gopMargin), pts: gopMargin.score, max: 35,  weight: 0.35, value: marginValue },
+    { name: 'RGI Improvement', status: getStatus(rgi),       pts: rgi.score,       max: 15,  weight: 0.15, value: rgiValue },
+    { name: 'GSS Improvement', status: getStatus(gss),       pts: gss.score,       max: 15,  weight: 0.15, value: gssValue },
   ];
 }
 
@@ -148,25 +149,41 @@ export default function StaffExpandedRow({ staff, property, jobClass, colSpan = 
                   {/* KPI Breakdown Table */}
                   {hasData && kpiRows.length > 0 ? (
                     <div>
-                      {/* Table header */}
-                      <div className="grid grid-cols-[1fr_auto_auto_auto] gap-x-2 px-3 py-1.5 bg-muted/30 border-b border-border text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                      {/* Table header — KPI | Result | % of Salary | Potential $ | Earned $ | Pts */}
+                      <div className="grid grid-cols-[1fr_auto_auto_auto_auto_auto] gap-x-2 px-3 py-1.5 bg-muted/30 border-b border-border text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
                         <span>KPI</span>
                         <span className="text-center w-16">Result</span>
-                        <span className="text-right w-12">Pts</span>
-                        <span className="text-right w-12">Max</span>
+                        <span className="text-right w-14">% Salary</span>
+                        <span className="text-right w-16">Potential</span>
+                        <span className="text-right w-16">Earned</span>
+                        <span className="text-right w-10">Pts</span>
                       </div>
 
                       {kpiRows.map((row) => {
                         const meta = STATUS_META[row.status];
+                        // % of salary = weight × bonus target %
+                        const pctOfSalary = row.weight * (jobClass?.max_bonus_percentage || 0);
+                        // Potential $ = salary × pctOfSalary / 100
+                        const potentialDollar = salary * pctOfSalary / 100;
+                        // Earned $ = salary × bonus% × (pts earned / max pts)
+                        const earnedDollar = row.max > 0 ? salary * bonusPct * (row.pts / row.max) : 0;
                         return (
                           <div key={row.name} className={`border-b border-border/60 ${meta.rowBg}`}>
-                            <div className="grid grid-cols-[1fr_auto_auto_auto] gap-x-2 px-3 py-1.5 items-center text-xs">
+                            <div className="grid grid-cols-[1fr_auto_auto_auto_auto_auto] gap-x-2 px-3 py-1.5 items-center text-xs">
                               <span className={`font-medium ${meta.textColor}`}>{row.name}</span>
                               <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded w-16 text-center ${meta.labelBg}`}>
                                 {meta.icon} {meta.label}
                               </span>
-                              <span className={`font-bold text-right w-12 ${meta.textColor}`}>{row.pts}</span>
-                              <span className="text-muted-foreground text-right w-12">{row.max}</span>
+                              <span className={`text-right w-14 font-semibold ${meta.textColor}`}>
+                                {hasBonusPct ? `${pctOfSalary.toFixed(1)}%` : '—'}
+                              </span>
+                              <span className={`text-right w-16 ${meta.textColor}`}>
+                                {hasBonusPct ? fmt(potentialDollar) : '—'}
+                              </span>
+                              <span className={`text-right w-16 font-bold ${meta.textColor}`}>
+                                {hasBonusPct ? fmt(earnedDollar) : '—'}
+                              </span>
+                              <span className={`font-bold text-right w-10 ${meta.textColor}`}>{row.pts}</span>
                             </div>
                             {row.value && (
                               <div className={`px-3 pb-1.5 text-[10px] ${meta.textColor} opacity-80`}>
@@ -178,11 +195,19 @@ export default function StaffExpandedRow({ staff, property, jobClass, colSpan = 
                       })}
 
                       {/* Total Score row */}
-                      <div className="grid grid-cols-[1fr_auto_auto_auto] gap-x-2 px-3 py-2 bg-muted/40 border-b border-border items-center">
-                        <span className="text-xs font-bold uppercase tracking-wide text-foreground">Total Score</span>
+                      <div className="grid grid-cols-[1fr_auto_auto_auto_auto_auto] gap-x-2 px-3 py-2 bg-muted/40 border-b border-border items-center">
+                        <span className="text-xs font-bold uppercase tracking-wide text-foreground">Total</span>
                         <span className="w-16" />
-                        <span className="font-black text-sm text-right w-12 text-foreground">{kpiScore}</span>
-                        <span className="font-bold text-sm text-right w-12 text-muted-foreground">{maxPossible}</span>
+                        <span className="font-black text-xs text-right w-14 text-foreground">
+                          {hasBonusPct ? `${jobClass?.max_bonus_percentage}%` : '—'}
+                        </span>
+                        <span className="font-black text-xs text-right w-16 text-foreground">
+                          {hasBonusPct ? fmt(bonusTarget) : '—'}
+                        </span>
+                        <span className="font-black text-xs text-right w-16 text-foreground">
+                          {hasBonusPct && bonusEarned !== null ? fmt(bonusEarned) : '—'}
+                        </span>
+                        <span className="font-black text-sm text-right w-10 text-foreground">{kpiScore}/{maxPossible}</span>
                       </div>
                     </div>
                   ) : (
