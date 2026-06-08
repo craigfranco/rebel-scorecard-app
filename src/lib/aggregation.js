@@ -138,10 +138,10 @@ export function aggregateEntries(entries, periodType, selectedMonth, selectedYea
     revpar_index: avgField('revpar_index'),
     revpar_index_change: avgField('revpar_index_change'),
     revpar_index_prior: avgField('revpar_index_prior'),
-    // GSS: most recent month where BOTH gss_actual and gss_prior are non-null and non-zero
-    gss_actual: (() => { const e = [...sorted].reverse().find(e => e.gss_actual != null && e.gss_actual !== 0 && e.gss_prior != null && e.gss_prior !== 0); return e?.gss_actual ?? null; })(),
-    gss_prior:  (() => { const e = [...sorted].reverse().find(e => e.gss_actual != null && e.gss_actual !== 0 && e.gss_prior != null && e.gss_prior !== 0); return e?.gss_prior  ?? null; })(),
-    
+    // GSS: average of all months with valid (non-null, non-zero) data for each field
+    gss_actual: (() => { const vals = sorted.filter(e => e.gss_actual != null && e.gss_actual !== 0).map(e => e.gss_actual); return vals.length ? Math.round(vals.reduce((s,v) => s+v,0) / vals.length * 10000) / 10000 : null; })(),
+    gss_prior:  (() => { const vals = sorted.filter(e => e.gss_prior  != null && e.gss_prior  !== 0).map(e => e.gss_prior);  return vals.length ? Math.round(vals.reduce((s,v) => s+v,0) / vals.length * 10000) / 10000 : null; })(),
+
     // ALL: Boolean kickers
     forecast_kicker: allField('forecast_kicker'),
     red_zone_kicker: allField('red_zone_kicker'),
@@ -220,9 +220,9 @@ export function aggregateQuarterEntries(arr) {
     revpar_index: avgField('revpar_index'),
     revpar_index_change: avgField('revpar_index_change'),
     revpar_index_prior: avgField('revpar_index_prior'),
-    // GSS: most recent month where BOTH gss_actual and gss_prior are non-null and non-zero
-    gss_actual: (() => { const e = [...sorted].reverse().find(e => e.gss_actual != null && e.gss_actual !== 0 && e.gss_prior != null && e.gss_prior !== 0); return e?.gss_actual ?? null; })(),
-    gss_prior:  (() => { const e = [...sorted].reverse().find(e => e.gss_actual != null && e.gss_actual !== 0 && e.gss_prior != null && e.gss_prior !== 0); return e?.gss_prior  ?? null; })(),
+    // GSS: average of all months with valid (non-null, non-zero) data for each field
+    gss_actual: (() => { const vals = sorted.filter(e => e.gss_actual != null && e.gss_actual !== 0).map(e => e.gss_actual); return vals.length ? Math.round(vals.reduce((s,v) => s+v,0) / vals.length * 10000) / 10000 : null; })(),
+    gss_prior:  (() => { const vals = sorted.filter(e => e.gss_prior  != null && e.gss_prior  !== 0).map(e => e.gss_prior);  return vals.length ? Math.round(vals.reduce((s,v) => s+v,0) / vals.length * 10000) / 10000 : null; })(),
     forecast_kicker: allField('forecast_kicker'),
     red_zone_kicker: allField('red_zone_kicker'),
     forecast_result: forecastResult,
