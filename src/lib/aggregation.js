@@ -146,9 +146,9 @@ export function aggregateEntries(entries, periodType, selectedMonth, selectedYea
     revpar_index: avgField('revpar_index'),
     revpar_index_change: avgField('revpar_index_change'),
     revpar_index_prior: avgField('revpar_index_prior'),
-    // GSS: use LAST month with data (not average) — per spec
-    gss_actual: last.gss_actual ?? null,
-    gss_prior: last.gss_prior ?? null,
+    // GSS: use most recent month that has both gss_actual and gss_prior
+    gss_actual: (() => { const e = [...sorted].reverse().find(e => e.gss_actual != null); return e?.gss_actual ?? null; })(),
+    gss_prior: (() => { const e = [...sorted].reverse().find(e => e.gss_prior != null); return e?.gss_prior ?? null; })(),
     
     // ALL: Boolean kickers
     forecast_kicker: allField('forecast_kicker'),
@@ -165,8 +165,82 @@ export function aggregateEntries(entries, periodType, selectedMonth, selectedYea
 }
 
 /**
- * Legacy wrapper for backward compatibility
+ * Aggregates a pre-filtered array of entries for a single quarter.
+ * Bypasses period filtering since the array is already scoped to the quarter.
  */
 export function aggregateQuarterEntries(arr) {
-  return aggregateEntries(arr, 'quarter', arr[0]?.month, arr[0]?.year);
+  if (!arr || arr.length === 0) return null;
+
+  const sorted = [...arr].sort((a, b) => a.month - b.month);
+  const last = sorted[sorted.length - 1];
+
+  const sumField = (field) => {
+    const vals = sorted.filter(e => e[field] != null).map(e => e[field]);
+    return vals.length ? vals.reduce((s, v) => s + v, 0) : null;
+  };
+
+  const avgField = (field) => {
+    const vals = sorted.filter(e => e[field] != null).map(e => e[field]);
+    if (!vals.length) return null;
+    return Math.round((vals.reduce((s, v) => s + v, 0) / vals.length) * 100) / 100;
+  };
+
+  // Weighted margin: weighted by revenue field, fallback to simple average
+  const weightedMargin = (marginField, weightField) => {
+    const withWeight = sorted.filter(e => e[weightField] != null && e[weightField] !== 0 && e[marginField] != null);
+    if (withWeight.length > 0) {
+      const wSum = withWeight.reduce((s, e) => s + Math.abs(e[weightField]), 0);
+      const wVal = withWeight.reduce((s, e) => s + e[marginField] * Math.abs(e[weightField]), 0);
+      return Math.round((wVal / wSum) * 100) / 100;
+    }
+    const vals = sorted.filter(e => e[marginField] != null).map(e => e[marginField]);
+    return vals.length ? Math.round((vals.reduce((s, v) => s + v, 0) / vals.length) * 100) / 100 : null;
+  };
+
+  const allField = (field) => {
+    const vals = sorted.filter(e => e[field] != null).map(e => e[field]);
+    return vals.length > 0 && vals.every(v => v === true);
+  };
+
+  const forecastResults = sorted.filter(e => e.forecast_result).map(e => e.forecast_result);
+  const forecastResult = forecastResults.length > 0 && forecastResults.every(r => r === 'Hit') ? 'Hit' : 'Miss';
+
+  const calculatedActualMargin = weightedMargin('gop_margin_actual', 'forecast_actual_revenue');
+  const calculatedPriorMargin = weightedMargin('gop_margin_prior', 'budgeted_gop_prior');
+  const totalBudgetGOP = sumField('budgeted_gop_target');
+  const totalBudgetRevenue = sumField('forecast_primary_forecast');
+  const calculatedBudgetMargin = (totalBudgetGOP != null && totalBudgetRevenue != null && totalBudgetRevenue !== 0)
+    ? Math.round((totalBudgetGOP / totalBudgetRevenue) * 100 * 100) / 100
+    : null;
+  const calculatedVariance = (calculatedActualMargin != null && calculatedBudgetMargin != null)
+    ? Math.round((calculatedActualMargin - calculatedBudgetMargin) * 100) / 100
+    : null;
+
+  return {
+    ...last,
+    budgeted_gop_actual: sumField('budgeted_gop_actual'),
+    budgeted_gop_target: sumField('budgeted_gop_target'),
+    budgeted_gop_prior: sumField('budgeted_gop_prior'),
+    forecast_actual_revenue: sumField('forecast_actual_revenue'),
+    forecast_primary_forecast: sumField('forecast_primary_forecast'),
+    gop_margin_actual: calculatedActualMargin,
+    gop_margin_prior: calculatedPriorMargin,
+    gop_margin_budget: calculatedBudgetMargin,
+    gop_margin_variance: calculatedVariance,
+    // RGI: AVERAGE of monthly revpar_index_change across all months in quarter
+    revpar_index: avgField('revpar_index'),
+    revpar_index_change: avgField('revpar_index_change'),
+    revpar_index_prior: avgField('revpar_index_prior'),
+    // GSS: most recent month with data
+    gss_actual: (() => { const e = [...sorted].reverse().find(e => e.gss_actual != null); return e?.gss_actual ?? null; })(),
+    gss_prior: (() => { const e = [...sorted].reverse().find(e => e.gss_prior != null); return e?.gss_prior ?? null; })(),
+    forecast_kicker: allField('forecast_kicker'),
+    red_zone_kicker: allField('red_zone_kicker'),
+    forecast_result: forecastResult,
+    key_wins: last.key_wins,
+    previous_results: last.previous_results,
+    next_priorities: last.next_priorities,
+    prepared_by: last.prepared_by,
+    reviewed_by: last.reviewed_by,
+  };
 }
