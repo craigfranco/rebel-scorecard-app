@@ -4,6 +4,66 @@ import { base44 } from '@/api/base44Client';
 import { calculateScorecard, getQuarterFromMonth, aggregateQuarterEntries } from '@/lib/scoring';
 import { calculateActualYtdSalary } from '@/lib/salaryCalculation';
 
+// Build KPI rows from a scorecard result + entry
+function buildKpiRows(scorecard, entry) {
+  if (!scorecard || !entry) return [];
+
+  const { gop, gopMargin, rgi, gss, gssStd } = scorecard;
+
+  const getStatus = (result) => {
+    if (result.incomplete) return 'na';
+    if (result.tier === 'partial') return 'partial';
+    return result.pass ? 'pass' : 'fail';
+  };
+
+  const gopValue = (() => {
+    if (entry.budgeted_gop_actual != null && entry.budgeted_gop_target != null) {
+      const a = `$${Math.round(entry.budgeted_gop_actual).toLocaleString()}`;
+      const t = `$${Math.round(entry.budgeted_gop_target).toLocaleString()}`;
+      return `${a} vs ${t} budget`;
+    }
+    return null;
+  })();
+
+  const marginValue = (() => {
+    if (gopMargin.diff != null && !gopMargin.incomplete) {
+      const sign = gopMargin.diff >= 0 ? '+' : '';
+      return `${sign}${gopMargin.diff.toFixed(1)} pts vs LY`;
+    }
+    return null;
+  })();
+
+  const rgiValue = (() => {
+    if (!rgi.incomplete && rgi.diff != null) {
+      const sign = rgi.diff >= 0 ? '+' : '';
+      return `${sign}${rgi.diff.toFixed(1)}% YOY`;
+    }
+    return null;
+  })();
+
+  const gssValue = (() => {
+    if (!gss.incomplete && gss.diff != null) {
+      const sign = gss.diff >= 0 ? '+' : '';
+      return `${sign}${gss.diff.toFixed(2)} pts vs LY (${gssStd?.metric || 'GSS'})`;
+    }
+    return null;
+  })();
+
+  return [
+    { name: 'Budgeted GOP',    status: getStatus(gop),       pts: gop.score,       max: 35,  value: gopValue },
+    { name: 'GOP Margin',      status: getStatus(gopMargin), pts: gopMargin.score, max: 35,  value: marginValue },
+    { name: 'RGI Improvement', status: getStatus(rgi),       pts: rgi.score,       max: 15,  value: rgiValue },
+    { name: 'GSS Improvement', status: getStatus(gss),       pts: gss.score,       max: 15,  value: gssValue },
+  ];
+}
+
+const STATUS_META = {
+  pass:    { icon: '✅', label: 'PASS',    rowBg: 'bg-green-50',  textColor: 'text-green-800',  labelBg: 'bg-green-100 text-green-800' },
+  fail:    { icon: '❌', label: 'FAIL',    rowBg: 'bg-red-50',    textColor: 'text-red-800',    labelBg: 'bg-red-100 text-red-800' },
+  partial: { icon: '⚡', label: 'PARTIAL', rowBg: 'bg-yellow-50', textColor: 'text-yellow-800', labelBg: 'bg-yellow-100 text-yellow-800' },
+  na:      { icon: '⬜', label: 'N/A',     rowBg: 'bg-gray-50',   textColor: 'text-gray-500',   labelBg: 'bg-gray-100 text-gray-500' },
+};
+
 const QUARTERS = [
   { q: 1, label: 'Q1 2026', range: 'Jan–Mar', months: [1, 2, 3] },
   { q: 2, label: 'Q2 2026', range: 'Apr–Jun', months: [4, 5, 6] },
@@ -42,7 +102,7 @@ export default function StaffExpandedRow({ staff, property, jobClass, colSpan = 
     const hasSalary = salary > 0;
     const hasData = entry !== null && hasSalary;
 
-    return { q, label, range, salary, hasSalary, hasData, kpiScore, maxPossible, bonusTarget, bonusEarned, paidOut, held };
+    return { q, label, range, salary, hasSalary, hasData, kpiScore, maxPossible, bonusTarget, bonusEarned, paidOut, held, entry, scorecard };
   });
 
   // Annual totals
@@ -59,7 +119,7 @@ export default function StaffExpandedRow({ staff, property, jobClass, colSpan = 
 
           {/* Quarter Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
-            {quarterData.map(({ q, label, range, salary, hasSalary, hasData, kpiScore, maxPossible, bonusTarget, bonusEarned, paidOut, held }) => {
+            {quarterData.map(({ q, label, range, salary, hasSalary, hasData, kpiScore, maxPossible, bonusTarget, bonusEarned, paidOut, held, entry, scorecard }) => {
               if (!hasSalary) {
                 return (
                   <div key={q} className="rounded-xl border border-dashed border-border bg-white px-4 py-4 text-center opacity-60">
@@ -69,72 +129,98 @@ export default function StaffExpandedRow({ staff, property, jobClass, colSpan = 
                 );
               }
 
+              const kpiRows = buildKpiRows(scorecard, entry);
+
               return (
                 <div key={q} className="rounded-xl border border-border bg-white overflow-hidden shadow-sm">
                   {/* Quarter Header */}
-                  <div className="px-4 py-2 bg-navy/90 text-white flex items-center justify-between" style={{ background: '#2d4b5e' }}>
+                  <div className="px-4 py-2 text-white flex items-center justify-between" style={{ background: '#2d4b5e' }}>
                     <span className="text-xs font-bold uppercase tracking-wide">{label}</span>
                     <span className="text-xs text-white/70">{range}</span>
                   </div>
 
-                  <div className="px-4 py-3 space-y-2 text-xs">
-                    {/* Salary */}
-                    <div className="flex justify-between items-center">
-                      <span className="text-muted-foreground">Quarterly Salary</span>
-                      <span className="font-semibold">{fmt(salary)}</span>
+                  {/* Salary row */}
+                  <div className="px-4 py-2 flex justify-between items-center text-xs border-b border-border bg-muted/20">
+                    <span className="text-muted-foreground">Quarterly Salary</span>
+                    <span className="font-semibold">{fmt(salary)}</span>
+                  </div>
+
+                  {/* KPI Breakdown Table */}
+                  {hasData && kpiRows.length > 0 ? (
+                    <div>
+                      {/* Table header */}
+                      <div className="grid grid-cols-[1fr_auto_auto_auto] gap-x-2 px-3 py-1.5 bg-muted/30 border-b border-border text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                        <span>KPI</span>
+                        <span className="text-center w-16">Result</span>
+                        <span className="text-right w-12">Pts</span>
+                        <span className="text-right w-12">Max</span>
+                      </div>
+
+                      {kpiRows.map((row) => {
+                        const meta = STATUS_META[row.status];
+                        return (
+                          <div key={row.name} className={`border-b border-border/60 ${meta.rowBg}`}>
+                            <div className="grid grid-cols-[1fr_auto_auto_auto] gap-x-2 px-3 py-1.5 items-center text-xs">
+                              <span className={`font-medium ${meta.textColor}`}>{row.name}</span>
+                              <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded w-16 text-center ${meta.labelBg}`}>
+                                {meta.icon} {meta.label}
+                              </span>
+                              <span className={`font-bold text-right w-12 ${meta.textColor}`}>{row.pts}</span>
+                              <span className="text-muted-foreground text-right w-12">{row.max}</span>
+                            </div>
+                            {row.value && (
+                              <div className={`px-3 pb-1.5 text-[10px] ${meta.textColor} opacity-80`}>
+                                {row.value}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+
+                      {/* Total Score row */}
+                      <div className="grid grid-cols-[1fr_auto_auto_auto] gap-x-2 px-3 py-2 bg-muted/40 border-b border-border items-center">
+                        <span className="text-xs font-bold uppercase tracking-wide text-foreground">Total Score</span>
+                        <span className="w-16" />
+                        <span className="font-black text-sm text-right w-12 text-foreground">{kpiScore}</span>
+                        <span className="font-bold text-sm text-right w-12 text-muted-foreground">{maxPossible}</span>
+                      </div>
                     </div>
-
-                    {/* KPI Score */}
-                    <div className="flex justify-between items-center">
-                      <span className="text-muted-foreground">KPI Score</span>
-                      {hasData && kpiScore !== null
-                        ? <span className="font-semibold">{kpiScore}/{maxPossible}</span>
-                        : <span className="text-muted-foreground italic">No data yet</span>
-                      }
+                  ) : (
+                    <div className="px-4 py-3 text-xs text-muted-foreground italic border-b border-border">
+                      No scorecard data entered for this quarter.
                     </div>
+                  )}
 
-                    {/* Bonus Target */}
-                    {hasBonusPct && (
-                      <div className="flex justify-between items-center">
-                        <span className="text-muted-foreground">Bonus Target</span>
-                        <span className="font-semibold">{fmt(bonusTarget)}</span>
+                  {/* Bonus calculation section */}
+                  <div className="px-4 py-3 space-y-1.5 text-xs">
+                    {!hasBonusPct ? (
+                      <div className="text-yellow-700 bg-yellow-50 rounded px-2 py-1">
+                        ⚠ No bonus % configured for this classification.
                       </div>
-                    )}
-
-                    {/* Bonus Earned */}
-                    {hasBonusPct && (
-                      <div className="flex justify-between items-center">
-                        <span className="text-muted-foreground">Bonus Earned</span>
-                        {bonusEarned !== null
-                          ? <span className="font-bold text-foreground">{fmt(bonusEarned)}</span>
-                          : <span className="text-muted-foreground italic">Pending</span>
-                        }
-                      </div>
-                    )}
-
-                    {!hasBonusPct && (
-                      <div className="text-yellow-700 text-xs bg-yellow-50 rounded px-2 py-1">
-                        ⚠ No bonus % set
-                      </div>
-                    )}
-
-                    {/* Divider + Payout Split */}
-                    {bonusEarned !== null && (
+                    ) : bonusEarned !== null ? (
                       <>
-                        <div className="border-t border-border my-1" />
-                        <div className="font-bold text-xs flex justify-between items-center">
-                          <span>Full Payout</span>
-                          <span>{fmt(bonusEarned)}</span>
+                        {/* Formula line */}
+                        <div className="text-[10px] text-muted-foreground bg-muted/30 rounded px-2 py-1">
+                          {fmt(salary)} × {jobClass?.max_bonus_percentage}% × {kpiScore}/{maxPossible} pts
+                          {' = '}
+                          <span className="font-bold text-foreground">{fmt(bonusEarned)}</span>
                         </div>
-                        <div className="flex justify-between items-center text-green-700">
-                          <span>✅ Paid This Quarter (50%)</span>
-                          <span className="font-semibold">{fmt(paidOut)}</span>
-                        </div>
-                        <div className="flex justify-between items-center text-blue-700">
-                          <span>🔄 Held to Year-End (50%)</span>
-                          <span className="font-semibold">{fmt(held)}</span>
+                        {/* Payout split */}
+                        <div className="rounded-lg overflow-hidden border border-border mt-1">
+                          <div className="flex justify-between items-center px-3 py-1.5 bg-green-50 text-green-800">
+                            <span>✅ Paid This Quarter (50%)</span>
+                            <span className="font-bold">{fmt(paidOut)}</span>
+                          </div>
+                          <div className="flex justify-between items-center px-3 py-1.5 bg-blue-50 text-blue-800 border-t border-border">
+                            <span>🔄 Held to Year-End (50%)</span>
+                            <span className="font-bold">{fmt(held)}</span>
+                          </div>
                         </div>
                       </>
+                    ) : (
+                      <div className="text-muted-foreground italic">
+                        Enter KPI data to calculate this quarter's bonus.
+                      </div>
                     )}
                   </div>
                 </div>
