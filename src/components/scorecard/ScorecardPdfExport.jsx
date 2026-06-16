@@ -393,15 +393,9 @@ export function generateScorecardPDF(property, entry, periodType, selectedMonth,
   doc.text('TOTAL SCORE', cols[0].x, totalY + 13);
   const anyIncomplete = kpiData.some(r => r.incomplete);
   const totalScore = scorecard.total.total;
-  doc.text(anyIncomplete ? '—' : `${totalScore} / 100`, cols[5].x + cols[5].w / 2, totalY + 13, { align: 'center' });
-  if (!anyIncomplete) {
-    const passLabel = scorecard.total.pass ? '✓ PASS' : '✗ FAIL';
-    const bx = cols[6].x + cols[6].w / 2;
-    doc.setFillColor(scorecard.total.pass ? 76 : 239, scorecard.total.pass ? 175 : 68, scorecard.total.pass ? 80 : 68);
-    doc.roundedRect(bx - 22, totalY + 4, 44, 13, 3, 3, 'F');
-    doc.setFontSize(8);
-    doc.text(passLabel, bx, totalY + 13, { align: 'center' });
-  }
+  const maxPossible = scorecard.total.maxPossible;
+  doc.text(anyIncomplete ? '—' : `${totalScore} / ${maxPossible}`, cols[5].x + cols[5].w / 2, totalY + 13, { align: 'center' });
+  // No overall pass/fail badge — total score is a sum only, not evaluated against a threshold
 
   // ── FORECAST + KICKERS + NARRATIVE ──────────────────────────────────────────
   const bottomY = tableY + tableH + 10;

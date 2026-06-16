@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
-import { Search, TrendingUp, TrendingDown, Minus, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
+import { Search, TrendingUp, Minus, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { calculateScorecard, aggregateEntries } from '../lib/scoring';
 import { useTimePeriod } from '@/lib/TimePeriodContext';
-import { getBrandColor, getStatusBadge, formatBrandLabel } from '@/lib/portfolioHelpers';
+import { getBrandColor, formatBrandLabel } from '@/lib/portfolioHelpers';
 import PropertyFilters from '@/components/filters/PropertyFilters';
 import { getLeadTypes } from '@/functions/getLeadTypes';
 import { useNavigate } from 'react-router-dom';
@@ -88,7 +88,6 @@ export default function AllProperties() {
       else if (sortCol === 'brand') { av = a.property.parent_brand || ''; bv = b.property.parent_brand || ''; }
       else if (sortCol === 'city') { av = a.property.city || ''; bv = b.property.city || ''; }
       else if (sortCol === 'gm') { av = a.property.gm_name || ''; bv = b.property.gm_name || ''; }
-      else if (sortCol === 'status') { av = a.scorecard ? (a.scorecard.total.pass ? 1 : 0) : -1; bv = b.scorecard ? (b.scorecard.total.pass ? 1 : 0) : -1; }
       else if (sortCol === 'gop') { av = a.scorecard?.gop.score ?? -1; bv = b.scorecard?.gop.score ?? -1; }
       else if (sortCol === 'margin') { av = a.scorecard?.gopMargin.score ?? -1; bv = b.scorecard?.gopMargin.score ?? -1; }
       else if (sortCol === 'rgi') { av = a.scorecard?.rgi.score ?? -1; bv = b.scorecard?.rgi.score ?? -1; }
@@ -99,8 +98,7 @@ export default function AllProperties() {
       return sortDir === 'asc' ? av - bv : bv - av;
     });
 
-  const passing = rows.filter(r => r.scorecard && !Object.values(r.scorecard).some(v => v?.incomplete) && r.scorecard.total.pass).length;
-  const failing = rows.filter(r => r.scorecard && !Object.values(r.scorecard).some(v => v?.incomplete) && !r.scorecard.total.pass).length;
+  const withData = rows.filter(r => r.scorecard).length;
   const noData = rows.filter(r => !r.scorecard).length;
 
   const periodLabel = getPeriodLabel();
@@ -136,10 +134,9 @@ export default function AllProperties() {
       </div>
 
       {/* Stats Summary */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 gap-4">
         {[
-          { label: 'Passing', value: passing, color: '#4CAF50', icon: TrendingUp },
-          { label: 'Failing', value: failing, color: '#ef4444', icon: TrendingDown },
+          { label: 'With Data', value: withData, color: '#2d4b5e', icon: TrendingUp },
           { label: 'No Data', value: noData, color: '#94a3b8', icon: Minus },
         ].map(({ label, value, color, icon: Icon }) => (
           <div key={label} className="bg-card rounded-2xl border border-border p-5 shadow-sm flex items-center gap-4">
@@ -188,14 +185,12 @@ export default function AllProperties() {
                 <SortTh col="rgi" className="text-center">RGI</SortTh>
                 <SortTh col="gss" className="text-center">GSS</SortTh>
                 <SortTh col="score" className="text-center">Score</SortTh>
-                <SortTh col="status" className="text-center">Status</SortTh>
               </tr>
             </thead>
             <tbody>
               {rows.map(({ property, scorecard }, idx) => {
                 const rank = idx + 1;
                 const anyIncomplete = scorecard && [scorecard.gop, scorecard.gopMargin, scorecard.rgi, scorecard.gss].some(k => k?.incomplete);
-                const statusBadge = getStatusBadge(scorecard);
                 const brandColor = getBrandColor(property.parent_brand);
                 
                 return (
@@ -239,18 +234,10 @@ export default function AllProperties() {
                     </td>
                     <td className="py-3 px-4 text-center">
                       {scorecard ? (
-                        <span className="text-lg font-black" style={{ color: anyIncomplete ? '#94a3b8' : (scorecard.total.pass ? '#4CAF50' : '#ef4444') }}>
-                          {anyIncomplete ? '—' : scorecard.total.total}
+                        <span className="text-lg font-black" style={{ color: anyIncomplete ? '#94a3b8' : '#2d4b5e' }}>
+                          {anyIncomplete ? '—' : `${scorecard.total.total}/${scorecard.total.maxPossible}`}
                         </span>
                       ) : <span className="text-muted-foreground text-xs">—</span>}
-                    </td>
-                    <td className="py-3 px-4 text-center">
-                      <span
-                        className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold"
-                        style={{ backgroundColor: statusBadge.bgColor, color: statusBadge.color }}
-                      >
-                        {statusBadge.label}
-                      </span>
                     </td>
                   </tr>
                 );
