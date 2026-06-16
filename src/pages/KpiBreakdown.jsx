@@ -202,9 +202,21 @@ export default function KpiBreakdown() {
   };
 
   const SortIcon = ({ col }) => {
-    if (sortCol !== col) return <ChevronsUpDown className="w-3 h-3 opacity-40" />;
-    return sortDir === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />;
+    if (sortCol !== col) return <ChevronsUpDown className="w-3 h-3 opacity-30 group-hover:opacity-60 transition-opacity" />;
+    return sortDir === 'asc' ? <ChevronUp className="w-3 h-3 text-primary" /> : <ChevronDown className="w-3 h-3 text-primary" />;
   };
+
+  const SortTh = ({ col, children, className = '' }) => (
+    <th
+      className={`py-3 px-4 font-semibold cursor-pointer select-none group hover:bg-muted/70 transition-colors ${className}`}
+      onClick={() => handleSort(col)}
+    >
+      <div className={`flex items-center gap-1 ${className.includes('text-center') ? 'justify-center' : ''}`}>
+        {children}
+        <SortIcon col={col} />
+      </div>
+    </th>
+  );
 
   return (
     <div className="p-4 lg:p-8 space-y-6 max-w-7xl mx-auto">
@@ -256,13 +268,9 @@ export default function KpiBreakdown() {
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-muted/50 text-muted-foreground text-xs uppercase tracking-wide">
-                <th className="py-3 px-4 text-left font-semibold w-8">#</th>
-                <th className="py-3 px-4 text-left font-semibold cursor-pointer" onClick={() => handleSort('name')}>
-                  <div className="flex items-center gap-1">Hotel <SortIcon col="name" /></div>
-                </th>
-                <th className="py-3 px-4 text-center font-semibold cursor-pointer" onClick={() => handleSort('gm')}>
-                  <div className="flex items-center justify-center gap-1">GM <SortIcon col="gm" /></div>
-                </th>
+                <th className="py-3 px-4 text-left font-semibold w-10">Rank</th>
+                <SortTh col="name" className="text-left">Hotel</SortTh>
+                <SortTh col="gm" className="text-center">GM</SortTh>
                 <th className="py-3 px-4 text-center font-semibold">
                   {activeKpi === 'rgi' ? 'TY Index' : activeKpi === 'gopMargin' ? 'TY Margin' : activeKpi === 'gop' ? 'Achievement' : 'Actual'}
                 </th>
@@ -305,12 +313,8 @@ export default function KpiBreakdown() {
                 )}
 
 
-                <th className="py-3 px-4 text-center font-semibold cursor-pointer" onClick={() => handleSort('score')}>
-                  <div className="flex items-center justify-center gap-1">Score <SortIcon col="score" /></div>
-                </th>
-                <th className="py-3 px-4 text-center font-semibold cursor-pointer" onClick={() => handleSort('pass')}>
-                  <div className="flex items-center justify-center gap-1">Status <SortIcon col="pass" /></div>
-                </th>
+                <SortTh col="score" className="text-center">Score</SortTh>
+                <SortTh col="pass" className="text-center">Status</SortTh>
               </tr>
             </thead>
             <tbody>
@@ -322,7 +326,11 @@ export default function KpiBreakdown() {
                     className={`border-b border-border cursor-pointer transition-colors ${rowBg}`}
                     onClick={() => navigate(`/hotel-scorecard?propertyId=${property.id}`)}
                   >
-                    <td className="py-3 px-4 text-muted-foreground text-xs font-medium">{idx + 1}</td>
+                    <td className="py-3 px-4">
+                      <span className="text-xs font-bold text-muted-foreground w-7 h-7 rounded-full bg-white/70 border border-border flex items-center justify-center">
+                        {idx + 1}
+                      </span>
+                    </td>
                     <td className="py-3 px-4">
                       <div className="font-semibold text-foreground text-sm">{property.name}</div>
                       <div className="text-xs text-muted-foreground">{property.city}, {property.state}</div>

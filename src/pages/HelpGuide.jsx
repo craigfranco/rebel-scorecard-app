@@ -350,14 +350,22 @@ function PayoutsGuide() {
         <LI>Quarterly salary for each quarter (Q1–Q4) — enter only the quarters that have closed</LI>
       </UL>
 
-      <H3>How bonus is calculated</H3>
-      <P>For each quarter, the system:</P>
+      <H3>Bonus Eligibility Gate</H3>
+      <P>Before any bonus is calculated, the staff member must meet <strong>both</strong> of these eligibility criteria for that quarter:</P>
+      <UL>
+        <LI><strong>RGI Improvement</strong> — RevPAR Index must improve by at least 0.1% YOY (partial or full pass counts)</LI>
+        <LI><strong>GSS Improvement</strong> — Normalized GSS score this year must exceed prior year (any improvement)</LI>
+      </UL>
+      <P>If <strong>either RGI or GSS is not met</strong>, the staff member receives <strong>no bonus at all that quarter</strong> — even if GOP and Margin both passed. There is no minimum total score threshold.</P>
+      <InfoBox>💡 Eligibility requires both RGI and GSS. Once eligible, each KPI earns its bonus independently — GOP if passed, Margin if passed, RGI per its tier, GSS if passed.</InfoBox>
+
+      <H3>How bonus is calculated (when eligible)</H3>
+      <P>For each quarter where eligibility is met, the system:</P>
       <UL>
         <LI>Calculates the KPI scorecard for that hotel and quarter</LI>
         <LI>For each KPI that passes, earns: <strong>quarterly salary × bonus percentage for that KPI</strong></LI>
         <LI>Sums the individual KPI bonuses for a quarterly total</LI>
       </UL>
-      <InfoBox>💡 KPIs are <strong>independent</strong> — a hotel can pass GOP and fail GSS, earning only the GOP portion. There is no gatekeeper.</InfoBox>
 
       <H3>Job Classification Bonus Structures</H3>
       <div className="overflow-x-auto rounded-lg border border-border mt-2">

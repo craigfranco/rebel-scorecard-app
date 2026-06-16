@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 import { calculateScorecard, getQuarterFromMonth, aggregateQuarterEntries } from '@/lib/scoring';
 import { calculateActualYtdSalary } from '@/lib/salaryCalculation';
+import { calcKpiBonus, checkBonusEligibility } from '@/lib/bonusCalculation';
 
 const QUARTER_DATES = {
   1: { label: 'Q1 2026', range: 'Jan 1 – Mar 31', months: [1, 2, 3] },
@@ -33,18 +34,13 @@ export default function BonusPayoutDrillDown({ staff, property, jobClass, quarte
   // Whether bonus % is configured
   const hasBonusPct = jobClass && (jobClass.max_bonus_percentage || 0) > 0;
 
-  // Compute YTD running total using: salary_q[x] × max_bonus_pct × (KPI score / maxPossible)
+  // Compute YTD running total using per-KPI bonus amounts, gated by RGI+GSS eligibility.
   const ytdData = useMemo(() => {
-    // Quarters that have salary data entered (bonus calc requires salary)
     const quartersWithSalary = [1, 2, 3, 4].filter(q => (staff[`salary_q${q}`] || 0) > 0);
-
-    // Quarters that also have scorecard entries
     const quartersWithData = quartersWithSalary.filter(q => {
       const qEntries = entries.filter(e => getQuarterFromMonth(e.month) === q);
       return qEntries.length > 0;
     });
-
-    const bonusPct = (jobClass?.max_bonus_percentage || 0) / 100;
 
     let bonusTotal = 0;
     const quarterBreakdown = [];
@@ -57,14 +53,12 @@ export default function BonusPayoutDrillDown({ staff, property, jobClass, quarte
       const qScorecard = calculateScorecard(qEntry, property);
       if (!qScorecard) continue;
 
-      const kpiScore = qScorecard.total?.total ?? 0;
-      const maxPossible = qScorecard.total?.maxPossible ?? 100;
-      const kpiRatio = maxPossible > 0 ? kpiScore / maxPossible : 0;
+      const eligibility = checkBonusEligibility(qScorecard);
+      const bonusResult = calcKpiBonus(qSalary, qScorecard, jobClass);
+      const qBonus = bonusResult.total; // already $0 if not eligible
 
-      // Quarterly Bonus = salary × max_bonus_pct × (kpi score / max possible)
-      const qBonus = qSalary * bonusPct * kpiRatio;
       bonusTotal += qBonus;
-      quarterBreakdown.push({ q, qSalary, kpiScore, maxPossible, kpiRatio, qBonus });
+      quarterBreakdown.push({ q, qSalary, qBonus, eligible: eligibility.eligible, eligibilityReason: eligibility.reason, rgiMet: eligibility.rgiMet, gssMet: eligibility.gssMet });
     }
 
     return {
@@ -97,6 +91,7 @@ export default function BonusPayoutDrillDown({ staff, property, jobClass, quarte
 
   // Scorecard for the viewed quarter (used for KPI table display only)
   const scorecardData = latestEntry ? calculateScorecard(latestEntry, property) : null;
+  const thisQEligibility = scorecardData ? checkBonusEligibility(scorecardData) : null;
 
   // Max bonus potential for the viewed quarter (display only)
   const maxQuarterlyBonus = (quarterlySalary * (jobClass.max_bonus_percentage || 0)) / 100;
@@ -179,20 +174,20 @@ export default function BonusPayoutDrillDown({ staff, property, jobClass, quarte
                'Period close: December 31, 2026'}
             </p>
           </div>
-          {scorecardData && (
-            <span className="text-xs font-semibold text-muted-foreground bg-muted/50 px-3 py-1.5 rounded-lg">
-              KPI Score: <span className="text-foreground font-bold">{scorecardData.total?.total ?? '—'}/{scorecardData.total?.maxPossible ?? 100}</span>
-            </span>
-          )}
+          {/* Eligibility badge */}
+        {thisQEligibility && (
+          <span className={`text-xs font-semibold px-3 py-1.5 rounded-lg ${thisQEligibility.eligible ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'}`}>
+            {thisQEligibility.eligible ? '✅ Eligible — RGI & GSS met' : `❌ Not Eligible — ${thisQEligibility.reason}`}
+          </span>
+        )}
         </div>
 
-        {/* Calculation formula row */}
-        {thisQuarterBreakdown && (
-          <div className="rounded-lg bg-muted/30 px-4 py-3 text-xs text-muted-foreground">
-            <span className="font-medium text-foreground">Formula: </span>
-            ${quarterlySalary.toLocaleString('en-US', { maximumFractionDigits: 0 })} (salary) × {jobClass.max_bonus_percentage}% (bonus %) × {thisQuarterBreakdown.kpiScore}/{thisQuarterBreakdown.maxPossible} pts (KPI score)
-            {' = '}
-            <span className="font-bold text-foreground">${thisQuarterBonusEarned.toLocaleString('en-US', { maximumFractionDigits: 0 })}</span>
+        {/* Eligibility explanation */}
+        {thisQEligibility && !thisQEligibility.eligible && (
+          <div className="rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-xs text-red-800">
+            <span className="font-semibold">No bonus this quarter.</span> Eligibility requires both RGI Improvement (≥0.1% YOY) and GSS Improvement to be met.
+            {!thisQEligibility.rgiMet && <span className="block mt-1">• RGI Improvement: ❌ Not met</span>}
+            {!thisQEligibility.gssMet && <span className="block mt-1">• GSS Improvement: ❌ Not met</span>}
           </div>
         )}
 
@@ -283,13 +278,16 @@ export default function BonusPayoutDrillDown({ staff, property, jobClass, quarte
         ) : (
           <div className="divide-y divide-border rounded-xl border border-border overflow-hidden">
             {/* Per-quarter breakdown */}
-            {quarterBreakdown.map(({ q, qSalary, kpiScore, maxPossible, kpiRatio, qBonus }) => (
+            {quarterBreakdown.map(({ q, qSalary, qBonus, eligible, eligibilityReason }) => (
               <div key={q} className="flex items-center justify-between px-5 py-3 bg-muted/20 text-sm">
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 flex-wrap">
                   <span className="text-xs font-bold text-muted-foreground w-6">Q{q}</span>
                   <span className="text-xs text-muted-foreground">
-                    ${qSalary.toLocaleString('en-US', { maximumFractionDigits: 0 })} × {jobClass.max_bonus_percentage}% × {kpiScore}/{maxPossible} pts
+                    ${qSalary.toLocaleString('en-US', { maximumFractionDigits: 0 })} salary
                   </span>
+                  {eligible
+                    ? <span className="text-xs text-green-700 font-medium">✅ Eligible</span>
+                    : <span className="text-xs text-red-700 font-medium">❌ {eligibilityReason}</span>}
                 </div>
                 <span className="font-semibold text-xs">${qBonus.toLocaleString('en-US', { maximumFractionDigits: 0 })}</span>
               </div>

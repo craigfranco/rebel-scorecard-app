@@ -86,8 +86,13 @@ export default function AllProperties() {
       if (sortCol === 'score') { av = a.scorecard?.total.total ?? -1; bv = b.scorecard?.total.total ?? -1; }
       else if (sortCol === 'name') { av = a.property.name; bv = b.property.name; }
       else if (sortCol === 'brand') { av = a.property.parent_brand || ''; bv = b.property.parent_brand || ''; }
+      else if (sortCol === 'city') { av = a.property.city || ''; bv = b.property.city || ''; }
       else if (sortCol === 'gm') { av = a.property.gm_name || ''; bv = b.property.gm_name || ''; }
       else if (sortCol === 'status') { av = a.scorecard ? (a.scorecard.total.pass ? 1 : 0) : -1; bv = b.scorecard ? (b.scorecard.total.pass ? 1 : 0) : -1; }
+      else if (sortCol === 'gop') { av = a.scorecard?.gop.score ?? -1; bv = b.scorecard?.gop.score ?? -1; }
+      else if (sortCol === 'margin') { av = a.scorecard?.gopMargin.score ?? -1; bv = b.scorecard?.gopMargin.score ?? -1; }
+      else if (sortCol === 'rgi') { av = a.scorecard?.rgi.score ?? -1; bv = b.scorecard?.rgi.score ?? -1; }
+      else if (sortCol === 'gss') { av = a.scorecard?.gss.score ?? -1; bv = b.scorecard?.gss.score ?? -1; }
       else { av = a.scorecard?.total.total ?? -1; bv = b.scorecard?.total.total ?? -1; }
       
       if (typeof av === 'string') return sortDir === 'asc' ? av.localeCompare(bv) : bv.localeCompare(av);
@@ -106,9 +111,21 @@ export default function AllProperties() {
   };
 
   const SortIcon = ({ col }) => {
-    if (sortCol !== col) return <ChevronsUpDown className="w-3 h-3 opacity-40" />;
-    return sortDir === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />;
+    if (sortCol !== col) return <ChevronsUpDown className="w-3 h-3 opacity-30 group-hover:opacity-60 transition-opacity" />;
+    return sortDir === 'asc' ? <ChevronUp className="w-3 h-3 text-primary" /> : <ChevronDown className="w-3 h-3 text-primary" />;
   };
+
+  const SortTh = ({ col, children, className = '' }) => (
+    <th
+      className={`py-3 px-4 font-semibold cursor-pointer select-none group hover:bg-muted/70 transition-colors ${className}`}
+      onClick={() => handleSort(col)}
+    >
+      <div className={`flex items-center gap-1 ${className.includes('text-center') ? 'justify-center' : ''}`}>
+        {children}
+        <SortIcon col={col} />
+      </div>
+    </th>
+  );
 
   return (
     <div className="p-4 lg:p-8 space-y-6 max-w-7xl mx-auto">
@@ -161,30 +178,22 @@ export default function AllProperties() {
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-muted/50 text-muted-foreground text-xs uppercase tracking-wide">
-                <th className="py-3 px-4 text-left font-semibold w-8">#</th>
-                <th className="py-3 px-4 text-left font-semibold cursor-pointer" onClick={() => handleSort('name')}>
-                  <div className="flex items-center gap-1">Property <SortIcon col="name" /></div>
-                </th>
-                <th className="py-3 px-4 text-center font-semibold cursor-pointer" onClick={() => handleSort('brand')}>
-                  <div className="flex items-center justify-center gap-1">Brand <SortIcon col="brand" /></div>
-                </th>
-                <th className="py-3 px-4 text-center font-semibold cursor-pointer" onClick={() => handleSort('gm')}>
-                  <div className="flex items-center justify-center gap-1">GM <SortIcon col="gm" /></div>
-                </th>
-                <th className="py-3 px-4 text-center font-semibold">GOP</th>
-                <th className="py-3 px-4 text-center font-semibold">Margin</th>
-                <th className="py-3 px-4 text-center font-semibold">RGI</th>
-                <th className="py-3 px-4 text-center font-semibold">GSS</th>
-                <th className="py-3 px-4 text-center font-semibold cursor-pointer" onClick={() => handleSort('score')}>
-                  <div className="flex items-center justify-center gap-1">Score <SortIcon col="score" /></div>
-                </th>
-                <th className="py-3 px-4 text-center font-semibold cursor-pointer" onClick={() => handleSort('status')}>
-                  <div className="flex items-center justify-center gap-1">Status <SortIcon col="status" /></div>
-                </th>
+                <th className="py-3 px-4 text-left font-semibold w-10">Rank</th>
+                <SortTh col="name" className="text-left">Property</SortTh>
+                <SortTh col="brand" className="text-center">Brand</SortTh>
+                <SortTh col="city" className="text-center">City</SortTh>
+                <SortTh col="gm" className="text-center">GM</SortTh>
+                <SortTh col="gop" className="text-center">GOP</SortTh>
+                <SortTh col="margin" className="text-center">Margin</SortTh>
+                <SortTh col="rgi" className="text-center">RGI</SortTh>
+                <SortTh col="gss" className="text-center">GSS</SortTh>
+                <SortTh col="score" className="text-center">Score</SortTh>
+                <SortTh col="status" className="text-center">Status</SortTh>
               </tr>
             </thead>
             <tbody>
               {rows.map(({ property, scorecard }, idx) => {
+                const rank = idx + 1;
                 const anyIncomplete = scorecard && [scorecard.gop, scorecard.gopMargin, scorecard.rgi, scorecard.gss].some(k => k?.incomplete);
                 const statusBadge = getStatusBadge(scorecard);
                 const brandColor = getBrandColor(property.parent_brand);
@@ -195,7 +204,11 @@ export default function AllProperties() {
                     className="border-b border-border hover:bg-muted/20 transition-colors cursor-pointer"
                     onClick={() => navigate(`/hotel-scorecard?propertyId=${property.id}`)}
                   >
-                    <td className="py-3 px-4 text-muted-foreground text-xs font-medium">{idx + 1}</td>
+                    <td className="py-3 px-4 text-center">
+                      <span className="text-xs font-bold text-muted-foreground w-7 h-7 rounded-full bg-muted/60 flex items-center justify-center mx-auto">
+                        {rank}
+                      </span>
+                    </td>
                     <td className="py-3 px-4">
                       <div className="flex items-center gap-3">
                         <div className="w-1 h-10 rounded-full" style={{ backgroundColor: brandColor }} />
@@ -210,6 +223,7 @@ export default function AllProperties() {
                         {formatBrandLabel(property.parent_brand, property.sub_brand) || '—'}
                       </span>
                     </td>
+                    <td className="py-3 px-4 text-center text-xs text-muted-foreground">{property.city || '—'}</td>
                     <td className="py-3 px-4 text-center text-xs text-muted-foreground">{property.gm_name || '—'}</td>
                     <td className="py-3 px-4 text-center">
                       {scorecard ? <ScoreCell score={scorecard.gop.score} max={35} pass={scorecard.gop.pass} incomplete={scorecard.gop.incomplete} /> : <span className="text-muted-foreground text-xs">—</span>}

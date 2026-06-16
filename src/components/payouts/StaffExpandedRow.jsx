@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { calculateScorecard, getQuarterFromMonth, aggregateQuarterEntries } from '@/lib/scoring';
 import { calculateActualYtdSalary } from '@/lib/salaryCalculation';
-import { calcKpiBonus } from '@/lib/bonusCalculation';
+import { calcKpiBonus, checkBonusEligibility } from '@/lib/bonusCalculation';
 
 const QUARTERS = [
   { q: 1, label: 'Q1 2026' },
@@ -78,8 +78,9 @@ export default function StaffExpandedRow({ staff, property, jobClass, colSpan = 
     const maxPossible = scorecard?.total?.maxPossible ?? 100;
     const bonus = salary && scorecard ? calcKpiBonus(salary, scorecard, jobClass) : null;
     const bonusEarned = bonus?.total ?? null;
+    const eligibility = scorecard ? checkBonusEligibility(scorecard) : null;
     const rows = scorecard ? kpiRows(scorecard, salary, jobClass) : [];
-    return { q, label, salary, kpiScore, maxPossible, bonus, bonusEarned, rows };
+    return { q, label, salary, kpiScore, maxPossible, bonus, bonusEarned, eligibility, rows };
   });
 
   const { total: ytdSalary } = calculateActualYtdSalary(staff);
@@ -111,7 +112,7 @@ export default function StaffExpandedRow({ staff, property, jobClass, colSpan = 
 
           {/* 4-column quarter grid */}
           <div className="grid grid-cols-4 divide-x divide-border">
-            {quarterData.map(({ q, label, salary, kpiScore, maxPossible, bonus, bonusEarned, rows }) => {
+            {quarterData.map(({ q, label, salary, kpiScore, maxPossible, bonus, bonusEarned, eligibility, rows }) => {
               const isPending = !salary;
               const paidOut = bonusEarned !== null ? bonusEarned * 0.5 : null;
               const held = bonusEarned !== null ? bonusEarned * 0.5 : null;
@@ -136,13 +137,14 @@ export default function StaffExpandedRow({ staff, property, jobClass, colSpan = 
                         <span className="font-semibold text-foreground">{fmt(salary)}</span>
                       </div>
 
-                      {/* KPI Score */}
-                      <div className="text-xs">
-                        <span className="text-muted-foreground">KPI </span>
-                        <span className="font-semibold text-foreground">
-                          {kpiScore !== null ? `${kpiScore}/${maxPossible}` : '—'}
-                        </span>
-                      </div>
+                      {/* Eligibility Badge */}
+                      {eligibility && (
+                        <div className={`rounded px-2 py-1 text-xs font-semibold ${eligibility.eligible ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'}`}>
+                          {eligibility.eligible
+                            ? '✅ Eligible — RGI & GSS met'
+                            : `❌ Not Eligible — ${eligibility.reason}`}
+                        </div>
+                      )}
 
                       {/* KPI rows */}
                       {rows.length > 0 ? (

@@ -73,14 +73,14 @@ export default function BonusSummaryTable({ jobClassifications = [] }) {
           </p>
         </div>
 
-        {/* GOP Gatekeeper Card */}
+        {/* Eligibility Gate Card */}
         <div className="bg-orange-50 rounded-2xl border border-orange-200 p-5">
           <h4 className="font-bold text-orange-900 mb-2 flex items-center gap-2">
             <AlertCircle className="w-4 h-4" />
-            GOP GATEKEEPER
+            BONUS ELIGIBILITY GATE
           </h4>
           <p className="text-xs text-orange-800 leading-relaxed">
-            The adjusted GOP $ must equal the annual approved budgeted target & GOP Margin must exceed the prior year–end % margin to be able to earn the GOP $ and GOP Margin component of the Bonus.
+            Both <strong>RGI Improvement</strong> (≥0.1% YOY, partial or full) <strong>and GSS Improvement</strong> must be met to qualify for any bonus that quarter. If either is missed, no bonus is paid — regardless of GOP or Margin performance. There is no minimum total score threshold.
           </p>
         </div>
 
