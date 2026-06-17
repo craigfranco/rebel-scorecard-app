@@ -77,15 +77,35 @@ export function calcRGIScore(revparIndexChange) {
 }
 
 export function calcGSSScore(actual, prior, parentBrand = 'Independent') {
-  if (actual == null || prior == null) return { score: 0, diff: 0, pass: false, incomplete: true };
-  // Normalize both values to the same 100-pt equivalent scale before comparing
+  if (actual == null || prior == null) return { score: 0, diff: 0, pass: false, tier: 'below', incomplete: true };
+  const std = getGssStandard(parentBrand);
+  const rawDiff = actual - prior; // raw (non-normalized) improvement
+  const target = std.target;
+
+  // 4-tier payout scale using raw brand-specific targets:
+  // Below Threshold (≤0): 0%
+  // Threshold (0 < diff < target): 25% → 3.75 pts
+  // Target (diff >= target): 75% → 11.25 pts
+  // Max (diff >= 2× target): 100% → 15 pts
+  let tier, payoutPct;
+  if (rawDiff >= 2 * target) {
+    tier = 'max'; payoutPct = 1.0;
+  } else if (rawDiff >= target) {
+    tier = 'target'; payoutPct = 0.75;
+  } else if (rawDiff > 0) {
+    tier = 'threshold'; payoutPct = 0.25;
+  } else {
+    tier = 'below'; payoutPct = 0;
+  }
+
+  const score = Math.round(15 * payoutPct * 100) / 100;
+  const pass = rawDiff > 0; // any improvement = eligible for some payout
+
+  // Also compute normalized values for display purposes
   const normActual = normalizeGssTo100(actual, parentBrand);
   const normPrior  = normalizeGssTo100(prior,  parentBrand);
-  const diff = normActual - normPrior;
-  // Any YOY improvement (TY > PY after normalization) = 15 pts full, otherwise 0
-  const pass = diff > 0;
-  const score = pass ? 15 : 0;
-  return { score, diff: Math.round(diff * 100) / 100, normActual, normPrior, pass, incomplete: false };
+
+  return { score, diff: Math.round(rawDiff * 10000) / 10000, rawDiff, normActual, normPrior, pass, tier, payoutPct, incomplete: false };
 }
 
 /**

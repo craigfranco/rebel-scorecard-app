@@ -1,71 +1,47 @@
 /**
- * Bonus eligibility gate: staff must meet BOTH RGI (partial or full) AND GSS (pass)
- * to receive any bonus that quarter. If either fails → total bonus = $0.
+ * GOP GATEKEEPER: Both conditions must be true to earn GOP $ bonus OR Margin $ bonus:
+ *   1. Actual GOP $ >= Budgeted GOP $
+ *   2. Actual GOP Margin % > Prior Year GOP Margin %
  *
- * Returns: { eligible: boolean, rgiMet: boolean, gssMet: boolean, reason: string }
+ * If either fails → gop and gopMargin bonus = $0. RGI and GSS calculate independently.
+ *
+ * RGI and GSS have no eligibility gate — they always calculate.
  */
-export function checkBonusEligibility(scorecard) {
-  if (!scorecard) return { eligible: false, rgiMet: false, gssMet: false, reason: 'No scorecard data' };
-
-  const rgiMet = !scorecard.rgi?.incomplete && scorecard.rgi?.pass === true;
-  const gssMet = !scorecard.gss?.incomplete && scorecard.gss?.pass === true;
-  const eligible = rgiMet && gssMet;
-
-  let reason = '';
-  if (!eligible) {
-    const missing = [];
-    if (!rgiMet) missing.push('RGI Improvement');
-    if (!gssMet) missing.push('GSS Improvement');
-    reason = `Not met: ${missing.join(' & ')}`;
-  }
-
-  return { eligible, rgiMet, gssMet, reason };
+export function checkGopGate(scorecard) {
+  if (!scorecard) return { passed: false, gopPassed: false, marginPassed: false };
+  const gopPassed = !scorecard.gop?.incomplete && scorecard.gop?.pass === true;
+  const marginPassed = !scorecard.gopMargin?.incomplete && scorecard.gopMargin?.pass === true;
+  return { passed: gopPassed && marginPassed, gopPassed, marginPassed };
 }
 
 /**
- * Quarterly bonus calculation using quarterly salary × per-KPI bonus %.
+ * Quarterly bonus calculation per 2026 Incentive Plan.
  *
- * ELIGIBILITY GATE: Both RGI (partial or full) AND GSS must pass.
- * If either fails → all bonus components = $0.
+ * GOP GATEKEEPER: Both GOP $ and Margin $ must individually pass.
+ * If either fails → gop = $0 AND gopMargin = $0.
+ * RGI and GSS always calculate independently.
  *
- * When eligible, each KPI earns independently:
- *   GOP:         PASS → gop_bonus_percentage × quarterly_salary
- *   Margin:      PASS → gop_margin_bonus_percentage × quarterly_salary
- *   RGI full:    tier='full' → rgi_bonus_percentage_high × quarterly_salary
- *   RGI partial: tier='partial' → (rgi_bonus_percentage_high / 2) × quarterly_salary
- *   GSS:         PASS → gss_bonus_percentage × quarterly_salary
+ * GSS 4-tier: uses scorecard.gss.payoutPct (0, 0.25, 0.75, 1.0).
+ * RGI two-tier: full = rgi_bonus_percentage_high × salary; partial = 50% of that.
+ *
+ * Red Zone kicker: +25% of GSS payout for hotels that started in Red Zone
+ * and are showing GSS improvement (tier >= threshold).
  */
-export function calcKpiBonus(quarterlySalary, scorecard, jobClass) {
+export function calcKpiBonus(quarterlySalary, scorecard, jobClass, property = null) {
   if (!jobClass || !scorecard || !quarterlySalary) {
-    return { gop: 0, gopMargin: 0, rgi: 0, gss: 0, total: 0, eligible: false, rgiMet: false, gssMet: false, eligibilityReason: 'Missing data' };
-  }
-
-  const eligibility = checkBonusEligibility(scorecard);
-
-  // If not eligible → zero out everything
-  if (!eligibility.eligible) {
-    return {
-      gop: 0, gopMargin: 0, rgi: 0, gss: 0, total: 0,
-      eligible: false,
-      rgiMet: eligibility.rgiMet,
-      gssMet: eligibility.gssMet,
-      eligibilityReason: eligibility.reason,
-    };
+    return { gop: 0, gopMargin: 0, rgi: 0, gss: 0, redZoneKicker: 0, total: 0, eligible: true, gopGatePassed: false, gopGate: { passed: false, gopPassed: false, marginPassed: false }, eligibilityReason: 'Missing data' };
   }
 
   const sal = quarterlySalary;
+  const gopGate = checkGopGate(scorecard);
 
-  // GOP
-  const gop = (!scorecard.gop?.incomplete && scorecard.gop?.pass)
-    ? sal * (jobClass.gop_bonus_percentage || 0) / 100
-    : 0;
+  // GOP: only if gate passes
+  const gop = gopGate.passed ? sal * (jobClass.gop_bonus_percentage || 0) / 100 : 0;
 
-  // GOP Margin
-  const gopMargin = (!scorecard.gopMargin?.incomplete && scorecard.gopMargin?.pass)
-    ? sal * (jobClass.gop_margin_bonus_percentage || 0) / 100
-    : 0;
+  // GOP Margin: only if gate passes
+  const gopMargin = gopGate.passed ? sal * (jobClass.gop_margin_bonus_percentage || 0) / 100 : 0;
 
-  // RGI — two tiers; partial = high / 2
+  // RGI — independent, two tiers
   let rgi = 0;
   if (!scorecard.rgi?.incomplete && scorecard.rgi?.pass) {
     const highPct = jobClass.rgi_bonus_percentage_high || 0;
@@ -74,29 +50,42 @@ export function calcKpiBonus(quarterlySalary, scorecard, jobClass) {
       : sal * (highPct / 2) / 100;
   }
 
-  // GSS
-  const gss = (!scorecard.gss?.incomplete && scorecard.gss?.pass)
-    ? sal * (jobClass.gss_bonus_percentage || 0) / 100
-    : 0;
+  // GSS — 4-tier using payoutPct from scoring
+  const gssPct = jobClass.gss_bonus_percentage || 0;
+  const gssPayoutPct = (!scorecard.gss?.incomplete) ? (scorecard.gss?.payoutPct ?? 0) : 0;
+  const gss = sal * gssPct / 100 * gssPayoutPct;
 
-  const total = gop + gopMargin + rgi + gss;
+  // Red Zone Kicker: +25% of GSS payout if property started in Red Zone and GSS tier >= threshold
+  let redZoneKicker = 0;
+  if (property?.started_in_red_zone && gss > 0 && scorecard.gss?.pass) {
+    redZoneKicker = gss * 0.25;
+  }
 
-  return { gop, gopMargin, rgi, gss, total, eligible: true, rgiMet: true, gssMet: true, eligibilityReason: '' };
+  const total = gop + gopMargin + rgi + gss + redZoneKicker;
+
+  return {
+    gop, gopMargin, rgi, gss, redZoneKicker, total,
+    eligible: true,
+    gopGatePassed: gopGate.passed,
+    gopGate,
+    eligibilityReason: gopGate.passed ? '' : `GOP Gate: GOP ${gopGate.gopPassed ? '✓' : '✗'}, Margin ${gopGate.marginPassed ? '✓' : '✗'}`,
+  };
 }
 
-// Legacy wrappers — kept so other pages don't break
+// Legacy: checkBonusEligibility — always eligible now (gate is GOP-only)
+export function checkBonusEligibility(scorecard) {
+  if (!scorecard) return { eligible: false, rgiMet: false, gssMet: false, reason: 'No scorecard data' };
+  // No longer gates on RGI+GSS; return eligible=true always (gate is inside calcKpiBonus)
+  const rgiMet = !scorecard.rgi?.incomplete && scorecard.rgi?.pass === true;
+  const gssMet = !scorecard.gss?.incomplete && scorecard.gss?.pass === true;
+  return { eligible: true, rgiMet, gssMet, reason: '' };
+}
+
+// Legacy wrappers
 export const calculateBonusForMetric = (staff, scorecard, jobClass, entry) => {
   const quarterlySalary = staff.annual_salary || 0;
   const result = calcKpiBonus(quarterlySalary, scorecard, jobClass);
-  return {
-    ...result,
-    metricsHit: {
-      gop: result.gop > 0,
-      gopMargin: result.gopMargin > 0,
-      rgi: result.rgi > 0,
-      gss: result.gss > 0,
-    },
-  };
+  return { ...result, metricsHit: { gop: result.gop > 0, gopMargin: result.gopMargin > 0, rgi: result.rgi > 0, gss: result.gss > 0 } };
 };
 
 export const calculateQuarterlyBonus = (staff, scorecard, jobClass, entry) => {
@@ -105,18 +94,16 @@ export const calculateQuarterlyBonus = (staff, scorecard, jobClass, entry) => {
 };
 
 export const calculateAnnualBonus = (staff, scorecards, jobClass, entries = []) => {
-  let total = { gop: 0, gopMargin: 0, rgi: 0, gss: 0, total: 0, metricsHit: {} };
+  let total = { gop: 0, gopMargin: 0, rgi: 0, gss: 0, redZoneKicker: 0, total: 0, metricsHit: {} };
   scorecards.forEach((scorecard, idx) => {
     const q = calculateQuarterlyBonus(staff, scorecard, jobClass, entries[idx]);
-    // Only accumulate quarters where the staff member was eligible
-    if (q.eligible) {
-      total.gop += q.gop;
-      total.gopMargin += q.gopMargin;
-      total.rgi += q.rgi;
-      total.gss += q.gss;
-    }
+    total.gop += q.gop;
+    total.gopMargin += q.gopMargin;
+    total.rgi += q.rgi;
+    total.gss += q.gss;
+    total.redZoneKicker += q.redZoneKicker || 0;
   });
-  total.total = total.gop + total.gopMargin + total.rgi + total.gss;
+  total.total = total.gop + total.gopMargin + total.rgi + total.gss + total.redZoneKicker;
   const maxBonusAmount = ((staff.annual_salary || 0) * (jobClass?.max_bonus_percentage || 0)) / 100;
   if (total.total > maxBonusAmount) total.total = maxBonusAmount;
   return total;

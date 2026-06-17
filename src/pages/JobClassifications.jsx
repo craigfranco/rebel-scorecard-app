@@ -230,15 +230,15 @@ export default function JobClassifications() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
           <div>
             <p className="font-semibold">General Manager</p>
-            <p>Max: 50%, GOP: 10%, Margin: 10%, RGI: 15%, GSS: 15%</p>
+            <p>Max: 50%, GOP: 10%, Margin: 10%, RGI full: 15% / partial: 7.5%, GSS: 15%</p>
           </div>
           <div>
             <p className="font-semibold">AGM / EC Members</p>
-            <p>Max: 40%, GOP: 10%, Margin: 10%, RGI: 10%, GSS: 10%</p>
+            <p>Max: 30%, GOP: 10%, Margin: 10%, RGI full: 5% / partial: 2.5%, GSS: 5%</p>
           </div>
           <div>
             <p className="font-semibold">Department Heads</p>
-            <p>Max: 20%, GOP: 5%, Margin: 5%, RGI: 2%, GSS: 8%</p>
+            <p>Max: 20%, GOP: 5%, Margin: 5%, RGI full: 2% / partial: 1%, GSS: 8%</p>
           </div>
         </div>
       </div>

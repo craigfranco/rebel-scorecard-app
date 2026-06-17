@@ -54,9 +54,9 @@ export default function BonusSummaryTable({ jobClassifications = [] }) {
           </table>
         </div>
 
-        {/* Footnote for GM RGI */}
+        {/* Footnote */}
         <div className="px-6 py-3 border-t border-border text-xs text-muted-foreground bg-muted/20">
-          <p><span className="text-destructive font-semibold">*</span> General Manager RGI: 7.5% for 0.1–2.0% improvement; 15% for 2.1%+ improvement</p>
+          <p>RGI partial (0.1–2.0%) earns 50% of that role's RGI full rate. Full (2.1%+) earns 100%. GOP Gate: both GOP $ and Margin $ bonus = $0 if Actual GOP &lt; Budget OR Margin Actual ≤ Margin Prior Year.</p>
         </div>
       </div>
 
@@ -73,14 +73,14 @@ export default function BonusSummaryTable({ jobClassifications = [] }) {
           </p>
         </div>
 
-        {/* Eligibility Gate Card */}
+        {/* GOP Gatekeeper Card */}
         <div className="bg-orange-50 rounded-2xl border border-orange-200 p-5">
           <h4 className="font-bold text-orange-900 mb-2 flex items-center gap-2">
             <AlertCircle className="w-4 h-4" />
-            BONUS ELIGIBILITY GATE
+            GOP GATEKEEPER
           </h4>
           <p className="text-xs text-orange-800 leading-relaxed">
-            Both <strong>RGI Improvement</strong> (≥0.1% YOY, partial or full) <strong>and GSS Improvement</strong> must be met to qualify for any bonus that quarter. If either is missed, no bonus is paid — regardless of GOP or Margin performance. There is no minimum total score threshold.
+            Both <strong>Actual GOP ≥ Budget</strong> AND <strong>Margin Actual &gt; Margin Prior Year</strong> must be true to earn either the GOP $ component or the Margin $ component. If either fails → both GOP and Margin bonuses = $0. RGI and GSS always calculate independently.
           </p>
         </div>
 

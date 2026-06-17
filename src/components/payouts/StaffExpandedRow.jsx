@@ -76,7 +76,7 @@ export default function StaffExpandedRow({ staff, property, jobClass, colSpan = 
     const scorecard = entry ? calculateScorecard(entry, property) : null;
     const kpiScore = scorecard?.total?.total ?? null;
     const maxPossible = scorecard?.total?.maxPossible ?? 100;
-    const bonus = salary && scorecard ? calcKpiBonus(salary, scorecard, jobClass) : null;
+    const bonus = salary && scorecard ? calcKpiBonus(salary, scorecard, jobClass, property) : null;
     const bonusEarned = bonus?.total ?? null;
     const eligibility = scorecard ? checkBonusEligibility(scorecard) : null;
     const rows = scorecard ? kpiRows(scorecard, salary, jobClass) : [];
@@ -137,12 +137,12 @@ export default function StaffExpandedRow({ staff, property, jobClass, colSpan = 
                         <span className="font-semibold text-foreground">{fmt(salary)}</span>
                       </div>
 
-                      {/* Eligibility Badge */}
-                      {eligibility && (
-                        <div className={`rounded px-2 py-1 text-xs font-semibold ${eligibility.eligible ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'}`}>
-                          {eligibility.eligible
-                            ? '✅ Eligible — RGI & GSS met'
-                            : `❌ Not Eligible — ${eligibility.reason}`}
+                      {/* GOP Gate Badge */}
+                      {bonus && (
+                        <div className={`rounded px-2 py-1 text-xs font-semibold ${bonus.gopGatePassed ? 'bg-green-50 text-green-800' : 'bg-orange-50 text-orange-800'}`}>
+                          {bonus.gopGatePassed
+                            ? '✅ GOP Gate — GOP & Margin both passed'
+                            : `⚠️ GOP Gate failed — ${bonus.eligibilityReason}`}
                         </div>
                       )}
 
@@ -166,6 +166,16 @@ export default function StaffExpandedRow({ staff, property, jobClass, colSpan = 
                               )}
                             </div>
                           ))}
+                          {/* Red Zone kicker row */}
+                          {bonus?.redZoneKicker > 0 && (
+                            <div className="flex items-center justify-between gap-1 text-xs text-red-700">
+                              <span className="flex items-center gap-1">
+                                <span>🔴</span>
+                                <span>Red Zone Kicker (+25% GSS)</span>
+                              </span>
+                              <span className="font-semibold">{fmt(bonus.redZoneKicker)}</span>
+                            </div>
+                          )}
                           {/* Total row */}
                           <div className="flex items-center justify-between gap-1 text-xs border-t border-border/40 pt-1 mt-1">
                             <span className="font-bold text-foreground">Total</span>

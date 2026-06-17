@@ -15,7 +15,7 @@ export function TimePeriodProvider({ children }) {
   const [selectedMonth, setSelectedMonth] = useState(null);
   const [selectedYear, setSelectedYear] = useState(CURRENT_YEAR);
   // 'month', 'quarter', or 'ytd'
-  const [periodType, setPeriodType] = useState('month');
+  const [periodType, setPeriodType] = useState('quarter');
   const [availableYears, setAvailableYears] = useState([CURRENT_YEAR]);
   const [isInitialized, setIsInitialized] = useState(false);
   // Set of "YYYY-M" strings for months that have at least one ScoreEntry record
@@ -67,8 +67,26 @@ export function TimePeriodProvider({ children }) {
           .sort((a, b) => (b.year * 100 + b.month) - (a.year * 100 + a.month));
 
         if (distinctMonths.length > 0) {
-          setSelectedYear(distinctMonths[0].year);
-          setSelectedMonth(distinctMonths[0].month);
+          // Default to the last month of the most recent complete quarter that has data
+          // A complete quarter has all 3 months loaded
+          let defaultYear = distinctMonths[0].year;
+          let defaultMonth = distinctMonths[0].month;
+
+          // Try to find the most recent complete quarter
+          const yearsDesc = Array.from(new Set(distinctMonths.map(d => d.year))).sort((a, b) => b - a);
+          outerLoop: for (const yr of yearsDesc) {
+            for (let q = 4; q >= 1; q--) {
+              const qMonths = [q * 3 - 2, q * 3 - 1, q * 3];
+              if (qMonths.every(m => keys.has(`${yr}-${m}`))) {
+                defaultYear = yr;
+                defaultMonth = q * 3; // last month of the complete quarter
+                break outerLoop;
+              }
+            }
+          }
+          // If no complete quarter found, fall back to most recent loaded month
+          setSelectedYear(defaultYear);
+          setSelectedMonth(defaultMonth);
         } else {
           setSelectedYear(CURRENT_YEAR);
           setSelectedMonth(CURRENT_MONTH > 1 ? CURRENT_MONTH - 1 : 1);
