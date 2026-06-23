@@ -7,6 +7,26 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
 import { getQuarterFromMonth, getQuarterStartMonth, MONTHS } from '@/lib/scoring';
 
+// Parse initiatives from stored text into array of 3
+function parseInitiatives(text) {
+  if (!text) return ['', '', ''];
+  // Split by numbered patterns (1., 2., 3. or 1) 2) 3))
+  const lines = text.split(/\d+[.)]\s*/).filter(line => line.trim());
+  const result = ['', '', ''];
+  for (let i = 0; i < 3; i++) {
+    result[i] = lines[i] ? lines[i].trim() : '';
+  }
+  return result;
+}
+
+// Convert array of 3 initiatives back to numbered text
+function formatInitiatives(initiatives) {
+  return initiatives
+    .map((text, i) => text.trim() ? `${i + 1}. ${text.trim()}` : '')
+    .filter(t => t)
+    .join('\n');
+}
+
 /**
  * KeyWinsSection — GM narrative section for monthly/quarterly scorecards.
  * Three categories (Key Wins, Previous Results, Next Priorities), each with 3 numbered initiatives.
@@ -15,25 +35,26 @@ export default function KeyWinsSection({ property, entry, periodType, selectedMo
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
-  const [localData, setLocalData] = useState({
-    key_wins: '',
-    previous_results: '',
-    next_priorities: '',
+  // Store as arrays of 3 initiatives each
+  const [initiatives, setInitiatives] = useState({
+    key_wins: ['', '', ''],
+    previous_results: ['', '', ''],
+    next_priorities: ['', '', ''],
   });
 
   const [isEditing, setIsEditing] = useState(false);
 
   // Sync local state when entry changes
   useEffect(() => {
-    setLocalData({
-      key_wins: entry?.key_wins || '',
-      previous_results: entry?.previous_results || '',
-      next_priorities: entry?.next_priorities || '',
+    setInitiatives({
+      key_wins: parseInitiatives(entry?.key_wins || ''),
+      previous_results: parseInitiatives(entry?.previous_results || ''),
+      next_priorities: parseInitiatives(entry?.next_priorities || ''),
     });
   }, [entry]);
 
   const mutation = useMutation({
-    mutationFn: async (data) => {
+    mutationFn: async () => {
       // Determine the month to use based on period type
       let month;
       if (periodType === 'month') {
@@ -43,6 +64,12 @@ export default function KeyWinsSection({ property, entry, periodType, selectedMo
       } else {
         month = selectedMonth; // YTD defaults to selected month
       }
+
+      const data = {
+        key_wins: formatInitiatives(initiatives.key_wins),
+        previous_results: formatInitiatives(initiatives.previous_results),
+        next_priorities: formatInitiatives(initiatives.next_priorities),
+      };
 
       if (!entry?.id) {
         // Create new ScoreEntry
@@ -79,43 +106,51 @@ export default function KeyWinsSection({ property, entry, periodType, selectedMo
   });
 
   const handleSave = () => {
-    mutation.mutate(localData);
+    mutation.mutate();
   };
 
   const handleCancel = () => {
-    setLocalData({
-      key_wins: entry?.key_wins || '',
-      previous_results: entry?.previous_results || '',
-      next_priorities: entry?.next_priorities || '',
+    setInitiatives({
+      key_wins: parseInitiatives(entry?.key_wins || ''),
+      previous_results: parseInitiatives(entry?.previous_results || ''),
+      next_priorities: parseInitiatives(entry?.next_priorities || ''),
     });
     setIsEditing(false);
   };
 
-  const updateField = (field, value) => {
-    setLocalData(prev => ({ ...prev, [field]: value }));
+  const updateInitiative = (category, index, value) => {
+    setInitiatives(prev => ({
+      ...prev,
+      [category]: prev[category].map((item, i) => i === index ? value : item),
+    }));
   };
 
-  // Helper to render numbered initiatives (1-3)
-  const renderInitiatives = (label, field, placeholder) => {
-    if (!isEditing) {
-      const value = localData[field];
-      if (!value || value.trim() === '') {
-        return (
-          <div className="text-xs text-muted-foreground italic">No {label.toLowerCase()} entered</div>
-        );
-      }
-      return (
-        <div className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">{value}</div>
-      );
-    }
-
+  // Render 3 separate text boxes for each category
+  const renderInitiatives = (label, category, colorClass) => {
     return (
-      <Textarea
-        value={localData[field]}
-        onChange={(e) => updateField(field, e.target.value)}
-        placeholder={placeholder}
-        className="min-h-[120px] text-sm resize-none"
-      />
+      <div className="space-y-3">
+        {[0, 1, 2].map((idx) => (
+          <div key={idx} className="space-y-1">
+            <label className="text-xs font-medium text-muted-foreground">
+              {label} #{idx + 1}
+            </label>
+            {!isEditing ? (
+              initiatives[category][idx] ? (
+                <div className="text-sm text-foreground leading-relaxed">{initiatives[category][idx]}</div>
+              ) : (
+                <div className="text-xs text-muted-foreground italic">Not specified</div>
+              )
+            ) : (
+              <Textarea
+                value={initiatives[category][idx]}
+                onChange={(e) => updateInitiative(category, idx, e.target.value)}
+                placeholder={`Enter ${label.toLowerCase()} #${idx + 1}...`}
+                className="min-h-[60px] text-sm resize-none"
+              />
+            )}
+          </div>
+        ))}
+      </div>
     );
   };
 
@@ -168,11 +203,7 @@ export default function KeyWinsSection({ property, entry, periodType, selectedMo
             <span className="w-2 h-2 rounded-full bg-green-500"></span>
             Key Wins
           </h3>
-          {renderInitiatives(
-            'Key Wins',
-            'key_wins',
-            'Enter 3 key wins (numbered 1-3):\n1. \n2. \n3. '
-          )}
+          {renderInitiatives('Key Win', 'key_wins', 'green')}
         </div>
 
         {/* Previous Months Results */}
@@ -181,11 +212,7 @@ export default function KeyWinsSection({ property, entry, periodType, selectedMo
             <span className="w-2 h-2 rounded-full bg-blue-500"></span>
             Previous Months Results
           </h3>
-          {renderInitiatives(
-            'Previous Results',
-            'previous_results',
-            'Enter 3 previous results (numbered 1-3):\n1. \n2. \n3. '
-          )}
+          {renderInitiatives('Result', 'previous_results', 'blue')}
         </div>
 
         {/* Next Months Priorities */}
@@ -194,11 +221,7 @@ export default function KeyWinsSection({ property, entry, periodType, selectedMo
             <span className="w-2 h-2 rounded-full bg-orange-500"></span>
             Next Months Priorities
           </h3>
-          {renderInitiatives(
-            'Next Priorities',
-            'next_priorities',
-            'Enter 3 next priorities (numbered 1-3):\n1. \n2. \n3. '
-          )}
+          {renderInitiatives('Priority', 'next_priorities', 'orange')}
         </div>
       </div>
     </div>
