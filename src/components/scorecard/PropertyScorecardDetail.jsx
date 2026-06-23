@@ -351,15 +351,6 @@ export default function PropertyScorecardDetail({
         </div>
       </div>
 
-      {/* Key Wins & Risks Section */}
-      <KeyWinsSection
-        property={property}
-        entry={activeEntry}
-        periodType={periodType}
-        selectedMonth={selectedMonth}
-        selectedYear={selectedYear}
-      />
-
       {/* Scorecard Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* Gauge */}
@@ -435,6 +426,15 @@ export default function PropertyScorecardDetail({
           </div>
         </div>
       </div>
+
+      {/* Key Wins & Risks Section */}
+      <KeyWinsSection
+        property={property}
+        entry={activeEntry}
+        periodType={periodType}
+        selectedMonth={selectedMonth}
+        selectedYear={selectedYear}
+      />
     </div>
   );
 }
