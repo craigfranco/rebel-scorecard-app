@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import ScoreGauge from '@/components/scorecard/ScoreGauge';
 import KpiRow from '@/components/scorecard/KpiRow';
 import KickerBadge from '@/components/scorecard/KickerBadge';
+import KeyWinsSection from '@/components/scorecard/KeyWinsSection';
 import { generateScorecardPDF } from '@/components/scorecard/ScorecardPdfExport';
 import { formatBrandLabel } from '@/lib/portfolioHelpers';
 import {
@@ -349,6 +350,15 @@ export default function PropertyScorecardDetail({
           </div>
         </div>
       </div>
+
+      {/* Key Wins & Risks Section */}
+      <KeyWinsSection
+        property={property}
+        entry={activeEntry}
+        periodType={periodType}
+        selectedMonth={selectedMonth}
+        selectedYear={selectedYear}
+      />
 
       {/* Scorecard Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
