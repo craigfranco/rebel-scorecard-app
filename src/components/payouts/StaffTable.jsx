@@ -19,7 +19,7 @@ const JOB_CLASS_LABELS = {
   'Department Head': 'Department Heads',
 };
 
-export default function StaffTable({ staff = [], jobClassifications = [], properties = [], salaryColHeader = 'Q1 Salary', onQuarterClick }) {
+export default function StaffTable({ staff = [], jobClassifications = [], properties = [], salaryColHeader = 'Q1 Salary' }) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [editingStaffId, setEditingStaffId] = useState(null);
@@ -130,17 +130,8 @@ export default function StaffTable({ staff = [], jobClassifications = [], proper
                             </div>
                           </td>
                           <td className="py-3 px-4 text-center text-muted-foreground text-xs">{classTitle}</td>
-                          <td className="py-3 px-4 text-center">
-                            {closedQuarters.includes(1) ? (
-                              <button
-                                onClick={(e) => { e.stopPropagation(); onQuarterClick?.(s.id, 1); }}
-                                className="text-primary hover:text-primary/80 hover:underline font-medium"
-                              >
-                                {getDisplayedQ1(s)}
-                              </button>
-                            ) : (
-                              <span className="text-muted-foreground">{getDisplayedQ1(s)}</span>
-                            )}
+                          <td className="py-3 px-4 text-center text-muted-foreground">
+                            {getDisplayedQ1(s)}
                           </td>
                           <td className="py-3 px-4 text-center font-semibold">
                             {formatYtdSalary(s)}

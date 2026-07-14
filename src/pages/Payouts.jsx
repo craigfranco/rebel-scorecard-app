@@ -4,15 +4,11 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Plus, Save, ChevronRight, Check, X } from 'lucide-react';
+import { Plus, Save, ChevronRight } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
-import { calculateQuarterlyBonus, calculateAnnualBonus, calculateBonusForMetric, getMetricStatus } from '@/lib/bonusCalculation';
-import { calculateScorecard } from '@/lib/scoring';
 import { getClosedQuarters, calculateEstimatedAnnualSalary } from '@/lib/salaryCalculation';
 import StaffTable from '@/components/payouts/StaffTable';
 import BonusSummaryTable from '@/components/payouts/BonusSummaryTable';
-import PayoutBreakdownCard from '@/components/payouts/PayoutBreakdownCard';
-import BonusPayoutDrillDown from '@/components/payouts/BonusPayoutDrillDown';
 import { useTimePeriod } from '@/lib/TimePeriodContext';
 
 const Switch = ({ checked, onChange }) => (
@@ -35,10 +31,7 @@ export default function Payouts() {
   const closedQuarters = getClosedQuarters();
 
   const [selectedPropertyId, setSelectedPropertyId] = useState('');
-  const [selectedStaffId, setSelectedStaffId] = useState('');
   const [showAddForm, setShowAddForm] = useState(false);
-  const [drillDownStaffId, setDrillDownStaffId] = useState(null);
-  const [drillDownQuarter, setDrillDownQuarter] = useState(null);
   const [newStaff, setNewStaff] = useState({ 
     name: '', 
     property_id: '', 
@@ -81,29 +74,6 @@ export default function Payouts() {
     enabled: !!selectedPropertyId,
   });
 
-  const { data: allStaff = [] } = useQuery({
-    queryKey: ['all-staff'],
-    queryFn: () => base44.entities.Staff.list('name', 500),
-  });
-
-  const { data: entries = [] } = useQuery({
-    queryKey: ['score-entries', selectedPropertyId, selectedYear],
-    queryFn: () =>
-      selectedPropertyId
-        ? base44.entities.ScoreEntry.filter({ property_id: selectedPropertyId, year: selectedYear })
-        : Promise.resolve([]),
-    enabled: !!selectedPropertyId,
-  });
-
-  const { data: bonusPayouts = [] } = useQuery({
-    queryKey: ['bonus-payouts', selectedPropertyId, selectedYear],
-    queryFn: () =>
-      selectedPropertyId
-        ? base44.entities.BonusPayout.filter({ year: selectedYear })
-        : Promise.resolve([]),
-    enabled: !!selectedPropertyId,
-  });
-
   // Mutations
   const addStaffMutation = useMutation({
     mutationFn: (data) => {
@@ -124,7 +94,6 @@ export default function Payouts() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['staff', selectedPropertyId, selectedYear] });
-      queryClient.invalidateQueries({ queryKey: ['all-staff'] });
       setNewStaff({ 
         name: '', 
         property_id: selectedPropertyId, 
@@ -142,58 +111,6 @@ export default function Payouts() {
   });
 
   const selectedProperty = properties.find(p => p.id === selectedPropertyId);
-  const selectedStaff = allStaff.find(s => s.id === selectedStaffId);
-
-  // Compute vs-target variance for each staff member in the current property
-  const staffVarianceMap = useMemo(() => {
-    if (!entries.length || !staffMembers.length) return {};
-    const map = {};
-    for (const s of staffMembers) {
-      const jobClass = jobClassifications.find(jc => jc.id === s.job_classification_id);
-      if (!jobClass) continue;
-      const prop = properties.find(p => p.id === s.property_id);
-      if (!prop) continue;
-      const latestEntry = entries[entries.length - 1];
-      if (!latestEntry) continue;
-      const scorecard = calculateScorecard(latestEntry, prop);
-      const annualSalary = calculateEstimatedAnnualSalary(s, closedQuarters);
-      const bonus = calculateBonusForMetric({ ...s, annual_salary: annualSalary }, scorecard, jobClass, latestEntry);
-      const maxBonus = (annualSalary * jobClass.max_bonus_percentage) / 100;
-      const actual = Math.min(bonus.total, maxBonus);
-      const diff = actual - maxBonus;
-      map[s.id] = { actual, target: maxBonus, diff };
-    }
-    return map;
-  }, [staffMembers, entries, jobClassifications, properties, closedQuarters]);
-
-  // Calculate bonus for selected staff
-  const selectedStaffBonus = selectedStaff && selectedProperty ? (() => {
-    const jobClass = jobClassifications.find(jc => jc.id === selectedStaff.job_classification_id);
-    if (!jobClass) return null;
-
-    const staffEntries = entries.filter(e => e.property_id === selectedPropertyId);
-    if (staffEntries.length === 0) return null;
-
-    const entry = staffEntries[staffEntries.length - 1];
-    const scorecard = calculateScorecard(entry, selectedProperty);
-    const estimatedAnnualSalary = calculateEstimatedAnnualSalary(selectedStaff, closedQuarters);
-
-    const quarterlyBonus = calculateQuarterlyBonus(
-      { ...selectedStaff, annual_salary: estimatedAnnualSalary },
-      scorecard,
-      jobClass,
-      entry
-    );
-
-    return {
-      ...selectedStaff,
-      jobClass,
-      quarterlyBonus,
-      scorecard,
-      entry,
-      estimatedAnnualSalary,
-    };
-  })() : null;
 
   const handleAddStaff = () => {
     if (!newStaff.name || !newStaff.job_classification_id) {
@@ -224,33 +141,6 @@ export default function Payouts() {
       setSelectedPropertyId(properties[0].id);
     }
   }, [properties]);
-
-  // Reset staff selection when property changes
-  React.useEffect(() => {
-    setSelectedStaffId('');
-  }, [selectedPropertyId]);
-
-  // Get drill-down staff and property for detail view
-  const drillDownStaff = drillDownStaffId ? allStaff.find(s => s.id === drillDownStaffId) : null;
-  const drillDownProperty = drillDownStaff ? properties.find(p => p.id === drillDownStaff.property_id) : null;
-  const drillDownJobClass = drillDownStaff ? jobClassifications.find(jc => jc.id === drillDownStaff.job_classification_id) : null;
-
-  if (drillDownStaffId && drillDownQuarter && drillDownStaff && drillDownProperty && drillDownJobClass) {
-    return (
-      <div className="p-4 lg:p-8 max-w-7xl mx-auto">
-        <BonusPayoutDrillDown
-          staff={drillDownStaff}
-          property={drillDownProperty}
-          jobClass={drillDownJobClass}
-          quarter={drillDownQuarter}
-          onClose={() => {
-            setDrillDownStaffId(null);
-            setDrillDownQuarter(null);
-          }}
-        />
-      </div>
-    );
-  }
 
   return (
     <div className="p-4 lg:p-8 space-y-6 max-w-7xl mx-auto">
@@ -323,10 +213,6 @@ export default function Payouts() {
             jobClassifications={jobClassifications}
             properties={properties}
             salaryColHeader={salaryColHeader}
-            onQuarterClick={(staffId, quarter) => {
-              setDrillDownStaffId(staffId);
-              setDrillDownQuarter(quarter);
-            }}
           />
 
           {/* Bonus Summary Table */}
@@ -472,19 +358,6 @@ export default function Payouts() {
               </div>
             </div>
           )}
-
-          {/* Payout Breakdown Card */}
-          {selectedStaffBonus && (
-            <PayoutBreakdownCard
-              staff={selectedStaffBonus}
-              jobClass={selectedStaffBonus.jobClass}
-              bonus={selectedStaffBonus.quarterlyBonus}
-              salary={selectedStaffBonus.projectedAnnualSalary}
-              scorecard={selectedStaffBonus.scorecard}
-              entry={selectedStaffBonus.entry}
-            />
-          )}
-
 
         </>
       )}
