@@ -54,7 +54,8 @@ export default function DataHealthPanel() {
   const expectedMonths = getExpectedMonths();
 
   const propertyHealth = useMemo(() => {
-    return properties.map(prop => {
+    // Only include properties that are on deployment (have an str_id from the Dashboard sync)
+    return properties.filter(p => p.str_id).map(prop => {
       const propEntries = entries.filter(e => e.property_id === prop.id);
       const kpiStatus = {};
       for (const kpi of KPI_TYPES) {
