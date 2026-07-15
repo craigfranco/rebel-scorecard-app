@@ -6,15 +6,15 @@ import { MONTHS } from '@/lib/scoring';
 
 const CURRENT_YEAR = 2026;
 
-// A month is "expected" (due) only after the 20th of the following month.
-// e.g. July data isn't expected until August 20th.
+// A month is "expected" (due) after the 15th of the following month.
+// e.g. June data is expected by July 15th.
 function getExpectedMonths(now = new Date()) {
   const expected = [];
   for (let m = 1; m <= 12; m++) {
     let dueYear = CURRENT_YEAR;
     let dueMonth = m + 1;
     if (dueMonth > 12) { dueMonth = 1; dueYear = CURRENT_YEAR + 1; }
-    const dueDate = new Date(dueYear, dueMonth - 1, 20, 23, 59, 59);
+    const dueDate = new Date(dueYear, dueMonth - 1, 15);
     if (now >= dueDate) expected.push(m);
   }
   return expected;
