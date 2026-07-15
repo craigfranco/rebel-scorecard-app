@@ -109,8 +109,20 @@ export async function parseFile(file) {
       Papa.parse(file, {
         skipEmptyLines: true,
         complete: (results) => {
-          const [headers, ...rows] = results.data;
-          resolve({ headers: headers.map(h => String(h).trim()), rows });
+          const nonEmpty = results.data.filter(row => row.some(c => c !== '' && c != null));
+          if (!nonEmpty.length) { resolve({ headers: [], rows: [] }); return; }
+          // Find the first row that looks like a header (>= 3 non-numeric string cells).
+          // Break on first match so data rows with text values (e.g. STR rank columns like "5 of 7")
+          // don't overwrite the real header.
+          let headerIdx = 0;
+          for (let i = 0; i < Math.min(nonEmpty.length, 8); i++) {
+            const row = nonEmpty[i];
+            const strCells = row.filter(c => c !== '' && c != null && isNaN(Number(c))).length;
+            if (strCells >= 3) { headerIdx = i; break; }
+          }
+          const headers = nonEmpty[headerIdx].map((h, i) => h !== '' && h != null ? String(h).trim() : `col_${i}`);
+          const rows = nonEmpty.slice(headerIdx + 1);
+          resolve({ headers, rows });
         },
         error: reject,
       });
@@ -135,8 +147,8 @@ export async function parseFile(file) {
         let headerIdx = 0;
         for (let i = 0; i < Math.min(nonEmpty.length, 8); i++) {
           const row = nonEmpty[i];
-          const strCells = row.filter(c => c !== '' && isNaN(Number(c))).length;
-          if (strCells >= 3) { headerIdx = i; }
+          const strCells = row.filter(c => c !== '' && c != null && isNaN(Number(c))).length;
+          if (strCells >= 3) { headerIdx = i; break; }
         }
 
         const headers = nonEmpty[headerIdx].map((h, i) => h !== '' ? String(h).trim() : `col_${i}`);
