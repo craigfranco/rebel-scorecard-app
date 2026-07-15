@@ -61,9 +61,10 @@ export function bestMatch(nameOrStrId, properties, strId = null) {
       continue;
     }
 
-    // Word overlap (ignore short words)
-    const needleWords = needle.split(' ').filter(w => w.length > 2);
-    const hayWords = hay.split(' ').filter(w => w.length > 2);
+    // Word overlap (ignore short words, but keep numbers like "39" — strong identifiers)
+    const isToken = w => w.length > 2 || /^\d+$/.test(w);
+    const needleWords = needle.split(' ').filter(isToken);
+    const hayWords = hay.split(' ').filter(isToken);
     if (!needleWords.length || !hayWords.length) continue;
     const matched = needleWords.filter(w => hayWords.includes(w)).length;
     const score = matched / Math.max(needleWords.length, hayWords.length);
