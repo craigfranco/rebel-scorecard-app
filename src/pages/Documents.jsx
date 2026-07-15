@@ -8,6 +8,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { MONTHS, getQuarterFromMonth } from '../lib/scoring';
 import UploadZone from '@/components/documents/UploadZone';
 import ImportWizard from '@/components/documents/ImportWizard';
+import DataHealthPanel from '@/components/documents/DataHealthPanel';
 
 const CURRENT_YEAR = 2026;
 const CURRENT_MONTH = 1;
@@ -104,6 +105,9 @@ export default function Documents() {
         <h1 className="text-2xl font-bold">Documents</h1>
         <p className="text-white/70 text-sm mt-1">Upload Excel or CSV files — data is parsed client-side and imported directly into scorecards</p>
       </div>
+
+      {/* Data Health */}
+      <DataHealthPanel />
 
       {/* Upload Zone */}
       <div className="bg-card rounded-2xl border border-border shadow-sm p-6 space-y-4">
