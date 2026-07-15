@@ -1,4 +1,4 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
+import { createClientFromRequest, createClient } from 'npm:@base44/sdk@0.8.25';
 
 /**
  * deploymentSync - Receives property/staff data pushed from the Dashboard app
@@ -29,11 +29,36 @@ Deno.serve(async (req) => {
     const expectedSecret = Deno.env.get('BASE44_SERVICE_API_KEY');
     const secretMatch = expectedSecret && secret === expectedSecret;
 
+    let isAuthedUser = false;
     if (!secretMatch) {
       const user = await base44.auth.me().catch(() => null);
       if (!user) {
         return Response.json({ error: 'Unauthorized' }, { status: 401 });
       }
+      isAuthedUser = true;
+    }
+
+    // PULL MODE: fetch the latest deployments from the Dashboard app
+    if (body.pull === true && (secretMatch || isAuthedUser)) {
+      const apiKey = Deno.env.get('BASE44_SERVICE_API_KEY');
+      const dashboardClient = createClient({
+        appId: '69d57633cdc86dba45d18ca2',
+        token: apiKey,
+      });
+      const deployments = await dashboardClient.entities.Deployment.list('name', 500);
+
+      body.properties = deployments.map(d => ({
+        str_id: d.str_id || null,
+        name: d.name || d.hotel_name || d.property_name || null,
+        parent_brand: d.parent_brand || d.brand || null,
+        sub_brand: d.sub_brand || null,
+        city: d.city || null,
+        state: d.state || null,
+        gm_name: d.property_gm || d.gm_name || d.general_manager || null,
+        lead_type: d.lead_type || null,
+        department: d.department || null,
+      })).filter(p => p.name);
+      body.source = 'dashboard_pull';
     }
 
     const incomingProperties = body.properties || [];
@@ -146,12 +171,14 @@ Deno.serve(async (req) => {
       staffUpserted++;
     }
 
-    // Deactivate staff no longer in incoming set
-    for (const s of existingStaff) {
-      const key = `${s.name}|${s.property_id}|${s.role || ''}|${s.year}`;
-      if (!seenStaffKeys.has(key) && s.is_active !== false) {
-        await base44.asServiceRole.entities.Staff.update(s.id, { is_active: false });
-        staffDeactivated++;
+    // Deactivate staff no longer in incoming set (only when staff are being synced)
+    if (incomingStaff.length > 0) {
+      for (const s of existingStaff) {
+        const key = `${s.name}|${s.property_id}|${s.role || ''}|${s.year}`;
+        if (!seenStaffKeys.has(key) && s.is_active !== false) {
+          await base44.asServiceRole.entities.Staff.update(s.id, { is_active: false });
+          staffDeactivated++;
+        }
       }
     }
 
