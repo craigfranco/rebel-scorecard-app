@@ -5,7 +5,20 @@ import { ChevronDown, ChevronRight, AlertTriangle, CheckCircle2, XCircle, FileWa
 import { MONTHS } from '@/lib/scoring';
 
 const CURRENT_YEAR = 2026;
-const CURRENT_MONTH = 7; // July 2026 — months 1..7 expected
+
+// A month is "expected" (due) only after the 20th of the following month.
+// e.g. July data isn't expected until August 20th.
+function getExpectedMonths(now = new Date()) {
+  const expected = [];
+  for (let m = 1; m <= 12; m++) {
+    let dueYear = CURRENT_YEAR;
+    let dueMonth = m + 1;
+    if (dueMonth > 12) { dueMonth = 1; dueYear = CURRENT_YEAR + 1; }
+    const dueDate = new Date(dueYear, dueMonth - 1, 20, 23, 59, 59);
+    if (now >= dueDate) expected.push(m);
+  }
+  return expected;
+}
 
 const KPI_TYPES = [
   { key: 'gop',      label: 'GOP',      docType: 'GOP Report',          color: 'emerald', fields: ['budgeted_gop_actual', 'budgeted_gop_target'] },
@@ -38,7 +51,7 @@ export default function DataHealthPanel() {
     queryFn: () => base44.entities.Document.list('-created_date', 500),
   });
 
-  const expectedMonths = Array.from({ length: CURRENT_MONTH }, (_, i) => i + 1);
+  const expectedMonths = getExpectedMonths();
 
   const propertyHealth = useMemo(() => {
     return properties.map(prop => {
@@ -101,7 +114,7 @@ export default function DataHealthPanel() {
       <div className="px-6 py-4 border-b border-border flex items-center gap-2" style={{ background: '#2d4b5e' }}>
         <FileWarning className="w-5 h-5 text-white" />
         <h2 className="font-bold text-lg text-white">Data Health</h2>
-        <span className="text-white/60 text-xs ml-1">Jan–{MONTHS[CURRENT_MONTH - 1]} {CURRENT_YEAR}</span>
+        <span className="text-white/60 text-xs ml-1">Jan–{expectedMonths.length ? MONTHS[expectedMonths[expectedMonths.length - 1] - 1] : '—'} {CURRENT_YEAR}</span>
       </div>
 
       {/* Summary bar */}
