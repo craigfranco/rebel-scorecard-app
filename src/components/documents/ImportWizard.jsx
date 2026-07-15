@@ -83,6 +83,10 @@ export default function ImportWizard({ file, properties, onClose, onSuccess }) {
     const autoMatches = rows.map(r => {
       const match = bestMatch(r.hotel_name, properties, r.str_id);
       console.log(`[ImportWizard] row "${r.hotel_name}" str_id="${r.str_id}" => matched: ${match?.name ?? 'NONE'}`);
+      // Auto-create new property for unmatched hotels
+      if (!match) {
+        return { __new__: true, name: r.hotel_name, str_id: r.str_id || null };
+      }
       return match;
     });
     setMappedRows(rows);
@@ -93,6 +97,7 @@ export default function ImportWizard({ file, properties, onClose, onSuccess }) {
   const handleImport = async () => {
     setStep('importing');
     let ok = 0, fail = 0;
+    let newPropsCreated = 0;
     const unmatchedNames = [];
 
     // Upload file first
@@ -113,11 +118,24 @@ export default function ImportWizard({ file, properties, onClose, onSuccess }) {
     // Import each matched row
     for (let i = 0; i < mappedRows.length; i++) {
       const row = mappedRows[i];
-      const prop = matches[i];
+      let prop = matches[i];
       if (!prop) {
         fail++;
         if (row.hotel_name) unmatchedNames.push(row.hotel_name);
         continue;
+      }
+
+      // Create new property if this row was marked as "create new"
+      if (prop.__new__) {
+        const newProp = await base44.entities.Property.create({
+          name: prop.name,
+          str_id: prop.str_id || null,
+          is_active: true,
+        });
+        prop = newProp;
+        newPropsCreated++;
+        // Update local matches array so subsequent logic uses the real property
+        matches[i] = newProp;
       }
 
       const patch = {};
@@ -160,11 +178,12 @@ export default function ImportWizard({ file, properties, onClose, onSuccess }) {
     queryClient.invalidateQueries({ queryKey: ['score-entries'] });
     queryClient.invalidateQueries({ queryKey: ['all-entries'] });
     queryClient.invalidateQueries({ queryKey: ['documents'] });
+    queryClient.invalidateQueries({ queryKey: ['properties'] });
     // Refresh time period context so newly imported months become selectable
     await refreshAvailableData();
     setSelectedYear(periodYear);
     setSelectedMonth(periodMonth);
-    setImportResult({ ok, fail, unmatchedNames });
+    setImportResult({ ok, fail, unmatchedNames, newPropsCreated });
     setStep('done');
   };
 
@@ -353,7 +372,7 @@ export default function ImportWizard({ file, properties, onClose, onSuccess }) {
                   onClick={handleImport}
                   disabled={mappedRows.filter((_, i) => matches[i]).length === 0}
                 >
-                  Import {mappedRows.filter((_, i) => matches[i]).length} Records
+                  Import {mappedRows.filter((_, i) => matches[i]).length} Records{mappedRows.filter((_, i) => matches[i]?.__new__).length > 0 ? ` (${mappedRows.filter((_, i) => matches[i]?.__new__).length} new)` : ''}
                 </Button>
               </div>
             </div>
@@ -396,6 +415,11 @@ export default function ImportWizard({ file, properties, onClose, onSuccess }) {
                       {importResult.fail > 0 && (
                         <p className="text-xs mt-1">
                           {importResult.fail} row{importResult.fail > 1 ? 's' : ''} skipped (no property match or no data).
+                        </p>
+                      )}
+                      {importResult.newPropsCreated > 0 && (
+                        <p className="text-xs mt-1 text-blue-700">
+                          {importResult.newPropsCreated} new hotel{importResult.newPropsCreated > 1 ? 's' : ''} created and added to the property list.
                         </p>
                       )}
                     </div>
