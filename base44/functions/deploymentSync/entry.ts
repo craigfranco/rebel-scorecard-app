@@ -74,6 +74,41 @@ Deno.serve(async (req) => {
     // Load existing records
     const existingProperties = await base44.asServiceRole.entities.Property.list('name', 500);
     const existingStaff = await base44.asServiceRole.entities.Staff.list('name', 1000);
+    const existingEntries = await base44.asServiceRole.entities.ScoreEntry.filter({ year: new Date().getFullYear() }, undefined, 500);
+
+    // --- Deduplicate existing properties (same str_id or same normalized name) ---
+    // Keeps the property that has score entries; moves staff/docs to it; deactivates the rest.
+    const entryCountByProp = {};
+    existingEntries.forEach(e => { entryCountByProp[e.property_id] = (entryCountByProp[e.property_id] || 0) + 1; });
+    const propGroups = {};
+    existingProperties.forEach(p => {
+      const key = (p.str_id || p.name || '').toString().toLowerCase().trim();
+      if (!key) return;
+      if (!propGroups[key]) propGroups[key] = [];
+      propGroups[key].push(p);
+    });
+    let dedupMerged = 0;
+    for (const key of Object.keys(propGroups)) {
+      const group = propGroups[key];
+      if (group.length <= 1) continue;
+      // canonical = property with the most score entries (fallback: the active one)
+      const canonical = group.slice().sort((a, b) =>
+        (entryCountByProp[b.id] || 0) - (entryCountByProp[a.id] || 0)
+      )[0];
+      for (const p of group) {
+        if (p.id === canonical.id) continue;
+        // Move staff to canonical
+        const dupStaff = existingStaff.filter(s => s.property_id === p.id);
+        for (const s of dupStaff) {
+          const dup = existingStaff.find(x => x.property_id === canonical.id && x.name === s.name && (x.year || 0) === (s.year || 0));
+          if (dup) continue;
+          await base44.asServiceRole.entities.Staff.update(s.id, { property_id: canonical.id });
+          s.property_id = canonical.id;
+        }
+        await base44.asServiceRole.entities.Property.update(p.id, { is_active: false });
+        dedupMerged++;
+      }
+    }
 
     let propertiesUpserted = 0;
     let staffUpserted = 0;
