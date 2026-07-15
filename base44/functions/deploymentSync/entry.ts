@@ -65,15 +65,47 @@ Deno.serve(async (req) => {
     const incomingStaff = body.staff || [];
     const source = body.source || 'manual';
 
+    // --- Permanent blocklist: properties that must never exist in this app ---
+    // Matched case-insensitively by str_id or name token. Filtered out of every sync
+    // so Dashboard pulls cannot re-create them, and purged if found in existing records.
+    const BLOCKED_STR_IDS = new Set(['26356']);
+    const BLOCKED_NAME_TOKENS = ['skipjack'];
+    const isBlockedProperty = (p) => {
+      if (p.str_id && BLOCKED_STR_IDS.has(String(p.str_id).trim())) return true;
+      const n = (p.name || '').toLowerCase();
+      return BLOCKED_NAME_TOKENS.some(t => n.includes(t));
+    };
+
     // If no data provided, return current sync status
     if (!incomingProperties.length && !incomingStaff.length) {
       const syncLogs = await base44.asServiceRole.entities.SyncLog.list('-synced_at', 1);
       return Response.json({ status: 'ok', last_sync: syncLogs[0] || null });
     }
 
-    // Load existing records
+    // Permanently purge any blocked property that already exists in this app,
+    // so it can never reappear even if the Dashboard still lists it.
     const existingProperties = await base44.asServiceRole.entities.Property.list('name', 500);
     const existingStaff = await base44.asServiceRole.entities.Staff.list('name', 1000);
+    let blockedPurged = 0;
+    for (const p of existingProperties) {
+      if (isBlockedProperty(p)) {
+        // Remove staff attached to the blocked property
+        const attached = existingStaff.filter(s => s.property_id === p.id);
+        for (const s of attached) {
+          await base44.asServiceRole.entities.Staff.delete(s.id);
+        }
+        await base44.asServiceRole.entities.Property.delete(p.id);
+        blockedPurged++;
+      }
+    }
+    if (blockedPurged) {
+      const still = await base44.asServiceRole.entities.Property.list('name', 500);
+      existingProperties.length = 0;
+      existingProperties.push(...still);
+      const stillStaff = await base44.asServiceRole.entities.Staff.list('name', 1000);
+      existingStaff.length = 0;
+      existingStaff.push(...stillStaff);
+    }
     const existingEntries = await base44.asServiceRole.entities.ScoreEntry.filter({ year: new Date().getFullYear() }, undefined, 500);
 
     // --- Deduplicate existing properties (same str_id or same normalized name) ---
@@ -128,6 +160,7 @@ Deno.serve(async (req) => {
 
     // --- Upsert Properties ---
     for (const rec of incomingProperties) {
+      if (isBlockedProperty(rec)) continue; // never (re)create blocked properties
       const payload = {
         str_id: rec.str_id || null,
         name: rec.name || rec.hotel_name || rec.property_name || null,
