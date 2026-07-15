@@ -9,6 +9,7 @@ import { MONTHS, getQuarterFromMonth } from '../lib/scoring';
 import UploadZone from '@/components/documents/UploadZone';
 import ImportWizard from '@/components/documents/ImportWizard';
 import DataHealthPanel from '@/components/documents/DataHealthPanel';
+import DashboardSyncButton from '@/components/documents/DashboardSyncButton';
 
 const CURRENT_YEAR = 2026;
 const CURRENT_MONTH = 1;
@@ -101,9 +102,12 @@ export default function Documents() {
   return (
     <div className="p-4 lg:p-8 space-y-6 max-w-6xl mx-auto">
       {/* Header */}
-      <div className="rounded-2xl text-white p-6 shadow-lg" style={{ background: 'linear-gradient(135deg, #2d4b5e 0%, #1e3547 100%)' }}>
-        <h1 className="text-2xl font-bold">Documents</h1>
-        <p className="text-white/70 text-sm mt-1">Upload Excel or CSV files — data is parsed client-side and imported directly into scorecards</p>
+      <div className="rounded-2xl text-white p-6 shadow-lg flex flex-wrap items-center justify-between gap-3" style={{ background: 'linear-gradient(135deg, #2d4b5e 0%, #1e3547 100%)' }}>
+        <div>
+          <h1 className="text-2xl font-bold">Documents</h1>
+          <p className="text-white/70 text-sm mt-1">Upload Excel or CSV files — data is parsed client-side and imported directly into scorecards</p>
+        </div>
+        <DashboardSyncButton />
       </div>
 
       {/* Data Health */}
