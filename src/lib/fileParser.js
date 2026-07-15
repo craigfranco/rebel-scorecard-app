@@ -166,7 +166,7 @@ export function autoDetectMapping(headers, docType) {
   };
 
   const base = {
-    hotel_name: find('property', 'hotel', 'hotelname', 'propertyname', 'name'),
+    hotel_name: find('property', 'hotel', 'hotelname', 'propertyname', 'name', 'account', 'site') ?? 0,
   };
 
   if (docType === 'GOP Report') {
@@ -240,5 +240,14 @@ export function applyMapping(rows, mapping) {
       };
       });
   console.log('[applyMapping] sample rows (first 3):', result.slice(0, 3).map(r => ({ hotel_name: r.hotel_name, str_id: r.str_id, revpar_index: r.revpar_index, revpar_index_change: r.revpar_index_change })));
-  return result.filter(r => (r.str_id && r.str_id.length > 0) || (r.hotel_name && r.hotel_name !== 'Property' && r.hotel_name.length > 1));
+  return result.filter(r => {
+    const hasName = r.hotel_name && r.hotel_name !== 'Property' && r.hotel_name.length > 1;
+    const hasStrId = r.str_id && r.str_id.length > 0;
+    const hasKpi = r.revpar_index != null || r.revpar_index_change != null || r.revpar_index_prior != null ||
+                   r.budgeted_gop_actual != null || r.budgeted_gop_target != null || r.budgeted_gop_prior != null ||
+                   r.gop_margin_actual != null || r.gop_margin_budget != null || r.gop_margin_prior != null ||
+                   r.gss_actual != null || r.gss_prior != null ||
+                   r.forecast_actual_revenue != null || r.forecast_primary_forecast != null;
+    return hasName || hasStrId || hasKpi;
+  });
 }
