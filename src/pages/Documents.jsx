@@ -3,7 +3,7 @@ import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { FileText, Download, Trash2, Building2, Globe, Loader2, Eraser, Trash } from 'lucide-react';
+import { FileText, Download, Trash2, Building2, Globe, Loader2, Eraser, Trash, Search, X } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { MONTHS, getQuarterFromMonth } from '../lib/scoring';
 import UploadZone from '@/components/documents/UploadZone';
@@ -48,6 +48,14 @@ export default function Documents() {
   const [clearYear] = useState(CURRENT_YEAR);
   const [clearDocType, setClearDocType] = useState('all');
   const [clearing, setClearing] = useState(false);
+
+  // File list filters
+  const [filterType, setFilterType] = useState('all');
+  const [filterScope, setFilterScope] = useState('all'); // all | company-wide | hotel-specific
+  const [filterProperty, setFilterProperty] = useState('all');
+  const [filterMonth, setFilterMonth] = useState('all');
+  const [filterYear, setFilterYear] = useState('all');
+  const [filterSearch, setFilterSearch] = useState('');
 
   const { data: properties = [] } = useQuery({
     queryKey: ['properties'],
@@ -98,6 +106,31 @@ export default function Documents() {
   };
 
   const propertyName = (id) => properties.find(p => p.id === id)?.name || '—';
+
+  const availableYears = Array.from(new Set(documents.map(d => d.period_year).filter(Boolean))).sort((a, b) => b - a);
+
+  const filteredDocs = documents.filter(doc => {
+    if (filterType !== 'all' && doc.doc_type !== filterType) return false;
+    if (filterScope !== 'all' && doc.scope !== filterScope) return false;
+    if (filterProperty !== 'all' && doc.property_id !== filterProperty) return false;
+    if (filterMonth !== 'all' && String(doc.period_month) !== filterMonth) return false;
+    if (filterYear !== 'all' && String(doc.period_year) !== filterYear) return false;
+    if (filterSearch && !(doc.filename || '').toLowerCase().includes(filterSearch.toLowerCase())) return false;
+    return true;
+  });
+
+  const hasActiveFilters =
+    filterType !== 'all' || filterScope !== 'all' || filterProperty !== 'all' ||
+    filterMonth !== 'all' || filterYear !== 'all' || filterSearch !== '';
+
+  const clearFilters = () => {
+    setFilterType('all');
+    setFilterScope('all');
+    setFilterProperty('all');
+    setFilterMonth('all');
+    setFilterYear('all');
+    setFilterSearch('');
+  };
 
   return (
     <div className="p-4 lg:p-8 space-y-6 max-w-6xl mx-auto">
@@ -164,8 +197,73 @@ export default function Documents() {
 
       {/* File List */}
       <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
-        <div className="px-6 py-4 border-b border-border">
-          <h2 className="font-bold text-foreground">Uploaded Files ({documents.length})</h2>
+        {/* Filters */}
+        <div className="px-6 py-4 border-b border-border space-y-3">
+          <div className="flex items-center justify-between gap-2 flex-wrap">
+            <h2 className="font-bold text-foreground">Uploaded Files ({filteredDocs.length}{hasActiveFilters ? ` of ${documents.length}` : ''})</h2>
+            {hasActiveFilters && (
+              <Button variant="ghost" size="sm" onClick={clearFilters} className="h-7 gap-1.5 text-xs text-muted-foreground">
+                <X className="w-3 h-3" /> Clear filters
+              </Button>
+            )}
+          </div>
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="relative flex-1 min-w-[180px]">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <input
+                value={filterSearch}
+                onChange={e => setFilterSearch(e.target.value)}
+                placeholder="Search filename..."
+                className="w-full h-9 pl-8 pr-3 text-sm rounded-md border border-input bg-transparent focus:outline-none focus:ring-1 focus:ring-ring"
+              />
+            </div>
+            <Select value={filterType} onValueChange={setFilterType}>
+              <SelectTrigger className="w-36 text-sm h-9"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Types</SelectItem>
+                <SelectItem value="GOP Report">GOP</SelectItem>
+                <SelectItem value="RGI/STR Report">RGI/STR</SelectItem>
+                <SelectItem value="GSS Report">GSS</SelectItem>
+                <SelectItem value="Forecast Accuracy">Forecast</SelectItem>
+                <SelectItem value="Other">Other</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={filterScope} onValueChange={setFilterScope}>
+              <SelectTrigger className="w-36 text-sm h-9"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Scopes</SelectItem>
+                <SelectItem value="company-wide">Shared</SelectItem>
+                <SelectItem value="hotel-specific">Hotel-specific</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={filterProperty} onValueChange={setFilterProperty} disabled={filterScope === 'company-wide'}>
+              <SelectTrigger className="w-44 text-sm h-9 disabled:opacity-50"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Hotels</SelectItem>
+                {properties.map(p => (
+                  <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={filterMonth} onValueChange={setFilterMonth}>
+              <SelectTrigger className="w-32 text-sm h-9"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Months</SelectItem>
+                {MONTHS.map((m, i) => (
+                  <SelectItem key={i + 1} value={String(i + 1)}>{m}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={filterYear} onValueChange={setFilterYear}>
+              <SelectTrigger className="w-28 text-sm h-9"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Years</SelectItem>
+                {availableYears.map(y => (
+                  <SelectItem key={y} value={String(y)}>{y}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
@@ -181,14 +279,16 @@ export default function Documents() {
               </tr>
             </thead>
             <tbody>
-              {documents.length === 0 ? (
+              {filteredDocs.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="py-16 text-center text-muted-foreground text-sm">
-                    No files uploaded yet. Use the upload area above.
+                    {documents.length === 0
+                      ? 'No files uploaded yet. Use the upload area above.'
+                      : 'No files match the current filters.'}
                   </td>
                 </tr>
               ) : (
-                documents.map(doc => (
+                filteredDocs.map(doc => (
                   <tr key={doc.id} className="border-b border-border hover:bg-muted/20 transition-colors">
                     <td className="py-3 px-4">
                       <div className="flex items-center gap-2">
