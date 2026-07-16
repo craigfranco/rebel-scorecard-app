@@ -11,9 +11,24 @@ import { calculateActualYtdSalary } from '@/lib/salaryCalculation';
 const NAVY = [45, 75, 94];
 const LIGHT = [245, 247, 250];
 const BORDER = [214, 222, 230];
+const LOGO_URL = 'https://media.base44.com/images/public/69d3e20c8254476c324dc91c/5b691f91d_generated_image.png';
 
 const fmt = (n) => `$${Math.round(n).toLocaleString('en-US')}`;
 const fmtPts = (n, max) => n != null ? `${n}/${max}` : '—';
+
+async function fetchLogoDataUrl() {
+  try {
+    const res = await fetch(LOGO_URL);
+    const blob = await res.blob();
+    return await new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result);
+      reader.readAsDataURL(blob);
+    });
+  } catch {
+    return null;
+  }
+}
 
 function statusIcon(result) {
   if (!result || result.incomplete) return '—';
@@ -42,7 +57,7 @@ export default function PayoutsPdfExport({ property, staff = [], jobClassificati
     enabled: !!property?.id,
   });
 
-  const handleDownload = () => {
+  const handleDownload = async () => {
     if (!property || staff.length === 0) return;
     setGenerating(true);
 
@@ -56,13 +71,18 @@ export default function PayoutsPdfExport({ property, staff = [], jobClassificati
       // ---- Header bar ----
       doc.setFillColor(...NAVY);
       doc.rect(0, 0, pageW, 22, 'F');
+      const logoData = await fetchLogoDataUrl();
+      if (logoData) {
+        doc.addImage(logoData, 'PNG', margin, 3, 14, 14);
+      }
+      const textX = margin + 18;
       doc.setTextColor(255, 255, 255);
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(14);
-      doc.text('REBEL Hotel Operations Bonus Report', margin, 10);
+      doc.text('REBEL Hotel Operations Bonus Report', textX, 10);
       doc.setFontSize(9);
       doc.setFont('helvetica', 'normal');
-      doc.text(`${property.name} — ${property.city || ''}, ${property.state || ''}`, margin, 16);
+      doc.text(`${property.name} — ${property.city || ''}, ${property.state || ''}`, textX, 16);
       doc.text(`${quarterLabel}  |  ${periodLabel}`, pageW - margin, 16, { align: 'right' });
 
       y = 28;
