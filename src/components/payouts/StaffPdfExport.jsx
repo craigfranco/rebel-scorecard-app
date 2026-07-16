@@ -10,7 +10,7 @@ import { calculateActualYtdSalary } from '@/lib/salaryCalculation';
 
 const NAVY = [45, 75, 94];
 const LIGHT = [245, 247, 250];
-const LOGO_URL = 'https://media.base44.com/images/public/69d3e20c8254476c324dc91c/5b691f91d_generated_image.png';
+const LOGO_URL = 'https://media.base44.com/images/public/69d3e20c8254476c324dc91c/d054aef74_generated_image.png';
 
 const fmt = (n) => `$${Math.round(n).toLocaleString('en-US')}`;
 const fmtPts = (n, max) => n != null ? `${n}/${max}` : '—';
