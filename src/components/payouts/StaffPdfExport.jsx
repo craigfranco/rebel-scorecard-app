@@ -10,24 +10,9 @@ import { calculateActualYtdSalary } from '@/lib/salaryCalculation';
 
 const NAVY = [45, 75, 94];
 const LIGHT = [245, 247, 250];
-const LOGO_URL = 'https://media.base44.com/images/public/69d3e20c8254476c324dc91c/d054aef74_generated_image.png';
 
 const fmt = (n) => `$${Math.round(n).toLocaleString('en-US')}`;
 const fmtPts = (n, max) => n != null ? `${n}/${max}` : '—';
-
-async function fetchLogoDataUrl() {
-  try {
-    const res = await fetch(LOGO_URL);
-    const blob = await res.blob();
-    return await new Promise((resolve) => {
-      const reader = new FileReader();
-      reader.onloadend = () => resolve(reader.result);
-      reader.readAsDataURL(blob);
-    });
-  } catch {
-    return null;
-  }
-}
 
 function statusLabel(result) {
   if (!result || result.incomplete) return '—';
@@ -55,7 +40,7 @@ export default function StaffPdfExport({ staff, property, jobClass, selectedYear
     enabled: !!property?.id,
   });
 
-  const handleDownload = async () => {
+  const handleDownload = () => {
     if (!staff || !property) return;
     setGenerating(true);
 
@@ -69,18 +54,13 @@ export default function StaffPdfExport({ staff, property, jobClass, selectedYear
       // ---- Header bar ----
       doc.setFillColor(...NAVY);
       doc.rect(0, 0, pageW, 24, 'F');
-      const logoData = await fetchLogoDataUrl();
-      if (logoData) {
-        doc.addImage(logoData, 'PNG', margin, 3, 16, 16);
-      }
-      const textX = margin + 20;
       doc.setTextColor(255, 255, 255);
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(13);
-      doc.text('Operations Bonus — Individual Payout Report', textX, 10);
+      doc.text('Operations Bonus — Individual Payout Report', margin, 10);
       doc.setFontSize(9);
       doc.setFont('helvetica', 'normal');
-      doc.text(`${property.name} — ${property.city || ''}, ${property.state || ''}`, textX, 17);
+      doc.text(`${property.name} — ${property.city || ''}, ${property.state || ''}`, margin, 17);
       doc.text(`${quarterLabel}`, pageW - margin, 17, { align: 'right' });
 
       y = 32;
