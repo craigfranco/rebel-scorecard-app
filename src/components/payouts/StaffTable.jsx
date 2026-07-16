@@ -19,7 +19,7 @@ const JOB_CLASS_LABELS = {
   'Department Head': 'Department Heads',
 };
 
-export default function StaffTable({ staff = [], jobClassifications = [], properties = [], salaryColHeader = 'Q1 Salary' }) {
+export default function StaffTable({ staff = [], jobClassifications = [], properties = [], salaryColHeader = 'Q1 Salary', selectedYear, selectedMonth }) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [editingStaffId, setEditingStaffId] = useState(null);
@@ -172,6 +172,8 @@ export default function StaffTable({ staff = [], jobClassifications = [], proper
                             property={property}
                             jobClass={jobClass}
                             colSpan={6}
+                            selectedYear={selectedYear}
+                            selectedMonth={selectedMonth}
                           />
                         )}
                       </React.Fragment>

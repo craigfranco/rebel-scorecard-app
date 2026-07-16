@@ -225,6 +225,8 @@ export default function Payouts() {
             jobClassifications={jobClassifications}
             properties={properties}
             salaryColHeader={salaryColHeader}
+            selectedYear={selectedYear}
+            selectedMonth={selectedMonth}
           />
 
           {/* Bonus Summary Table */}

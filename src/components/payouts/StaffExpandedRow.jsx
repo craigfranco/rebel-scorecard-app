@@ -4,6 +4,7 @@ import { base44 } from '@/api/base44Client';
 import { calculateScorecard, getQuarterFromMonth, aggregateQuarterEntries } from '@/lib/scoring';
 import { calculateActualYtdSalary } from '@/lib/salaryCalculation';
 import { calcKpiBonus, checkBonusEligibility } from '@/lib/bonusCalculation';
+import StaffPdfExport from './StaffPdfExport';
 
 const QUARTERS = [
   { q: 1, label: 'Q1 2026' },
@@ -57,7 +58,7 @@ function kpiRows(scorecard, salary, jobClass) {
   ];
 }
 
-export default function StaffExpandedRow({ staff, property, jobClass, colSpan = 6 }) {
+export default function StaffExpandedRow({ staff, property, jobClass, colSpan = 6, selectedYear, selectedMonth }) {
   const { data: entries = [] } = useQuery({
     queryKey: ['score-entries-expanded', property?.id],
     queryFn: () =>
@@ -108,6 +109,15 @@ export default function StaffExpandedRow({ staff, property, jobClass, colSpan = 
                 <span className="text-muted-foreground">Bonus Target: <span className="font-semibold text-foreground">{maxBonusPct}%</span></span>
               </>
             )}
+            <div className="ml-auto">
+              <StaffPdfExport
+                staff={staff}
+                property={property}
+                jobClass={jobClass}
+                selectedYear={selectedYear}
+                selectedMonth={selectedMonth}
+              />
+            </div>
           </div>
 
           {/* 4-column quarter grid */}
