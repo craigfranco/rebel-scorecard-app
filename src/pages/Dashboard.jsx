@@ -9,6 +9,7 @@ import { calculateScorecard, normalizeGssTo100 } from '@/lib/scoring';
 import { aggregateEntries } from '@/lib/aggregation';
 
 import KpiTracker from '@/components/dashboard/KpiTracker';
+import DataAnnouncementPopup from '@/components/dashboard/DataAnnouncementPopup';
 
 export default function Dashboard() {
   const { selectedMonth, selectedYear, periodType } = useTimePeriod();
@@ -161,6 +162,8 @@ export default function Dashboard() {
           hotels={forecastHotels}
         />
       </div>
+
+      <DataAnnouncementPopup />
     </div>
   );
 }
