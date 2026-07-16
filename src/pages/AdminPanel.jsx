@@ -27,6 +27,8 @@ function fmtDate(iso) {
 export default function AdminPanel() {
   const qc = useQueryClient();
   const [search, setSearch] = useState('');
+  const [roleFilter, setRoleFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState('all');
   const [editingUser, setEditingUser] = useState(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [resendingId, setResendingId] = useState(null);
@@ -66,11 +68,20 @@ export default function AdminPanel() {
     deleteUser.mutate(profile.id);
   };
 
-  const filtered = profiles.filter(p =>
-    !search ||
-    p.full_name?.toLowerCase().includes(search.toLowerCase()) ||
-    p.email?.toLowerCase().includes(search.toLowerCase())
-  );
+  const filtered = profiles.filter(p => {
+    if (search) {
+      const q = search.toLowerCase();
+      if (!p.full_name?.toLowerCase().includes(q) && !p.email?.toLowerCase().includes(q)) return false;
+    }
+    if (roleFilter !== 'all' && p.role !== roleFilter) return false;
+    if (statusFilter !== 'all') {
+      if (statusFilter === 'active' && !(p.is_active && p.invite_status === 'active')) return false;
+      if (statusFilter === 'invited' && !(p.is_active && p.invite_status === 'invited')) return false;
+      if (statusFilter === 'not_invited' && !(p.is_active && (!p.invite_status || p.invite_status === 'not_invited'))) return false;
+      if (statusFilter === 'deactivated' && p.is_active) return false;
+    }
+    return true;
+  });
 
   const handleResendInvite = async (profile) => {
     setResendingId(profile.id);
@@ -138,9 +149,9 @@ export default function AdminPanel() {
           <div className="flex items-center gap-2">
             <Users className="w-5 h-5 text-primary" />
             <h2 className="font-bold text-lg">User Management</h2>
-            <span className="text-xs text-muted-foreground">({profiles.length} users)</span>
+            <span className="text-xs text-muted-foreground">({filtered.length} of {profiles.length} users)</span>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <div className="relative">
               <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
               <input
@@ -150,6 +161,35 @@ export default function AdminPanel() {
                 onChange={e => setSearch(e.target.value)}
               />
             </div>
+            <select
+              className="px-3 py-2 text-sm border border-border rounded-lg bg-background"
+              value={roleFilter}
+              onChange={e => setRoleFilter(e.target.value)}
+            >
+              <option value="all">All Roles</option>
+              <option value="admin">Admin</option>
+              <option value="full_view">Full View</option>
+              <option value="property_user">Property User</option>
+            </select>
+            <select
+              className="px-3 py-2 text-sm border border-border rounded-lg bg-background"
+              value={statusFilter}
+              onChange={e => setStatusFilter(e.target.value)}
+            >
+              <option value="all">All Statuses</option>
+              <option value="active">Active</option>
+              <option value="invited">Invited</option>
+              <option value="not_invited">Not Invited</option>
+              <option value="deactivated">Deactivated</option>
+            </select>
+            {(roleFilter !== 'all' || statusFilter !== 'all') && (
+              <button
+                onClick={() => { setRoleFilter('all'); setStatusFilter('all'); }}
+                className="px-3 py-2 text-sm text-muted-foreground hover:text-foreground"
+              >
+                Clear
+              </button>
+            )}
             <button
               onClick={() => setShowAddModal(true)}
               className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-white"
