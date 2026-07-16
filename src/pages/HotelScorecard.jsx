@@ -42,7 +42,7 @@ export default function HotelScorecard() {
       <SeedOnMount />
       <PropertyScorecardDetail
         property={selectedProperty}
-        showPropertySelector
+        showPropertySelector={properties.length > 1}
         properties={properties}
         selectedPropertyId={selectedPropertyId}
         onPropertyChange={setSelectedPropertyId}

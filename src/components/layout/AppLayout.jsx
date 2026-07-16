@@ -23,13 +23,17 @@ export default function AppLayout() {
     { path: '/kpi-breakdown', icon: PieChart, label: 'KPI Breakdown' },
     { path: '/payouts', icon: DollarSign, label: 'Payouts' },
     { path: '/kpi-reference', icon: BookOpen, label: 'KPI Reference' },
+    // Non-admins see Documents in the main nav (no Admin section)
+    ...(!isAdmin ? [{ path: '/documents', icon: FolderOpen, label: 'Documents' }] : []),
     { path: '/help', icon: HelpCircle, label: 'Help & Guide' },
   ];
 
-  const adminItems = [
-    { path: '/documents', icon: FolderOpen, label: 'Documents' },
-    ...(isAdmin ? [{ path: '/admin', icon: Shield, label: 'Admin Panel' }] : []),
-  ];
+  const adminItems = isAdmin
+    ? [
+        { path: '/documents', icon: FolderOpen, label: 'Documents' },
+        { path: '/admin', icon: Shield, label: 'Admin Panel' },
+      ]
+    : [];
 
   const adminActive = adminItems.some(i => location.pathname.startsWith(i.path));
 
@@ -71,38 +75,40 @@ export default function AppLayout() {
             );
           })}
 
-          {/* Admin section */}
-          <div className="pt-3">
-            <button
-              onClick={() => setAdminOpen(o => !o)}
-              className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold uppercase tracking-wider transition-all ${
-                adminActive ? 'text-white' : 'text-white/40 hover:text-white/70'
-              }`}
-            >
-              <span>Admin</span>
-              <ChevronDown className={`w-3.5 h-3.5 transition-transform ${adminOpen ? 'rotate-180' : ''}`} />
-            </button>
-            {adminOpen && (
-              <div className="mt-1 space-y-1">
-                {adminItems.map(({ path, icon: Icon, label }) => {
-                  const active = location.pathname.startsWith(path);
-                  return (
-                    <Link
-                      key={path}
-                      to={path}
-                      onClick={() => setMobileOpen(false)}
-                      className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
-                        active ? 'bg-white/20 text-white shadow-sm' : 'text-white/65 hover:text-white hover:bg-white/10'
-                      }`}
-                    >
-                      <Icon className="w-4 h-4 shrink-0" />
-                      {label}
-                    </Link>
-                  );
-                })}
-              </div>
-            )}
-          </div>
+          {/* Admin section — admins only */}
+          {isAdmin && (
+            <div className="pt-3">
+              <button
+                onClick={() => setAdminOpen(o => !o)}
+                className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold uppercase tracking-wider transition-all ${
+                  adminActive ? 'text-white' : 'text-white/40 hover:text-white/70'
+                }`}
+              >
+                <span>Admin</span>
+                <ChevronDown className={`w-3.5 h-3.5 transition-transform ${adminOpen ? 'rotate-180' : ''}`} />
+              </button>
+              {adminOpen && (
+                <div className="mt-1 space-y-1">
+                  {adminItems.map(({ path, icon: Icon, label }) => {
+                    const active = location.pathname.startsWith(path);
+                    return (
+                      <Link
+                        key={path}
+                        to={path}
+                        onClick={() => setMobileOpen(false)}
+                        className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                          active ? 'bg-white/20 text-white shadow-sm' : 'text-white/65 hover:text-white hover:bg-white/10'
+                        }`}
+                      >
+                        <Icon className="w-4 h-4 shrink-0" />
+                        {label}
+                      </Link>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
         </nav>
 
         {/* User info in sidebar footer */}
