@@ -10,6 +10,7 @@ import { getClosedQuarters, calculateEstimatedAnnualSalary } from '@/lib/salaryC
 import StaffTable from '@/components/payouts/StaffTable';
 import BonusSummaryTable from '@/components/payouts/BonusSummaryTable';
 import { useTimePeriod } from '@/lib/TimePeriodContext';
+import { useUserProfile } from '@/lib/UserProfileContext';
 
 const Switch = ({ checked, onChange }) => (
   <button
@@ -28,6 +29,7 @@ export default function Payouts() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { selectedYear, selectedMonth, periodType, getPeriodLabel } = useTimePeriod();
+  const { filterPropertiesForUser } = useUserProfile();
   const closedQuarters = getClosedQuarters();
 
   const [selectedPropertyId, setSelectedPropertyId] = useState('');
@@ -50,15 +52,14 @@ export default function Payouts() {
     queryFn: () => base44.entities.Property.filter({ is_active: true }, 'name', 100),
   });
 
-  // Deduplicate by hotel name: if same name appears twice, only keep the active one (already filtered above)
-  // Then deduplicate by name in case of multiple active records with the same name
+  // Deduplicate by hotel name, then restrict to the user's assigned properties
   const properties = useMemo(() => {
     const seen = new Map();
     for (const p of rawProperties) {
       if (!seen.has(p.name)) seen.set(p.name, p);
     }
-    return Array.from(seen.values());
-  }, [rawProperties]);
+    return filterPropertiesForUser(Array.from(seen.values()));
+  }, [rawProperties, filterPropertiesForUser]);
 
   const { data: jobClassifications = [] } = useQuery({
     queryKey: ['job-classifications'],
@@ -160,21 +161,23 @@ export default function Payouts() {
           </div>
 
           <div className="flex flex-col sm:flex-row gap-3">
-            <Select value={selectedPropertyId} onValueChange={setSelectedPropertyId}>
-              <SelectTrigger className="w-full sm:w-72 bg-white/10 border-white/20 text-white">
-                <SelectValue placeholder="Select property..." />
-              </SelectTrigger>
-              <SelectContent>
-                {properties.map(p => (
-                  <SelectItem key={p.id} value={p.id}>
-                    <div>
-                      <div className="font-medium text-sm">{p.name}</div>
-                      <div className="text-xs text-muted-foreground">{p.city}, {p.state}</div>
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {properties.length > 1 && (
+              <Select value={selectedPropertyId} onValueChange={setSelectedPropertyId}>
+                <SelectTrigger className="w-full sm:w-72 bg-white/10 border-white/20 text-white">
+                  <SelectValue placeholder="Select property..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {properties.map(p => (
+                    <SelectItem key={p.id} value={p.id}>
+                      <div>
+                        <div className="font-medium text-sm">{p.name}</div>
+                        <div className="text-xs text-muted-foreground">{p.city}, {p.state}</div>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
           </div>
         </div>
       </div>
