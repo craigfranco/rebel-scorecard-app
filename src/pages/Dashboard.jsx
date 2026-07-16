@@ -9,6 +9,7 @@ import { calculateScorecard, normalizeGssTo100 } from '@/lib/scoring';
 import { aggregateEntries } from '@/lib/aggregation';
 
 import KpiTracker from '@/components/dashboard/KpiTracker';
+import MissingDataPanel from '@/components/dashboard/MissingDataPanel';
 
 export default function Dashboard() {
   const { selectedMonth, selectedYear, periodType } = useTimePeriod();
@@ -118,6 +119,8 @@ export default function Dashboard() {
         <h1 className="text-2xl font-bold">Portfolio Dashboard</h1>
         <p className="text-white/60 text-xs mt-0.5">Company-level overview — GOP, RPI, GSS, and forecast performance</p>
       </div>
+
+      <MissingDataPanel />
 
       {/* KPI Trackers Grid - 5 trackers using identical component design */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
