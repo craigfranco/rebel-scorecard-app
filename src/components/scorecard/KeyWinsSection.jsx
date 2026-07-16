@@ -136,7 +136,9 @@ export default function KeyWinsSection({ property, entry, periodType, selectedMo
             </label>
             {!isEditing ? (
               initiatives[category][idx] ? (
-                <div className="text-sm text-foreground leading-relaxed">{initiatives[category][idx]}</div>
+                <div className="text-sm text-foreground leading-relaxed break-words line-clamp-4" title={initiatives[category][idx]}>
+                  {initiatives[category][idx]}
+                </div>
               ) : (
                 <div className="text-xs text-muted-foreground italic">Not specified</div>
               )
@@ -145,7 +147,7 @@ export default function KeyWinsSection({ property, entry, periodType, selectedMo
                 value={initiatives[category][idx]}
                 onChange={(e) => updateInitiative(category, idx, e.target.value)}
                 placeholder={`Enter ${label.toLowerCase()} #${idx + 1}...`}
-                className="min-h-[60px] text-sm resize-none"
+                className="min-h-[100px] text-sm resize-y"
               />
             )}
           </div>
