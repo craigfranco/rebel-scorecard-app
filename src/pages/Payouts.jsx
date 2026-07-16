@@ -9,6 +9,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { getClosedQuarters, calculateEstimatedAnnualSalary } from '@/lib/salaryCalculation';
 import StaffTable from '@/components/payouts/StaffTable';
 import BonusSummaryTable from '@/components/payouts/BonusSummaryTable';
+import PayoutsPdfExport from '@/components/payouts/PayoutsPdfExport';
 import { useTimePeriod } from '@/lib/TimePeriodContext';
 import { useUserProfile } from '@/lib/UserProfileContext';
 
@@ -160,7 +161,7 @@ export default function Payouts() {
             )}
           </div>
 
-          <div className="flex flex-col sm:flex-row gap-3">
+          <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
             {properties.length > 1 && (
               <Select value={selectedPropertyId} onValueChange={setSelectedPropertyId}>
                 <SelectTrigger className="w-full sm:w-72 bg-white/10 border-white/20 text-white">
@@ -178,6 +179,14 @@ export default function Payouts() {
                 </SelectContent>
               </Select>
             )}
+            <PayoutsPdfExport
+              property={selectedProperty}
+              staff={staffMembers}
+              jobClassifications={jobClassifications}
+              selectedYear={selectedYear}
+              selectedMonth={selectedMonth}
+              periodLabel={getPeriodLabel()}
+            />
           </div>
         </div>
       </div>
