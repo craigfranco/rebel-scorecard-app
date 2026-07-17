@@ -55,7 +55,7 @@ export default function UserFormModal({ profile, properties, onClose, onSaved })
 
     const now = new Date().toISOString();
     const full_name = `${form.first_name} ${form.last_name}`.trim();
-    const data = { email: form.email, full_name, role: form.role, assigned_properties: form.assigned_properties };
+    const data = { email: form.email.trim().toLowerCase(), full_name, role: form.role, assigned_properties: form.assigned_properties };
 
     if (sendInvite) {
       data.invite_status = 'invited';

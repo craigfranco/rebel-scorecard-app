@@ -18,7 +18,7 @@ export const UserProfileProvider = ({ children }) => {
     setIsLoadingProfile(true);
     setProfileError(null);
     try {
-      const profiles = await base44.entities.UserProfile.filter({ email: user.email });
+      const profiles = await base44.entities.UserProfile.filter({ email: (user.email || '').toLowerCase() });
       if (!profiles || profiles.length === 0) {
         // Check if this is the default admin email — auto-create
         if (user.email === 'craig.franco@rebelhotelco.com') {
