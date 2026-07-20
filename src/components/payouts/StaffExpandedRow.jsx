@@ -60,10 +60,10 @@ function kpiRows(scorecard, salary, jobClass) {
 
 export default function StaffExpandedRow({ staff, property, jobClass, colSpan = 6, selectedYear, selectedMonth }) {
   const { data: entries = [] } = useQuery({
-    queryKey: ['score-entries-expanded', property?.id],
+    queryKey: ['score-entries-expanded', property?.id, selectedYear],
     queryFn: () =>
       property?.id
-        ? base44.entities.ScoreEntry.filter({ property_id: property.id, year: 2026 })
+        ? base44.entities.ScoreEntry.filter({ property_id: property.id, year: selectedYear })
         : Promise.resolve([]),
     enabled: !!property?.id,
   });

@@ -71,7 +71,7 @@ export default function Dashboard() {
     const change = entry.revpar_index_change;
     let status = 'fail';
     if (change != null) {
-      if (change > 2.0) status = 'pass';
+      if (change >= 2.1) status = 'pass';
       else if (change >= 0.1) status = 'partial';
     }
     const details = change != null ? `${change >= 0 ? '+' : ''}${change.toFixed(1)}%` : '';
