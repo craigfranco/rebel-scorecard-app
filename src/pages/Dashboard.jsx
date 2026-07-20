@@ -1,18 +1,27 @@
 import React from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
-import { ChevronRight, Target, TrendingUp, BarChart3, Smile, Zap } from 'lucide-react';
+import { ChevronRight, Target, TrendingUp, BarChart3, Smile, Zap, AlertTriangle } from 'lucide-react';
 import SeedOnMount from '../components/SeedOnMount';
 
 import { useTimePeriod } from '@/lib/TimePeriodContext';
 import { calculateScorecard, normalizeGssTo100 } from '@/lib/scoring';
-import { aggregateEntries } from '@/lib/aggregation';
+import { aggregateEntries, MONTHS, getQuarterFromMonth } from '@/lib/aggregation';
 
 import KpiTracker from '@/components/dashboard/KpiTracker';
 import DataAnnouncementPopup from '@/components/dashboard/DataAnnouncementPopup';
 
 export default function Dashboard() {
-  const { selectedMonth, selectedYear, periodType } = useTimePeriod();
+  const { selectedMonth, selectedYear, periodType, getQuarterState, getQuarterLoadedMonths, getPeriodLabel } = useTimePeriod();
+
+  // Determine if the selected period is incomplete
+  const activeQuarter = selectedMonth ? getQuarterFromMonth(selectedMonth) : 0;
+  const quarterState = periodType === 'quarter' && activeQuarter ? getQuarterState(activeQuarter) : 'complete';
+  const isQuarterIncomplete = quarterState === 'inprogress';
+  const loadedQuarterMonths = periodType === 'quarter' ? getQuarterLoadedMonths(activeQuarter) : [];
+  const missingQuarterMonths = isQuarterIncomplete
+    ? [activeQuarter * 3 - 2, activeQuarter * 3 - 1, activeQuarter * 3].filter(m => !loadedQuarterMonths.includes(m))
+    : [];
 
   const { data: properties = [] } = useQuery({
     queryKey: ['properties'],
@@ -119,6 +128,23 @@ export default function Dashboard() {
         <h1 className="text-2xl font-bold">Portfolio Dashboard</h1>
         <p className="text-white/60 text-xs mt-0.5">Company-level overview — GOP, RPI, GSS, and forecast performance</p>
       </div>
+
+      {/* Incomplete Quarter Banner */}
+      {isQuarterIncomplete && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 flex items-start gap-3">
+          <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+          <div>
+            <p className="text-sm font-semibold text-amber-900">
+              {getPeriodLabel()} — Incomplete Quarter
+            </p>
+            <p className="text-xs text-amber-700 mt-0.5">
+              Only {loadedQuarterMonths.length} of 3 months have data loaded.
+              Missing: {missingQuarterMonths.map(m => MONTHS[m - 1]).join(', ')}.
+              KPIs shown reflect partial-quarter averages and may change as remaining data is uploaded.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* KPI Trackers Grid - 5 trackers using identical component design */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
