@@ -4,6 +4,13 @@ import { base44 } from '@/api/base44Client';
 import { ChevronDown, ChevronRight, AlertTriangle, CheckCircle2, XCircle, FileWarning } from 'lucide-react';
 import { MONTHS } from '@/lib/scoring';
 
+const QUARTERS = [
+  { label: 'Q1', months: [1, 2, 3] },
+  { label: 'Q2', months: [4, 5, 6] },
+  { label: 'Q3', months: [7, 8, 9] },
+  { label: 'Q4', months: [10, 11, 12] },
+];
+
 const CURRENT_YEAR = 2026;
 
 // A month is "expected" (due) after the 15th of the following month.
@@ -35,6 +42,7 @@ function hasKpiData(entry, kpiKey) {
 
 export default function DataHealthPanel() {
   const [expandedProp, setExpandedProp] = useState(null);
+  const [viewMode, setViewMode] = useState('month'); // 'month' | 'quarter'
 
   const { data: properties = [], isLoading: loadingProps } = useQuery({
     queryKey: ['properties'],
@@ -116,6 +124,10 @@ export default function DataHealthPanel() {
         <FileWarning className="w-5 h-5 text-white" />
         <h2 className="font-bold text-lg text-white">Data Health</h2>
         <span className="text-white/60 text-xs ml-1">Jan–{expectedMonths.length ? MONTHS[expectedMonths[expectedMonths.length - 1] - 1] : '—'} {CURRENT_YEAR}</span>
+        <div className="ml-auto flex items-center gap-1 bg-white/10 rounded-full p-0.5">
+          <button onClick={() => setViewMode('month')} className={`text-xs px-3 py-1 rounded-full font-medium transition-colors ${viewMode === 'month' ? 'bg-white text-slate-800' : 'text-white/70'}`}>Month</button>
+          <button onClick={() => setViewMode('quarter')} className={`text-xs px-3 py-1 rounded-full font-medium transition-colors ${viewMode === 'quarter' ? 'bg-white text-slate-800' : 'text-white/70'}`}>Quarter</button>
+        </div>
       </div>
 
       {/* Summary bar */}
@@ -223,47 +235,81 @@ export default function DataHealthPanel() {
                           <table className="w-full text-xs">
                             <thead>
                               <tr className="text-muted-foreground border-b border-border">
-                                <th className="py-2 px-3 text-left font-semibold">Month</th>
+                                <th className="py-2 px-3 text-left font-semibold">{viewMode === 'quarter' ? 'Quarter' : 'Month'}</th>
                                 {KPI_TYPES.map(kpi => (
                                   <th key={kpi.key} className="py-2 px-3 text-center font-semibold">{kpi.label}</th>
                                 ))}
                               </tr>
                             </thead>
                             <tbody>
-                              {expectedMonths.map(m => {
-                                const entry = entries.find(e => e.property_id === property.id && e.month === m);
-                                return (
-                                  <tr key={m} className="border-b border-border/50">
-                                    <td className="py-2 px-3 font-medium text-foreground whitespace-nowrap">
-                                      {MONTHS[m - 1]}
-                                    </td>
-                                    {KPI_TYPES.map(kpi => {
-                                      const has = hasKpiData(entry, kpi.key);
-                                      const doc = propDocs.find(d => d.doc_type === kpi.docType && d.period_month === m);
-                                      return (
-                                        <td key={kpi.key} className="py-2 px-3 text-center">
-                                          <div className="inline-flex items-center gap-1">
-                                            {has ? (
-                                              <span className="inline-flex items-center gap-1 text-green-600 font-semibold">
-                                                <CheckCircle2 className="w-3.5 h-3.5" /> Data
-                                              </span>
-                                            ) : (
-                                              <span className="inline-flex items-center gap-1 text-red-500 font-semibold">
-                                                <XCircle className="w-3.5 h-3.5" /> Missing
-                                              </span>
-                                            )}
-                                            {doc && (
-                                              <span className="text-[10px] text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded-full">
-                                                📎 file
-                                              </span>
-                                            )}
-                                          </div>
+                              {viewMode === 'quarter'
+                                ? QUARTERS.filter(q => q.months.some(m => expectedMonths.includes(m))).map(q => {
+                                    const quarterExpected = q.months.filter(m => expectedMonths.includes(m));
+                                    return (
+                                      <tr key={q.label} className="border-b border-border/50">
+                                        <td className="py-2 px-3 font-medium text-foreground whitespace-nowrap">
+                                          {q.label} <span className="text-muted-foreground font-normal text-[10px]">({q.months.map(m => MONTHS[m - 1].slice(0, 3)).join('–')})</span>
                                         </td>
-                                      );
-                                    })}
-                                  </tr>
-                                );
-                              })}
+                                        {KPI_TYPES.map(kpi => {
+                                          const covered = quarterExpected.filter(m => {
+                                            const entry = entries.find(e => e.property_id === property.id && e.month === m);
+                                            return hasKpiData(entry, kpi.key);
+                                          }).length;
+                                          const total = quarterExpected.length;
+                                          const isMissing = covered === 0;
+                                          const isPartial = covered > 0 && covered < total;
+                                          const pct = total > 0 ? Math.round((covered / total) * 100) : 0;
+                                          return (
+                                            <td key={kpi.key} className="py-2 px-3 text-center">
+                                              <div className="inline-flex flex-col items-center gap-1">
+                                                <span className={`text-xs font-bold ${isMissing ? 'text-red-600' : isPartial ? 'text-amber-600' : 'text-green-600'}`}>
+                                                  {covered}/{total}
+                                                </span>
+                                                <div className="w-14 h-1.5 rounded-full bg-muted overflow-hidden">
+                                                  <div className={`h-full rounded-full ${isMissing ? 'bg-red-500' : isPartial ? 'bg-amber-500' : 'bg-green-500'}`} style={{ width: `${pct}%` }} />
+                                                </div>
+                                              </div>
+                                            </td>
+                                          );
+                                        })}
+                                      </tr>
+                                    );
+                                  })
+                                : expectedMonths.map(m => {
+                                    const entry = entries.find(e => e.property_id === property.id && e.month === m);
+                                    return (
+                                      <tr key={m} className="border-b border-border/50">
+                                        <td className="py-2 px-3 font-medium text-foreground whitespace-nowrap">
+                                          {MONTHS[m - 1]}
+                                        </td>
+                                        {KPI_TYPES.map(kpi => {
+                                          const has = hasKpiData(entry, kpi.key);
+                                          const doc = propDocs.find(d => d.doc_type === kpi.docType && d.period_month === m);
+                                          return (
+                                            <td key={kpi.key} className="py-2 px-3 text-center">
+                                              <div className="inline-flex items-center gap-1">
+                                                {has ? (
+                                                  <span className="inline-flex items-center gap-1 text-green-600 font-semibold">
+                                                    <CheckCircle2 className="w-3.5 h-3.5" /> Data
+                                                  </span>
+                                                ) : (
+                                                  <span className="inline-flex items-center gap-1 text-red-500 font-semibold">
+                                                    <XCircle className="w-3.5 h-3.5" /> Missing
+                                                  </span>
+                                                )}
+                                                {doc && (
+                                                  <span className="text-[10px] text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded-full">
+                                                    📎 file
+                                                  </span>
+                                                )}
+                                              </div>
+                                            </td>
+                                          );
+                                        })}
+                                      </tr>
+                                    );
+                                  })
+                              }
                             </tbody>
                           </table>
                         </div>
