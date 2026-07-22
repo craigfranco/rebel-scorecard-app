@@ -277,15 +277,21 @@ export default function PropertyScorecardDetail({
                   <div className="text-xs text-muted-foreground">vs Budget</div>
                   <div className="flex gap-4 pt-1 border-t border-border mt-2">
                     <div className="flex flex-col">
-                      <span className="text-[10px] text-muted-foreground uppercase tracking-wide">Achievement</span>
-                      <span className="text-sm font-bold" style={{ color }}>
-                        {gopPct != null ? `${pass && gopPct > 0 ? '+' : ''}${gopPct.toFixed(1)}%` : '—'}
+                      <span className="text-[10px] text-muted-foreground uppercase tracking-wide">Budget</span>
+                      <span className="text-sm font-bold text-foreground">
+                        {gopB != null ? `$${Math.round(gopB).toLocaleString('en-US')}` : '—'}
                       </span>
                     </div>
                     <div className="flex flex-col">
                       <span className="text-[10px] text-muted-foreground uppercase tracking-wide">Actual</span>
                       <span className="text-sm font-bold text-foreground">
                         {gopA != null ? `$${Math.round(gopA).toLocaleString('en-US')}` : '—'}
+                      </span>
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-[10px] text-muted-foreground uppercase tracking-wide">Achievement</span>
+                      <span className="text-sm font-bold" style={{ color }}>
+                        {gopPct != null ? `${pass && gopPct > 0 ? '+' : ''}${gopPct.toFixed(1)}%` : '—'}
                       </span>
                     </div>
                   </div>
