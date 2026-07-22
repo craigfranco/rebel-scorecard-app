@@ -349,7 +349,7 @@ export default function Documents() {
           onClose={() => setPendingFile(null)}
           onSuccess={(result) => {
             if (result.ok > 0) {
-              toast({ title: '✅ Import complete!', description: `${result.ok} hotel records updated for ${MONTHS[CURRENT_MONTH - 1]} ${CURRENT_YEAR}.` });
+              toast({ title: '✅ Import complete!', description: `${result.ok} hotel records updated for ${result.periodLabel || `${MONTHS[CURRENT_MONTH - 1]} ${CURRENT_YEAR}`}.` });
             }
           }}
         />

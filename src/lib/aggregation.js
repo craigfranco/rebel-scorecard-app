@@ -21,17 +21,46 @@ export function getQuarterStartMonth(quarter) {
 }
 
 /**
+ * Finds a quarterly RGI override for a given property / year / quarter.
+ * When present, the aggregated RGI fields are replaced with the exact
+ * STR-published quarterly figures (instead of averaging monthly snapshots).
+ */
+function findRgiOverride(overrides, propertyId, year, quarter) {
+  if (!overrides || !overrides.length || !propertyId) return null;
+  return overrides.find(o =>
+    o.property_id === propertyId &&
+    o.year === year &&
+    o.quarter === quarter
+  ) || null;
+}
+
+function applyRgiOverride(result, overrides, propertyId, year, quarter) {
+  const ov = findRgiOverride(overrides, propertyId, year, quarter);
+  if (!ov) return result;
+  const patched = { ...result };
+  if (ov.revpar_index != null) patched.revpar_index = ov.revpar_index;
+  if (ov.revpar_index_change != null) patched.revpar_index_change = ov.revpar_index_change;
+  if (ov.revpar_index_prior != null) patched.revpar_index_prior = ov.revpar_index_prior;
+  patched.rgi_source = 'quarterly_report';
+  return patched;
+}
+
+/**
  * Aggregates ScoreEntry data based on time period type
- * 
+ *
  * Rules:
- * - Dollar amounts (budgeted_gop_actual, budgeted_gop_target, budgeted_gop_prior, 
+ * - Dollar amounts (budgeted_gop_actual, budgeted_gop_target, budgeted_gop_prior,
  *   forecast_actual_revenue, forecast_primary_forecast): SUM
  * - Percentage/index metrics (gop_margin_actual, gop_margin_prior, gop_margin_budget,
  *   gop_margin_variance, revpar_index, revpar_index_change, gss_actual, gss_prior): AVERAGE
  * - Forecast result (Hit/Miss): Hit only if ALL months hit
  * - Red zone kicker: Hit only if ALL months hit
+ *
+ * rgiOverrides: optional array of RgiQuarterlyReport records. When the period is a
+ * full quarter and an override exists, RGI fields use the quarterly report's exact
+ * values instead of the monthly average.
  */
-export function aggregateEntries(entries, periodType, selectedMonth, selectedYear) {
+export function aggregateEntries(entries, periodType, selectedMonth, selectedYear, rgiOverrides = []) {
   if (!entries || entries.length === 0) return null;
 
   let filteredEntries = [];
@@ -42,16 +71,16 @@ export function aggregateEntries(entries, periodType, selectedMonth, selectedYea
   } else if (periodType === 'quarter') {
     const quarter = getQuarterFromMonth(selectedMonth);
     const quarterMonths = getQuarterMonths(quarter);
-    filteredEntries = entries.filter(e => 
-      quarterMonths.includes(e.month) && 
+    filteredEntries = entries.filter(e =>
+      quarterMonths.includes(e.month) &&
       e.year === selectedYear
     );
   } else if (periodType === 'qtd') {
     const quarter = getQuarterFromMonth(selectedMonth);
     const quarterStart = getQuarterStartMonth(quarter);
-    filteredEntries = entries.filter(e => 
-      e.month >= quarterStart && 
-      e.month <= selectedMonth && 
+    filteredEntries = entries.filter(e =>
+      e.month >= quarterStart &&
+      e.month <= selectedMonth &&
       e.year === selectedYear
     );
   } else if (periodType === 'ytd') {
@@ -117,17 +146,17 @@ export function aggregateEntries(entries, periodType, selectedMonth, selectedYea
   const forecastResults = sorted.filter(e => e.forecast_result).map(e => e.forecast_result);
   const forecastResult = forecastResults.length > 0 && forecastResults.every(r => r === 'Hit') ? 'Hit' : 'Miss';
 
-  return {
+  const result = {
     // Keep metadata from last entry
     ...last,
-    
+
     // SUM: Dollar amounts
     budgeted_gop_actual: sumField('budgeted_gop_actual'),
     budgeted_gop_target: sumField('budgeted_gop_target'),
     budgeted_gop_prior: sumField('budgeted_gop_prior'),
     forecast_actual_revenue: sumField('forecast_actual_revenue'),
     forecast_primary_forecast: sumField('forecast_primary_forecast'),
-    
+
     // GOP margins — averages for display; improvement = avg of monthly (actual - prior)
     gop_margin_actual: calculatedActualMargin,
     gop_margin_prior: calculatedPriorMargin,
@@ -146,7 +175,7 @@ export function aggregateEntries(entries, periodType, selectedMonth, selectedYea
     forecast_kicker: allField('forecast_kicker'),
     red_zone_kicker: allField('red_zone_kicker'),
     forecast_result: forecastResult,
-    
+
     // Text fields: use last entry
     key_wins: last.key_wins,
     previous_results: last.previous_results,
@@ -154,13 +183,24 @@ export function aggregateEntries(entries, periodType, selectedMonth, selectedYea
     prepared_by: last.prepared_by,
     reviewed_by: last.reviewed_by,
   };
+
+  // Quarterly RGI override: use exact STR quarterly figures when available
+  if (periodType === 'quarter') {
+    return applyRgiOverride(result, rgiOverrides, last.property_id, selectedYear, getQuarterFromMonth(selectedMonth));
+  }
+
+  return result;
 }
 
 /**
  * Aggregates a pre-filtered array of entries for a single quarter.
  * Bypasses period filtering since the array is already scoped to the quarter.
+ *
+ * rgiOverrides: optional array of RgiQuarterlyReport records. When an override
+ * exists for this property / year / quarter, RGI fields use the quarterly report's
+ * exact values instead of the monthly average.
  */
-export function aggregateQuarterEntries(arr) {
+export function aggregateQuarterEntries(arr, rgiOverrides = []) {
   if (!arr || arr.length === 0) return null;
 
   const sorted = [...arr].sort((a, b) => a.month - b.month);
@@ -204,7 +244,7 @@ export function aggregateQuarterEntries(arr) {
     ? Math.round((calculatedActualMargin - calculatedBudgetMargin) * 100) / 100
     : null;
 
-  return {
+  const result = {
     ...last,
     budgeted_gop_actual: sumField('budgeted_gop_actual'),
     budgeted_gop_target: sumField('budgeted_gop_target'),
@@ -232,4 +272,9 @@ export function aggregateQuarterEntries(arr) {
     prepared_by: last.prepared_by,
     reviewed_by: last.reviewed_by,
   };
+
+  // Quarterly RGI override: use exact STR quarterly figures when available
+  const year = sorted[0]?.year;
+  const quarter = sorted[0] ? getQuarterFromMonth(sorted[0].month) : null;
+  return applyRgiOverride(result, rgiOverrides, last.property_id, year, quarter);
 }

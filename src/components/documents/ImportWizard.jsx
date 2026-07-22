@@ -41,6 +41,8 @@ export default function ImportWizard({ file, properties, onClose, onSuccess }) {
   const [mappedRows, setMappedRows] = useState([]);
   const [matches, setMatches] = useState([]);
   const [importResult, setImportResult] = useState(null);
+  const [periodMode, setPeriodMode] = useState('monthly'); // 'monthly' | 'quarterly' — quarterly RGI uploads
+  const [periodQuarter, setPeriodQuarter] = useState(getQuarterFromMonth(CURRENT_MONTH));
 
   const ext = file.name.split('.').pop().toLowerCase();
   const isPdf = ext === 'pdf';
@@ -99,6 +101,7 @@ export default function ImportWizard({ file, properties, onClose, onSuccess }) {
     let ok = 0, fail = 0;
     let newPropsCreated = 0;
     const unmatchedNames = [];
+    const isQuarterlyRgi = docType === 'RGI/STR Report' && periodMode === 'quarterly';
 
     // Upload file first
     const user = await base44.auth.me();
@@ -110,7 +113,7 @@ export default function ImportWizard({ file, properties, onClose, onSuccess }) {
       doc_type: docType,
       scope: 'company-wide',
       property_id: null,
-      period_month: periodMonth,
+      period_month: isQuarterlyRgi ? periodQuarter * 3 : periodMonth,
       period_year: periodYear,
       uploaded_by: user?.full_name || user?.email || 'Unknown',
     });
@@ -136,6 +139,23 @@ export default function ImportWizard({ file, properties, onClose, onSuccess }) {
         newPropsCreated++;
         // Update local matches array so subsequent logic uses the real property
         matches[i] = newProp;
+      }
+
+      // Quarterly RGI reports are stored separately and override the monthly average
+      if (isQuarterlyRgi) {
+        const rgiPatch = {};
+        if (row.revpar_index_change != null) rgiPatch.revpar_index_change = row.revpar_index_change;
+        if (row.revpar_index != null) rgiPatch.revpar_index = row.revpar_index;
+        if (row.revpar_index_prior != null) rgiPatch.revpar_index_prior = row.revpar_index_prior;
+        if (Object.keys(rgiPatch).length === 0) { fail++; continue; }
+        const existingRgi = await base44.entities.RgiQuarterlyReport.filter({ property_id: prop.id, year: periodYear, quarter: periodQuarter });
+        if (existingRgi.length > 0) {
+          await base44.entities.RgiQuarterlyReport.update(existingRgi[0].id, rgiPatch);
+        } else {
+          await base44.entities.RgiQuarterlyReport.create({ property_id: prop.id, year: periodYear, quarter: periodQuarter, ...rgiPatch });
+        }
+        ok++;
+        continue;
       }
 
       const patch = {};
@@ -179,11 +199,12 @@ export default function ImportWizard({ file, properties, onClose, onSuccess }) {
     queryClient.invalidateQueries({ queryKey: ['all-entries'] });
     queryClient.invalidateQueries({ queryKey: ['documents'] });
     queryClient.invalidateQueries({ queryKey: ['properties'] });
+    queryClient.invalidateQueries({ queryKey: ['rgi-quarterly'] });
     // Refresh time period context so newly imported months become selectable
     await refreshAvailableData();
     setSelectedYear(periodYear);
-    setSelectedMonth(periodMonth);
-    setImportResult({ ok, fail, unmatchedNames, newPropsCreated });
+    setSelectedMonth(isQuarterlyRgi ? periodQuarter * 3 : periodMonth);
+    setImportResult({ ok, fail, unmatchedNames, newPropsCreated, periodLabel: isQuarterlyRgi ? `Q${periodQuarter} ${periodYear}` : `${MONTHS[periodMonth-1]} ${periodYear}` });
     setStep('done');
   };
 
@@ -274,6 +295,24 @@ export default function ImportWizard({ file, properties, onClose, onSuccess }) {
           {step === 'period' && (
             <div className="space-y-4">
               <p className="text-sm font-medium">What type of report is this, and what period does it cover?</p>
+              {docType === 'RGI/STR Report' && (
+                <div className="flex items-center gap-2 bg-blue-50 border border-blue-200 rounded-lg p-3">
+                  <span className="text-xs font-medium text-blue-800">Report frequency:</span>
+                  <button
+                    type="button"
+                    onClick={() => setPeriodMode('monthly')}
+                    className={`text-xs px-3 py-1 rounded-full font-semibold transition-colors ${periodMode === 'monthly' ? 'bg-blue-600 text-white' : 'bg-white text-blue-700 border border-blue-200'}`}
+                  >Monthly</button>
+                  <button
+                    type="button"
+                    onClick={() => setPeriodMode('quarterly')}
+                    className={`text-xs px-3 py-1 rounded-full font-semibold transition-colors ${periodMode === 'quarterly' ? 'bg-blue-600 text-white' : 'bg-white text-blue-700 border border-blue-200'}`}
+                  >Quarterly</button>
+                  {periodMode === 'quarterly' && (
+                    <span className="text-[11px] text-blue-600 ml-1">Quarterly reports use exact STR figures instead of averaging monthly data.</span>
+                  )}
+                </div>
+              )}
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
                   <label className="text-xs font-medium">Report Type</label>
@@ -292,10 +331,21 @@ export default function ImportWizard({ file, properties, onClose, onSuccess }) {
                 </div>
                 <div className="space-y-1">
                   <label className="text-xs font-medium">Period</label>
-                  <Select value={String(periodMonth)} onValueChange={v => setPeriodMonth(Number(v))}>
-                    <SelectTrigger className="text-sm"><SelectValue /></SelectTrigger>
-                    <SelectContent>{MONTHS.map((m, i) => <SelectItem key={i+1} value={String(i+1)}>{m} {periodYear}</SelectItem>)}</SelectContent>
-                  </Select>
+                  {docType === 'RGI/STR Report' && periodMode === 'quarterly' ? (
+                    <Select value={String(periodQuarter)} onValueChange={v => setPeriodQuarter(Number(v))}>
+                      <SelectTrigger className="text-sm"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {[1, 2, 3, 4].map(q => (
+                          <SelectItem key={q} value={String(q)}>Q{q} ({MONTHS[(q-1)*3]}–{MONTHS[(q-1)*3+2]}) {periodYear}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <Select value={String(periodMonth)} onValueChange={v => setPeriodMonth(Number(v))}>
+                      <SelectTrigger className="text-sm"><SelectValue /></SelectTrigger>
+                      <SelectContent>{MONTHS.map((m, i) => <SelectItem key={i+1} value={String(i+1)}>{m} {periodYear}</SelectItem>)}</SelectContent>
+                    </Select>
+                  )}
                 </div>
               </div>
               {parsed && (
@@ -409,7 +459,7 @@ export default function ImportWizard({ file, properties, onClose, onSuccess }) {
                     <div>
                       <p className="font-semibold text-sm">
                         {importResult.ok > 0
-                          ? `✅ ${importResult.ok} hotel${importResult.ok > 1 ? 's' : ''} matched & updated for ${MONTHS[periodMonth-1]} ${periodYear}`
+                          ? `✅ ${importResult.ok} hotel${importResult.ok > 1 ? 's' : ''} matched & updated for ${importResult.periodLabel}`
                           : 'No records imported'}
                       </p>
                       {importResult.fail > 0 && (

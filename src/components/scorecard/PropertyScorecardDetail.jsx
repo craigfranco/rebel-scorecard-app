@@ -49,7 +49,12 @@ export default function PropertyScorecardDetail({
     enabled: !!property?.id,
   });
 
-  const activeEntry = aggregateEntries(entries, periodType, selectedMonth, selectedYear) || {};
+  const { data: rgiQuarterlyReports = [] } = useQuery({
+    queryKey: ['rgi-quarterly', selectedYear],
+    queryFn: () => base44.entities.RgiQuarterlyReport.filter({ year: selectedYear }),
+  });
+
+  const activeEntry = aggregateEntries(entries, periodType, selectedMonth, selectedYear, rgiQuarterlyReports) || {};
   const scorecard = property ? calculateScorecard(activeEntry, property) : null;
 
   const yoyMargin =
