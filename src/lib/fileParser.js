@@ -4,6 +4,12 @@
 // e.g. "Holiday Inn Express & Suites Moreno Valley - Riverside" → strip "- Riverside"
 const LOCATION_SUFFIX_RE = /\s*-\s*(riverside|downtown|airport|north|south|east|west|central|midtown|uptown|old town|lakefront|waterfront|beachfront|harbor|marina|strip|galleria|market|square|plaza|village|heights|hills|valley|park|gardens|meadows|landing|crossing|junction|station|gateway|corridor|loop|skyway|bay|cove|ridge|bluff|summit|pointe|point|grove|woods|forest|lake|creek|brook|springs|falls|shores|harbor)\b.*/i;
 
+// Known alternate names used in upload files that don't fuzzy-match a stored property.
+// Key = normalized lowercased alias, Value = canonical property name as stored in the DB.
+const NAME_ALIASES = {
+  'the coachman': 'Coachman Lake Tahoe',
+};
+
 // Normalize a property name for fuzzy matching
 export function normalizeName(s) {
   if (!s) return '';
@@ -21,8 +27,11 @@ export function bestMatch(nameOrStrId, properties, strId = null) {
   // Always filter to active properties only — never match inactive/duplicate records
   const activeProperties = properties.filter(p => p.is_active !== false);
 
-  // 1. Exact case-insensitive name match
-  const rawName = typeof nameOrStrId === 'string' ? nameOrStrId.trim() : '';
+  // 1. Exact case-insensitive name match (after alias resolution)
+  const rawNameInput = typeof nameOrStrId === 'string' ? nameOrStrId.trim() : '';
+  const rawName = rawNameInput && NAME_ALIASES[rawNameInput.toLowerCase()]
+    ? NAME_ALIASES[rawNameInput.toLowerCase()]
+    : rawNameInput;
   if (rawName) {
     const exactMatch = activeProperties.find(
       p => p.name.trim().toLowerCase() === rawName.toLowerCase()
