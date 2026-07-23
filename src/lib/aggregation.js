@@ -120,8 +120,13 @@ export function aggregateEntries(entries, periodType, selectedMonth, selectedYea
     ? Math.round((monthlyMarginImprovements.reduce((s, v) => s + v, 0) / monthlyMarginImprovements.length) * 10000) / 10000
     : null;
 
-  // For display: keep actual/prior as simple averages so variance columns still show reasonable values
-  const calculatedActualMargin = avgField('gop_margin_actual');
+  // Dollar-weighted actual margin: sum(GOP) / sum(Revenue) × 100
+  // Matches budget-margin methodology; falls back to simple average when revenue is missing.
+  const totalActualGop = sumField('budgeted_gop_actual');
+  const totalActualRevenue = sumField('forecast_actual_revenue');
+  const calculatedActualMargin = (totalActualGop != null && totalActualRevenue != null && totalActualRevenue !== 0)
+    ? Math.round((totalActualGop / totalActualRevenue) * 100 * 100) / 100
+    : avgField('gop_margin_actual');
   const calculatedPriorMargin = avgField('gop_margin_prior');
 
   const totalBudgetGOP = sumField('budgeted_gop_target');
@@ -233,7 +238,11 @@ export function aggregateQuarterEntries(arr, rgiOverrides = []) {
     ? Math.round((qMonthlyImprovements.reduce((s, v) => s + v, 0) / qMonthlyImprovements.length) * 10000) / 10000
     : null;
 
-  const calculatedActualMargin = avgField('gop_margin_actual');
+  const totalActualGop = sumField('budgeted_gop_actual');
+  const totalActualRevenue = sumField('forecast_actual_revenue');
+  const calculatedActualMargin = (totalActualGop != null && totalActualRevenue != null && totalActualRevenue !== 0)
+    ? Math.round((totalActualGop / totalActualRevenue) * 100 * 100) / 100
+    : avgField('gop_margin_actual');
   const calculatedPriorMargin = avgField('gop_margin_prior');
   const totalBudgetGOP = sumField('budgeted_gop_target');
   const totalBudgetRevenue = sumField('forecast_primary_forecast');
