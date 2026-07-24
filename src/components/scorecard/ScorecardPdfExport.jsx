@@ -113,7 +113,9 @@ export function generateScorecardPDF(property, entry, periodType, selectedMonth,
 
   const marginTy = entry.gop_margin_actual;
   const marginPy = entry.gop_margin_prior;
-  const marginVar = (marginTy != null && marginPy != null) ? marginTy - marginPy : null;
+  const marginVar = entry.gop_margin_improvement != null
+    ? entry.gop_margin_improvement
+    : ((marginTy != null && marginPy != null) ? marginTy - marginPy : null);
 
   const rgiTy = entry.revpar_index;
   const rgiChg = entry.revpar_index_change;
