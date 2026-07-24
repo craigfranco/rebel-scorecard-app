@@ -137,8 +137,8 @@ export default function KpiBreakdown() {
           score = sc.gopMargin.score;
           pass = sc.gopMargin.pass;
           actual = entry.gop_margin_actual != null ? `${entry.gop_margin_actual.toFixed(1)}%` : '—';
-          entry._margin_yoy = (entry.gop_margin_actual != null && entry.gop_margin_prior != null)
-            ? entry.gop_margin_actual - entry.gop_margin_prior
+          entry._margin_yoy = entry.gop_margin_improvement != null
+            ? entry.gop_margin_improvement
             : null;
           entry._ly_margin = entry.gop_margin_prior != null ? `${entry.gop_margin_prior.toFixed(1)}%` : null;
         } else if (activeKpi === 'rgi') {

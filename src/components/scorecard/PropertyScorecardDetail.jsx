@@ -57,10 +57,11 @@ export default function PropertyScorecardDetail({
   const activeEntry = aggregateEntries(entries, periodType, selectedMonth, selectedYear, rgiQuarterlyReports) || {};
   const scorecard = property ? calculateScorecard(activeEntry, property) : null;
 
-  const yoyMargin =
-    activeEntry.gop_margin_actual != null && activeEntry.gop_margin_prior != null
-      ? activeEntry.gop_margin_actual - activeEntry.gop_margin_prior
-      : null;
+  const yoyMargin = activeEntry.gop_margin_improvement != null
+    ? activeEntry.gop_margin_improvement
+    : (activeEntry.gop_margin_actual != null && activeEntry.gop_margin_prior != null
+        ? activeEntry.gop_margin_actual - activeEntry.gop_margin_prior
+        : null);
 
   const marginTy = activeEntry.gop_margin_actual;
   const marginPy = activeEntry.gop_margin_prior;
@@ -106,10 +107,12 @@ export default function PropertyScorecardDetail({
           targetLy: marginPy != null ? marginPy.toFixed(1) + '%' : '—',
           actual: marginTy != null ? marginTy.toFixed(1) + '%' : '—',
           ytdActual: (() => {
-            const a = activeEntry.gop_margin_actual;
-            const p = activeEntry.gop_margin_prior;
-            if (a != null && p != null) {
-              const diff = a - p;
+            const diff = activeEntry.gop_margin_improvement != null
+              ? activeEntry.gop_margin_improvement
+              : (activeEntry.gop_margin_actual != null && activeEntry.gop_margin_prior != null
+                  ? activeEntry.gop_margin_actual - activeEntry.gop_margin_prior
+                  : null);
+            if (diff != null) {
               const color = diff >= 0.1 ? '#4CAF50' : '#ef4444';
               return (
                 <span style={{ color, fontWeight: 'bold' }}>
