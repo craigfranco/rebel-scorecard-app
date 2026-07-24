@@ -127,7 +127,17 @@ export function aggregateEntries(entries, periodType, selectedMonth, selectedYea
   const calculatedActualMargin = (totalActualGop != null && totalActualRevenue != null && totalActualRevenue !== 0)
     ? Math.round((totalActualGop / totalActualRevenue) * 100 * 100) / 100
     : avgField('gop_margin_actual');
-  const calculatedPriorMargin = avgField('gop_margin_prior');
+  // Revenue-weighted prior margin: weight each month's prior margin by current-year revenue,
+  // making the LY figure directly comparable to the TY dollar-weighted margin (same revenue weights).
+  const priorMarginEntries = sorted.filter(e => e.gop_margin_prior != null && e.forecast_actual_revenue != null);
+  const calculatedPriorMargin = priorMarginEntries.length > 0
+    ? (() => {
+        const totalRev = priorMarginEntries.reduce((s, e) => s + e.forecast_actual_revenue, 0);
+        return totalRev !== 0
+          ? Math.round((priorMarginEntries.reduce((s, e) => s + e.gop_margin_prior * e.forecast_actual_revenue, 0) / totalRev) * 100) / 100
+          : avgField('gop_margin_prior');
+      })()
+    : avgField('gop_margin_prior');
 
   const totalBudgetGOP = sumField('budgeted_gop_target');
   const totalBudgetRevenue = sumField('forecast_primary_forecast');
@@ -243,7 +253,17 @@ export function aggregateQuarterEntries(arr, rgiOverrides = []) {
   const calculatedActualMargin = (totalActualGop != null && totalActualRevenue != null && totalActualRevenue !== 0)
     ? Math.round((totalActualGop / totalActualRevenue) * 100 * 100) / 100
     : avgField('gop_margin_actual');
-  const calculatedPriorMargin = avgField('gop_margin_prior');
+  // Revenue-weighted prior margin: weight each month's prior margin by current-year revenue,
+  // making the LY figure directly comparable to the TY dollar-weighted margin (same revenue weights).
+  const priorMarginEntries = sorted.filter(e => e.gop_margin_prior != null && e.forecast_actual_revenue != null);
+  const calculatedPriorMargin = priorMarginEntries.length > 0
+    ? (() => {
+        const totalRev = priorMarginEntries.reduce((s, e) => s + e.forecast_actual_revenue, 0);
+        return totalRev !== 0
+          ? Math.round((priorMarginEntries.reduce((s, e) => s + e.gop_margin_prior * e.forecast_actual_revenue, 0) / totalRev) * 100) / 100
+          : avgField('gop_margin_prior');
+      })()
+    : avgField('gop_margin_prior');
   const totalBudgetGOP = sumField('budgeted_gop_target');
   const totalBudgetRevenue = sumField('forecast_primary_forecast');
   const calculatedBudgetMargin = (totalBudgetGOP != null && totalBudgetRevenue != null && totalBudgetRevenue !== 0)
