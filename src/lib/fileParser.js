@@ -197,6 +197,7 @@ export function autoDetectMapping(headers, docType) {
       budgeted_gop_actual: find('actualamt', 'actualgop', 'actualdollar', 'gopactual', 'actual') ?? find('amt'),
       gop_margin_actual:   find('actualrev', 'actualmargin', 'actualpct', 'margin') ?? find('rev'),
       budgeted_gop_target: find('budgetamt', 'budgetgop', 'budgetdollar', 'gopbudget', 'budget') ?? null,
+      budgeted_gop_prior:  find('prioryearamt', 'lastyearamt', 'prioramt', 'pyramt', 'priorgopamt') ?? null,
       gop_margin_budget:   find('budgetrev', 'budgetmargin', 'budgetpct') ?? null,
       gop_margin_prior:    find('prioryearamt', 'lastyearamt', 'priorgop', 'prioractual') ?? find('prior'),
     };
@@ -250,6 +251,7 @@ export function applyMapping(rows, mapping) {
       budgeted_gop_actual: num(get(mapping.budgeted_gop_actual)),
       gop_margin_actual:   num(get(mapping.gop_margin_actual)),
       budgeted_gop_target: num(get(mapping.budgeted_gop_target)),
+      budgeted_gop_prior:  num(get(mapping.budgeted_gop_prior)),
       gop_margin_budget:   num(get(mapping.gop_margin_budget)),
       gop_margin_prior:    num(get(mapping.gop_margin_prior)),
       revpar_index_change: num(get(mapping.revpar_index_change)),

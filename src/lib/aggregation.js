@@ -127,17 +127,7 @@ export function aggregateEntries(entries, periodType, selectedMonth, selectedYea
   const calculatedActualMargin = (totalActualGop != null && totalActualRevenue != null && totalActualRevenue !== 0)
     ? Math.round((totalActualGop / totalActualRevenue) * 100 * 100) / 100
     : avgField('gop_margin_actual');
-  // Revenue-weighted prior margin: weight each month's prior margin by current-year revenue,
-  // making the LY figure directly comparable to the TY dollar-weighted margin (same revenue weights).
-  const priorMarginEntries = sorted.filter(e => e.gop_margin_prior != null && e.forecast_actual_revenue != null);
-  const calculatedPriorMargin = priorMarginEntries.length > 0
-    ? (() => {
-        const totalRev = priorMarginEntries.reduce((s, e) => s + e.forecast_actual_revenue, 0);
-        return totalRev !== 0
-          ? Math.round((priorMarginEntries.reduce((s, e) => s + e.gop_margin_prior * e.forecast_actual_revenue, 0) / totalRev) * 100) / 100
-          : avgField('gop_margin_prior');
-      })()
-    : avgField('gop_margin_prior');
+  const calculatedPriorMargin = calculatePriorMargin(sorted, avgField);
 
   const totalBudgetGOP = sumField('budgeted_gop_target');
   const totalBudgetRevenue = sumField('forecast_primary_forecast');
@@ -208,6 +198,38 @@ export function aggregateEntries(entries, periodType, selectedMonth, selectedYea
 }
 
 /**
+ * Calculates the dollar-weighted prior-year GOP margin from monthly entries.
+ *
+ * Priority:
+ * 1. If budgeted_gop_prior (prior-year GOP $) is available, derives prior revenue
+ *    as prior_GOP ÷ prior_margin% and dollar-weights: sum(prior_GOP) / sum(prior_revenue).
+ *    This is the true quarterly margin — "adding the 3 months" by summing dollars.
+ * 2. Falls back to revenue-weighting using current-year revenue as weight.
+ * 3. Falls back to simple average of prior margins.
+ */
+function calculatePriorMargin(sorted, avgField) {
+  // Method 1: True dollar-weighting using prior-year GOP dollars
+  const priorGopEntries = sorted.filter(e => e.budgeted_gop_prior != null && e.gop_margin_prior != null && e.gop_margin_prior !== 0);
+  if (priorGopEntries.length > 0) {
+    const totalPriorGop = priorGopEntries.reduce((s, e) => s + e.budgeted_gop_prior, 0);
+    const totalPriorRev = priorGopEntries.reduce((s, e) => s + (e.budgeted_gop_prior / (e.gop_margin_prior / 100)), 0);
+    if (totalPriorRev !== 0) {
+      return Math.round((totalPriorGop / totalPriorRev) * 100 * 100) / 100;
+    }
+  }
+  // Method 2: Revenue-weighted using current-year revenue (same weights as TY)
+  const revWeighted = sorted.filter(e => e.gop_margin_prior != null && e.forecast_actual_revenue != null);
+  if (revWeighted.length > 0) {
+    const totalRev = revWeighted.reduce((s, e) => s + e.forecast_actual_revenue, 0);
+    if (totalRev !== 0) {
+      return Math.round((revWeighted.reduce((s, e) => s + e.gop_margin_prior * e.forecast_actual_revenue, 0) / totalRev) * 100) / 100;
+    }
+  }
+  // Method 3: Simple average
+  return avgField('gop_margin_prior');
+}
+
+/**
  * Aggregates a pre-filtered array of entries for a single quarter.
  * Bypasses period filtering since the array is already scoped to the quarter.
  *
@@ -253,17 +275,7 @@ export function aggregateQuarterEntries(arr, rgiOverrides = []) {
   const calculatedActualMargin = (totalActualGop != null && totalActualRevenue != null && totalActualRevenue !== 0)
     ? Math.round((totalActualGop / totalActualRevenue) * 100 * 100) / 100
     : avgField('gop_margin_actual');
-  // Revenue-weighted prior margin: weight each month's prior margin by current-year revenue,
-  // making the LY figure directly comparable to the TY dollar-weighted margin (same revenue weights).
-  const priorMarginEntries = sorted.filter(e => e.gop_margin_prior != null && e.forecast_actual_revenue != null);
-  const calculatedPriorMargin = priorMarginEntries.length > 0
-    ? (() => {
-        const totalRev = priorMarginEntries.reduce((s, e) => s + e.forecast_actual_revenue, 0);
-        return totalRev !== 0
-          ? Math.round((priorMarginEntries.reduce((s, e) => s + e.gop_margin_prior * e.forecast_actual_revenue, 0) / totalRev) * 100) / 100
-          : avgField('gop_margin_prior');
-      })()
-    : avgField('gop_margin_prior');
+  const calculatedPriorMargin = calculatePriorMargin(sorted, avgField);
   const totalBudgetGOP = sumField('budgeted_gop_target');
   const totalBudgetRevenue = sumField('forecast_primary_forecast');
   const calculatedBudgetMargin = (totalBudgetGOP != null && totalBudgetRevenue != null && totalBudgetRevenue !== 0)
