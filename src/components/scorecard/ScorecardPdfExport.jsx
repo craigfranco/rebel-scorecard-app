@@ -5,18 +5,11 @@ import { formatBrandLabel } from '@/lib/portfolioHelpers';
 
 // REBEL Hotel Company logo URL
 const REBEL_LOGO_URL = 'https://media.base44.com/images/public/69d3e20c8254476c324dc91c/624d887cf_RHC_Blue.png';
-// Brand accent colors
-const BRAND_COLORS = {
-  Marriott:    [140, 0, 0],
-  Hilton:      [0, 60, 113],
-  IHG:         [0, 100, 60],
-  Hyatt:       [150, 40, 40],
-  Choice:      [0, 80, 160],
-  Independent: [45, 75, 94],
-};
+// Consistent slate blue accent (matches app theme #2d4b5e)
+const ACCENT_COLOR = [45, 75, 94];
 
 function getBrandColor(brand) {
-  return BRAND_COLORS[brand] || BRAND_COLORS.Independent;
+  return ACCENT_COLOR;
 }
 
 // Full dollar formatting — no abbreviation, ever
