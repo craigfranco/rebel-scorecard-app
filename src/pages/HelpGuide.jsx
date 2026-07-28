@@ -206,9 +206,10 @@ function ScorecardGuide() {
 
       <H3>Score calculation</H3>
       <UL>
-        <LI>Total score is out of 100 (or 85 if GSS data is missing — the threshold scales accordingly)</LI>
-        <LI>Pass threshold: 70% of the maximum possible score</LI>
-        <LI>A hotel passes overall if its total score ≥ 70 (or ≥ 59.5 when GSS is excluded)</LI>
+        <LI>Total score is out of 100 (or 85 if GSS data is missing — the max scales accordingly)</LI>
+        <LI>The total score is shown as a raw number only (e.g. 70/100) — no overall pass/fail badge</LI>
+        <LI>Individual KPI rows still show pass/fail status with green ✅ or red ❌</LI>
+        <LI>Use the total score for relative comparison across hotels and periods</LI>
       </UL>
 
       <H3>Trend arrows</H3>
@@ -306,10 +307,12 @@ function KpiReferenceGuide() {
       <H3>Quarterly Aggregation Rules</H3>
       <UL>
         <LI><strong>GOP (dollar)</strong> — Summed across all months in the quarter</LI>
-        <LI><strong>GOP Margin %</strong> — Averaged across months; improvement = avg of monthly (actual − prior)</LI>
-        <LI><strong>RGI %</strong> — Averaged across months in the quarter</LI>
-        <LI><strong>GSS</strong> — Each field (TY and LY) averaged independently across all valid months, then normalized and compared</LI>
+        <LI><strong>GOP Margin %</strong> — Dollar-weighted: sum(GOP) ÷ sum(Revenue) × 100. Prior-year margin is also dollar-weighted using prior-year GOP dollars and derived prior-year revenue. Improvement = average of monthly (actual margin − prior margin).</LI>
+        <LI><strong>RGI %</strong> — Averaged across months in the quarter. If a quarterly STR report override exists for the property/quarter, the exact published quarterly figures are used instead of the monthly average.</LI>
+        <LI><strong>GSS</strong> — Each field (TY and LY) averaged independently across all valid (non-null, non-zero) months, then normalized and compared</LI>
+        <LI><strong>Bonus Exceptions</strong> — Approved quarterly add-backs are added to actual GOP dollars before margin and score calculations. Both raw and adjusted values are displayed on the scorecard.</LI>
       </UL>
+      <p className="text-xs text-muted-foreground mt-2">Source: 2026 GM/EC/Department Head Incentive Plan</p>
     </>
   );
 }
@@ -431,8 +434,13 @@ function PayoutsGuide() {
         <LI><strong>50% held to year-end</strong> — held until Q4 closes, then released as a year-end reconciliation payment</LI>
       </UL>
 
+      <H3>Bonus Exceptions &amp; Payouts</H3>
+      <P>Approved bonus exceptions (see the Hotel Performance Scorecard section) adjust a property's GOP dollars for the quarter. Since GOP achievement is a bonus-earning KPI, an approved exception can change whether a hotel passes the GOP gate — and therefore affect the bonus amount earned by eligible staff for that quarter. The adjusted (post-exception) figures are used in all payout calculations.</P>
+
       <H3>Annual running total</H3>
       <P>The annual total shown in Payouts is the <strong>sum of actual completed quarters only</strong>. No projections or estimates are made for future quarters. A quarter is only included once its salary and scorecard data are entered.</P>
+
+      <p className="text-xs text-muted-foreground mt-4">Source: 2026 GM/EC/Department Head Incentive Plan</p>
     </>
   );
 }
