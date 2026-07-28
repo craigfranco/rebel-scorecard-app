@@ -46,6 +46,63 @@ function applyRgiOverride(result, overrides, propertyId, year, quarter) {
 }
 
 /**
+ * Applies approved bonus exceptions (quarterly add-backs) to the aggregated result.
+ * Adds the exception dollar amount to actual GOP, then recalculates margins.
+ *
+ * bonusExceptions: array of BonusException records (only Approved ones are used)
+ * applicableQuarters: array of quarter numbers that the current period covers
+ */
+function applyBonusExceptions(result, bonusExceptions, propertyId, applicableQuarters) {
+  if (!bonusExceptions || !bonusExceptions.length || !propertyId || !applicableQuarters.length) return result;
+  const approved = bonusExceptions.filter(e =>
+    e.status === 'Approved' &&
+    e.property_id === propertyId &&
+    applicableQuarters.includes(e.quarter)
+  );
+  if (!approved.length) return result;
+
+  const exceptionTotal = approved.reduce((s, e) => s + (e.amount || 0), 0);
+  if (exceptionTotal === 0) return result;
+
+  const patched = { ...result };
+
+  // Store raw values for display
+  patched.budgeted_gop_actual_raw = result.budgeted_gop_actual;
+  patched.gop_margin_actual_raw = result.gop_margin_actual;
+  patched.gop_margin_improvement_raw = result.gop_margin_improvement;
+
+  // Apply add-back to actual GOP
+  if (patched.budgeted_gop_actual != null) {
+    patched.budgeted_gop_actual = patched.budgeted_gop_actual + exceptionTotal;
+  }
+
+  // Recalculate dollar-weighted actual margin using adjusted GOP
+  if (patched.budgeted_gop_actual != null && patched.forecast_actual_revenue != null && patched.forecast_actual_revenue !== 0) {
+    patched.gop_margin_actual = Math.round((patched.budgeted_gop_actual / patched.forecast_actual_revenue) * 100 * 100) / 100;
+  }
+
+  // Recalculate margin improvement (adjusted actual vs prior)
+  if (patched.gop_margin_actual != null && patched.gop_margin_prior != null) {
+    patched.gop_margin_improvement = Math.round((patched.gop_margin_actual - patched.gop_margin_prior) * 10000) / 10000;
+  }
+
+  // Recalculate budget variance
+  if (patched.gop_margin_actual != null && patched.gop_margin_budget != null) {
+    patched.gop_margin_variance = Math.round((patched.gop_margin_actual - patched.gop_margin_budget) * 100) / 100;
+  }
+
+  // Store exception metadata for UI
+  patched.bonus_exception_total = exceptionTotal;
+  patched.bonus_exceptions = approved.map(e => ({
+    amount: e.amount,
+    description: e.description,
+    category: e.category
+  }));
+
+  return patched;
+}
+
+/**
  * Aggregates ScoreEntry data based on time period type
  *
  * Rules:
@@ -60,7 +117,7 @@ function applyRgiOverride(result, overrides, propertyId, year, quarter) {
  * full quarter and an override exists, RGI fields use the quarterly report's exact
  * values instead of the monthly average.
  */
-export function aggregateEntries(entries, periodType, selectedMonth, selectedYear, rgiOverrides = []) {
+export function aggregateEntries(entries, periodType, selectedMonth, selectedYear, rgiOverrides = [], bonusExceptions = []) {
   if (!entries || entries.length === 0) return null;
 
   let filteredEntries = [];
@@ -189,12 +246,21 @@ export function aggregateEntries(entries, periodType, selectedMonth, selectedYea
     reviewed_by: last.reviewed_by,
   };
 
-  // Quarterly RGI override: use exact STR quarterly figures when available
-  if (periodType === 'quarter') {
-    return applyRgiOverride(result, rgiOverrides, last.property_id, selectedYear, getQuarterFromMonth(selectedMonth));
+  // Apply bonus exceptions for quarter and ytd periods
+  let finalResult = result;
+  if (periodType === 'quarter' || periodType === 'ytd') {
+    const applicableQuarters = periodType === 'quarter'
+      ? [getQuarterFromMonth(selectedMonth)]
+      : [1, 2, 3, 4].filter(q => q <= getQuarterFromMonth(selectedMonth));
+    finalResult = applyBonusExceptions(result, bonusExceptions, last.property_id, applicableQuarters);
   }
 
-  return result;
+  // Quarterly RGI override: use exact STR quarterly figures when available
+  if (periodType === 'quarter') {
+    return applyRgiOverride(finalResult, rgiOverrides, last.property_id, selectedYear, getQuarterFromMonth(selectedMonth));
+  }
+
+  return finalResult;
 }
 
 /**
@@ -237,7 +303,7 @@ function calculatePriorMargin(sorted, avgField) {
  * exists for this property / year / quarter, RGI fields use the quarterly report's
  * exact values instead of the monthly average.
  */
-export function aggregateQuarterEntries(arr, rgiOverrides = []) {
+export function aggregateQuarterEntries(arr, rgiOverrides = [], bonusExceptions = []) {
   if (!arr || arr.length === 0) return null;
 
   const sorted = [...arr].sort((a, b) => a.month - b.month);
@@ -314,8 +380,11 @@ export function aggregateQuarterEntries(arr, rgiOverrides = []) {
     reviewed_by: last.reviewed_by,
   };
 
-  // Quarterly RGI override: use exact STR quarterly figures when available
+  // Apply bonus exceptions (quarterly add-backs)
   const year = sorted[0]?.year;
   const quarter = sorted[0] ? getQuarterFromMonth(sorted[0].month) : null;
-  return applyRgiOverride(result, rgiOverrides, last.property_id, year, quarter);
+  const withExceptions = applyBonusExceptions(result, bonusExceptions, last.property_id, quarter ? [quarter] : []);
+
+  // Quarterly RGI override: use exact STR quarterly figures when available
+  return applyRgiOverride(withExceptions, rgiOverrides, last.property_id, year, quarter);
 }

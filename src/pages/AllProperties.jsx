@@ -39,6 +39,11 @@ export default function AllProperties() {
     queryFn: () => base44.entities.ScoreEntry.filter({ year: selectedYear }),
   });
 
+  const { data: bonusExceptions = [] } = useQuery({
+    queryKey: ['bonus-exceptions', selectedYear],
+    queryFn: () => base44.entities.BonusException.filter({ year: selectedYear }),
+  });
+
   const getEntryForProperty = (propertyId) => {
     const propEntries = allEntries.filter(e => e.property_id === propertyId);
     if (!propEntries.length) return null;
@@ -54,7 +59,7 @@ export default function AllProperties() {
     }
     
     // Use the proper aggregation from lib/aggregation.js for quarter, qtd, ytd
-    return aggregateEntries(periodEntries, periodType, selectedMonth, selectedYear);
+    return aggregateEntries(periodEntries, periodType, selectedMonth, selectedYear, [], bonusExceptions);
   };
 
   const rows = properties

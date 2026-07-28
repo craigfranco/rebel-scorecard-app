@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
-import { User, Download, X } from 'lucide-react';
+import { User, Download, X, ShieldAlert, AlertTriangle } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import ScoreGauge from '@/components/scorecard/ScoreGauge';
 import KpiRow from '@/components/scorecard/KpiRow';
@@ -18,6 +18,8 @@ import {
   normalizeGssTo100,
 } from '@/lib/scoring';
 import { useTimePeriod } from '@/lib/TimePeriodContext';
+import { useUserProfile } from '@/lib/UserProfileContext';
+import BonusExceptionModal from '@/components/scorecard/BonusExceptionModal';
 
 /**
  * PropertyScorecardDetail
@@ -39,6 +41,8 @@ export default function PropertyScorecardDetail({
   onPropertyChange,
 }) {
   const { selectedMonth, selectedYear, periodType } = useTimePeriod();
+  const { isAdmin } = useUserProfile();
+  const [showExceptionModal, setShowExceptionModal] = useState(false);
 
   const { data: entries = [] } = useQuery({
     queryKey: ['score-entries', property?.id, selectedYear],
@@ -49,12 +53,21 @@ export default function PropertyScorecardDetail({
     enabled: !!property?.id,
   });
 
+  const { data: bonusExceptions = [] } = useQuery({
+    queryKey: ['bonus-exceptions', property?.id, selectedYear],
+    queryFn: () =>
+      property?.id
+        ? base44.entities.BonusException.filter({ property_id: property.id, year: selectedYear })
+        : Promise.resolve([]),
+    enabled: !!property?.id,
+  });
+
   const { data: rgiQuarterlyReports = [] } = useQuery({
     queryKey: ['rgi-quarterly', selectedYear],
     queryFn: () => base44.entities.RgiQuarterlyReport.filter({ year: selectedYear }),
   });
 
-  const activeEntry = aggregateEntries(entries, periodType, selectedMonth, selectedYear, rgiQuarterlyReports) || {};
+  const activeEntry = aggregateEntries(entries, periodType, selectedMonth, selectedYear, rgiQuarterlyReports, bonusExceptions) || {};
   const scorecard = property ? calculateScorecard(activeEntry, property) : null;
 
   const yoyMargin = activeEntry.gop_margin_improvement != null
@@ -231,6 +244,21 @@ export default function PropertyScorecardDetail({
               Download PDF
             </button>
 
+            {isAdmin && (
+              <button
+                onClick={() => setShowExceptionModal(true)}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/15 hover:bg-white/25 text-white text-sm font-semibold border border-white/20 transition-colors"
+              >
+                <ShieldAlert className="w-4 h-4" />
+                Bonus Exceptions
+                {bonusExceptions.length > 0 && (
+                  <span className="ml-1 px-1.5 py-0.5 rounded-full bg-amber-500 text-white text-[10px] font-bold">
+                    {bonusExceptions.length}
+                  </span>
+                )}
+              </button>
+            )}
+
             {showPropertySelector && (
               <Select value={selectedPropertyId} onValueChange={onPropertyChange}>
                 <SelectTrigger className="w-full sm:w-72 bg-white/10 border-white/20 text-white">
@@ -260,6 +288,44 @@ export default function PropertyScorecardDetail({
           </div>
         </div>
       </div>
+
+      {/* Bonus Exception Banner */}
+      {bonusExceptions.length > 0 && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 flex items-start gap-3">
+          <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+          <div className="flex-1">
+            <p className="text-sm font-semibold text-amber-900">
+              Bonus Exception Active — {activeEntry.bonus_exceptions?.length || 0} approved add-back(s)
+              {bonusExceptions.filter(e => e.status === 'Pending').length > 0 && (
+                <span className="ml-2 text-amber-600 font-normal">+ {bonusExceptions.filter(e => e.status === 'Pending').length} pending</span>
+              )}
+            </p>
+            {activeEntry.bonus_exceptions?.map((exc, i) => (
+              <p key={i} className="text-xs text-amber-700 mt-1">
+                <span className="font-semibold">${Math.round(exc.amount).toLocaleString('en-US')}</span> — {exc.category}: {exc.description}
+              </p>
+            ))}
+            {activeEntry.bonus_exception_total != null && (
+              <div className="flex gap-4 mt-2 pt-2 border-t border-amber-200 flex-wrap">
+                <span className="text-xs text-amber-800 font-medium">
+                  Adjusted GOP: ${Math.round(activeEntry.budgeted_gop_actual).toLocaleString('en-US')}
+                </span>
+                {activeEntry.budgeted_gop_actual_raw != null && (
+                  <span className="text-xs text-amber-500">
+                    (Raw: ${Math.round(activeEntry.budgeted_gop_actual_raw).toLocaleString('en-US')})
+                  </span>
+                )}
+                {activeEntry.gop_margin_actual_raw != null && activeEntry.gop_margin_actual != null && (
+                  <span className="text-xs text-amber-800 font-medium">
+                    Adjusted Margin: {activeEntry.gop_margin_actual.toFixed(1)}%
+                    <span className="text-amber-500 font-normal"> (Raw: {activeEntry.gop_margin_actual_raw.toFixed(1)}%)</span>
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* YOY Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
@@ -449,6 +515,15 @@ export default function PropertyScorecardDetail({
         selectedMonth={selectedMonth}
         selectedYear={selectedYear}
       />
+
+      {isAdmin && (
+        <BonusExceptionModal
+          open={showExceptionModal}
+          onClose={() => setShowExceptionModal(false)}
+          property={property}
+          year={selectedYear}
+        />
+      )}
     </div>
   );
 }

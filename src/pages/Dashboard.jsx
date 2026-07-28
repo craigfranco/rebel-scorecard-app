@@ -38,12 +38,17 @@ export default function Dashboard() {
     queryFn: () => base44.entities.RgiQuarterlyReport.filter({ year: selectedYear }),
   });
 
+  const { data: bonusExceptions = [] } = useQuery({
+    queryKey: ['bonus-exceptions', selectedYear],
+    queryFn: () => base44.entities.BonusException.filter({ year: selectedYear }),
+  });
+
   // For each property, get the properly aggregated entry for the current period.
   // This ensures quarterly/YTD GSS (and all other KPIs) use averaged values, not just the latest month.
   const getAggregatedEntry = (prop) => {
     const propEntries = allEntries.filter(e => e.property_id === prop.id);
     if (!propEntries.length) return null;
-    return aggregateEntries(propEntries, periodType, selectedMonth, selectedYear, rgiQuarterlyReports);
+    return aggregateEntries(propEntries, periodType, selectedMonth, selectedYear, rgiQuarterlyReports, bonusExceptions);
   };
 
   // BUDGETED GOP TRACKER

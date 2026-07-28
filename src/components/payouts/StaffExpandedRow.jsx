@@ -73,12 +73,21 @@ export default function StaffExpandedRow({ staff, property, jobClass, colSpan = 
     queryFn: () => base44.entities.RgiQuarterlyReport.filter({ year: selectedYear }),
   });
 
+  const { data: bonusExceptions = [] } = useQuery({
+    queryKey: ['bonus-exceptions', property?.id, selectedYear],
+    queryFn: () =>
+      property?.id
+        ? base44.entities.BonusException.filter({ property_id: property.id, year: selectedYear })
+        : Promise.resolve([]),
+    enabled: !!property?.id,
+  });
+
   const maxBonusPct = jobClass?.max_bonus_percentage || 0;
 
   const quarterData = QUARTERS.map(({ q, label }) => {
     const salary = staff[`salary_q${q}`] || 0;
     const qEntries = entries.filter(e => getQuarterFromMonth(e.month) === q);
-    const entry = aggregateQuarterEntries(qEntries, rgiQuarterlyReports);
+    const entry = aggregateQuarterEntries(qEntries, rgiQuarterlyReports, bonusExceptions);
     const scorecard = entry ? calculateScorecard(entry, property) : null;
     const kpiScore = scorecard?.total?.total ?? null;
     const maxPossible = scorecard?.total?.maxPossible ?? 100;

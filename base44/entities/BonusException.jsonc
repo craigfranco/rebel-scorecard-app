@@ -1,0 +1,71 @@
+{
+  "name": "BonusException",
+  "type": "object",
+  "properties": {
+    "property_id": {
+      "type": "string",
+      "description": "Reference to Property"
+    },
+    "year": {
+      "type": "integer",
+      "description": "Report year"
+    },
+    "quarter": {
+      "type": "integer",
+      "description": "Quarter (1-4)",
+      "minimum": 1,
+      "maximum": 4
+    },
+    "amount": {
+      "type": "number",
+      "description": "Dollar amount to add back to GOP (reduces expense / increases GOP)"
+    },
+    "description": {
+      "type": "string",
+      "description": "What the exception is for and why it should be added back"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "Concession",
+        "Natural Disaster",
+        "Legal",
+        "Insurance",
+        "One-Time Expense",
+        "Other"
+      ],
+      "default": "Other",
+      "description": "Category of the bonus exception"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "Pending",
+        "Approved",
+        "Rejected"
+      ],
+      "default": "Pending",
+      "description": "Approval status \u2014 only Approved exceptions affect calculations"
+    },
+    "approved_by": {
+      "type": "string",
+      "description": "Name of the person who approved/rejected"
+    },
+    "approved_date": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Timestamp when approved/rejected"
+    },
+    "submitted_by": {
+      "type": "string",
+      "description": "Name of the person who submitted the exception"
+    }
+  },
+  "required": [
+    "property_id",
+    "year",
+    "quarter",
+    "amount",
+    "description"
+  ]
+}
