@@ -392,8 +392,54 @@ export function generateScorecardPDF(property, entry, periodType, selectedMonth,
   doc.text(anyIncomplete ? '—' : `${totalScore} / ${maxPossible}`, cols[5].x + cols[5].w / 2, totalY + 13, { align: 'center' });
   // No overall pass/fail badge — total score is a sum only, not evaluated against a threshold
 
+  // ── BONUS EXCEPTION BANNER (if applicable) ─────────────────────────────────
+  let exceptionBannerH = 0;
+  if (entry.bonus_exceptions && entry.bonus_exceptions.length > 0) {
+    const excY = tableY + tableH + 8;
+    const excListH = entry.bonus_exceptions.length * 10;
+    exceptionBannerH = 20 + excListH + 14;
+
+    doc.setFillColor(255, 251, 235); // amber-50
+    doc.setDrawColor(251, 191, 36);  // amber-400
+    doc.roundedRect(28, excY, W - 56, exceptionBannerH, 4, 4, 'FD');
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(7);
+    doc.setTextColor(180, 83, 9); // amber-900
+    doc.text('BONUS EXCEPTION ADJUSTMENT', 36, excY + 12);
+
+    let ey = excY + 22;
+    entry.bonus_exceptions.forEach((exc) => {
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(7);
+      doc.setTextColor(180, 83, 9);
+      doc.text(fmtDollar(exc.amount), 36, ey);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(120, 53, 15); // amber-800
+      const descText = `${exc.category}: ${exc.description}`;
+      const descLines = doc.splitTextToSize(descText, W - 56 - 90);
+      doc.text(descLines[0], 90, ey);
+      ey += 10;
+    });
+
+    // Summary: raw → adjusted
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(7);
+    doc.setTextColor(120, 53, 15);
+    const rawGop = entry.budgeted_gop_actual_raw;
+    const adjGop = entry.budgeted_gop_actual;
+    const rawMargin = entry.gop_margin_actual_raw;
+    const adjMargin = entry.gop_margin_actual;
+    const summaryParts = [];
+    if (rawGop != null && adjGop != null) summaryParts.push(`GOP: ${fmtDollar(rawGop)} → ${fmtDollar(adjGop)}`);
+    if (rawMargin != null && adjMargin != null) summaryParts.push(`Margin: ${rawMargin.toFixed(1)}% → ${adjMargin.toFixed(1)}%`);
+    if (summaryParts.length) {
+      doc.text(summaryParts.join('   |   '), 36, ey + 2);
+    }
+  }
+
   // ── FORECAST + KICKERS + NARRATIVE ──────────────────────────────────────────
-  const bottomY = tableY + tableH + 10;
+  const bottomY = tableY + tableH + 10 + exceptionBannerH;
   const bottomH = H - bottomY - 28;
 
   // Forecast section (left ~38%)
