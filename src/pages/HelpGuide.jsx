@@ -218,8 +218,33 @@ function ScorecardGuide() {
         <LI><strong>→</strong> — Flat / unchanged</LI>
       </UL>
 
+      <H3>Bonus Exceptions (Admin)</H3>
+      <P>Bonus Exceptions allow admins to add back extraordinary expenses that are outside of hotel management's control — such as natural disasters, legal settlements, insurance deductibles, or one-time charges — to the GOP calculation for a given quarter. This ensures that bonus calculations are fair and not penalized by non-recurring events.</P>
+      <H3>How to create an exception</H3>
+      <UL>
+        <LI>On the Hotel Performance Scorecard, click the <strong>"Bonus Exceptions"</strong> button (admin only)</LI>
+        <LI>Select the quarter and category (Concession, Natural Disaster, Legal, Insurance, One-Time Expense, or Other)</LI>
+        <LI>Enter the dollar amount to add back to GOP and a description of the exception</LI>
+        <LI>Submit — the exception starts in <strong>Pending</strong> status</LI>
+      </UL>
+      <H3>Approval workflow</H3>
+      <UL>
+        <LI>Only <strong>Approved</strong> exceptions affect KPI calculations — Pending and Rejected are ignored</LI>
+        <LI>An admin can approve or reject each submitted exception</LI>
+        <LI>Once approved, the exception amount is added back to actual GOP dollars before margin and score calculations</LI>
+      </UL>
+      <H3>Impact on calculations</H3>
+      <P>When an approved exception is active, the system:</P>
+      <UL>
+        <LI>Adds the exception amount to actual GOP dollars for the quarter</LI>
+        <LI>Recalculates the dollar-weighted GOP margin using the adjusted GOP figure</LI>
+        <LI>Recalculates GOP margin improvement and budget variance</LI>
+        <LI>Shows both raw and adjusted values in the amber banner on the scorecard</LI>
+      </UL>
+      <InfoBox>💡 An amber banner appears on the scorecard whenever active bonus exceptions exist, showing the adjustment amount, category, and the before/after GOP and margin figures.</InfoBox>
+
       <H3>PDF Export</H3>
-      <P>Use the "Export PDF" button on the scorecard to generate a print-ready PDF of the current hotel's scorecard for the selected period. This is useful for weekly reviews and board reporting.</P>
+      <P>Use the "Download PDF" button on the scorecard to generate a print-ready PDF of the current hotel's scorecard for the selected period. The PDF includes the bonus exception adjustment details when applicable. This is useful for weekly reviews and board reporting.</P>
     </>
   );
 }
