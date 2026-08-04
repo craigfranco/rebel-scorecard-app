@@ -40,6 +40,22 @@ export default function StaffPdfExport({ staff, property, jobClass, selectedYear
     enabled: !!property?.id,
   });
 
+  // Fetch RGI quarterly report overrides (must match StaffExpandedRow so PDF figures agree)
+  const { data: rgiQuarterlyReports = [] } = useQuery({
+    queryKey: ['rgi-quarterly', selectedYear],
+    queryFn: () => base44.entities.RgiQuarterlyReport.filter({ year: selectedYear }),
+  });
+
+  // Fetch approved bonus exceptions so add-backs are reflected in the PDF
+  const { data: bonusExceptions = [] } = useQuery({
+    queryKey: ['bonus-exceptions', property?.id, selectedYear],
+    queryFn: () =>
+      property?.id
+        ? base44.entities.BonusException.filter({ property_id: property.id, year: selectedYear })
+        : Promise.resolve([]),
+    enabled: !!property?.id,
+  });
+
   const handleDownload = () => {
     if (!staff || !property) return;
     setGenerating(true);
@@ -96,7 +112,7 @@ export default function StaffPdfExport({ staff, property, jobClass, selectedYear
 
       // ---- KPI Summary ----
       const qEntries = entries.filter(e => getQuarterFromMonth(e.month) === quarter);
-      const entry = aggregateQuarterEntries(qEntries);
+      const entry = aggregateQuarterEntries(qEntries, rgiQuarterlyReports, bonusExceptions);
       const scorecard = entry ? calculateScorecard(entry, property) : null;
 
       doc.setTextColor(...NAVY);
