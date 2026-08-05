@@ -193,10 +193,10 @@ export default function PayoutsPdfExport({ property, staff = [], jobClassificati
       y += 3;
 
       const valCols = [
-        { header: 'Measure', w: 55 },
-        { header: 'Actual', w: 45 },
-        { header: 'Target / Prior', w: 45 },
-        { header: 'Result', w: 50 },
+        { header: 'Measure', w: 48 },
+        { header: 'Actual', w: 40 },
+        { header: 'Target / Prior', w: 40 },
+        { header: 'Result', w: 80 },
       ];
       const valRowH = 7;
       const valTableW = valCols.reduce((s, c) => s + c.w, 0);
@@ -210,17 +210,31 @@ export default function PayoutsPdfExport({ property, staff = [], jobClassificati
       valCols.forEach(c => { doc.text(c.header, cx + 2, y + 5); cx += c.w; });
       y += valRowH;
 
+      const gopPctVar = (scorecard?.gop?.achievementPct != null) ? scorecard.gop.achievementPct - 100 : null;
+      const marginPctVar = (scorecard?.gopMargin?.diff != null && entry.gop_margin_prior != null && entry.gop_margin_prior !== 0)
+        ? (scorecard.gopMargin.diff / Math.abs(entry.gop_margin_prior)) * 100 : null;
+      const rgiIdxDiff = (entry.revpar_index != null && entry.revpar_index_prior != null)
+        ? entry.revpar_index - entry.revpar_index_prior : null;
+      const gssPtsDiff = (scorecard?.gss?.normActual != null && scorecard?.gss?.normPrior != null)
+        ? scorecard.gss.normActual - scorecard.gss.normPrior : null;
+      const gssPctVar = (gssPtsDiff != null && scorecard?.gss?.normPrior != null && scorecard.gss.normPrior !== 0)
+        ? (gssPtsDiff / scorecard.gss.normPrior) * 100 : null;
+
       const valRows = entry ? [
         ['Budgeted GOP', fmtK(entry.budgeted_gop_actual), fmtK(entry.budgeted_gop_target),
-          scorecard?.gop?.incomplete ? 'No data' : (scorecard.gop.pass ? `PASS (+${fmtK(scorecard.gop.variance)})` : `FAIL (${fmtK(scorecard.gop.variance)})`)],
+          scorecard?.gop?.incomplete ? 'No data'
+            : `${scorecard.gop.variance >= 0 ? '+' : '-'}${fmtK(Math.abs(scorecard.gop.variance))}${gopPctVar != null ? ` (${gopPctVar >= 0 ? '+' : ''}${gopPctVar.toFixed(1)}%)` : ''}`],
         ['GOP Margin', fmtPct(entry.gop_margin_actual), fmtPct(entry.gop_margin_prior),
-          scorecard?.gopMargin?.incomplete ? 'No data' : `${scorecard.gopMargin.diff >= 0 ? '+' : ''}${scorecard.gopMargin.diff} pts`],
+          scorecard?.gopMargin?.incomplete ? 'No data'
+            : `${scorecard.gopMargin.diff >= 0 ? '+' : ''}${scorecard.gopMargin.diff.toFixed(1)} pts${marginPctVar != null ? ` (${marginPctVar >= 0 ? '+' : ''}${marginPctVar.toFixed(1)}%)` : ''}`],
         ['RGI (RevPAR Index)', entry.revpar_index != null ? entry.revpar_index.toFixed(1) : '—',
           entry.revpar_index_prior != null ? entry.revpar_index_prior.toFixed(1) : '—',
-          scorecard?.rgi?.incomplete ? 'No data' : `${scorecard.rgi.diff >= 0 ? '+' : ''}${scorecard.rgi.diff}% (${scorecard.rgi.tier})`],
+          scorecard?.rgi?.incomplete ? 'No data'
+            : `${rgiIdxDiff != null ? `${rgiIdxDiff >= 0 ? '+' : ''}${rgiIdxDiff.toFixed(1)} pts ` : ''}${scorecard.rgi.diff >= 0 ? '+' : ''}${scorecard.rgi.diff.toFixed(1)}%`],
         ['GSS', entry.gss_actual != null ? entry.gss_actual.toFixed(1) : '—',
           entry.gss_prior != null ? entry.gss_prior.toFixed(1) : '—',
-          scorecard?.gss?.incomplete ? 'No data' : `${scorecard.gss.tier} (${Math.round((scorecard.gss.payoutPct ?? 0) * 100)}%)`],
+          scorecard?.gss?.incomplete ? 'No data'
+            : `${gssPtsDiff != null ? `${gssPtsDiff >= 0 ? '+' : ''}${gssPtsDiff.toFixed(1)} pts` : ''}${gssPctVar != null ? ` (${gssPctVar >= 0 ? '+' : ''}${gssPctVar.toFixed(1)}%)` : ''}`],
       ] : [['No scorecard data for this quarter', '—', '—', '—']];
 
       doc.setFont('helvetica', 'normal');
@@ -230,7 +244,7 @@ export default function PayoutsPdfExport({ property, staff = [], jobClassificati
         if (idx % 2 === 0) { doc.setFillColor(...LIGHT); doc.rect(margin, y, valTableW, valRowH, 'F'); }
         doc.setTextColor(40, 40, 40);
         cx = margin;
-        row.forEach((cell, i) => { doc.text(String(cell).substring(0, 28), cx + 2, y + 5); cx += valCols[i].w; });
+        row.forEach((cell, i) => { doc.text(String(cell).substring(0, 34), cx + 2, y + 5); cx += valCols[i].w; });
         y += valRowH;
       });
 
