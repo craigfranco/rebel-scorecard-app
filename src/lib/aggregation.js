@@ -46,17 +46,21 @@ function applyRgiOverride(result, overrides, propertyId, year, quarter) {
 }
 
 /**
- * Derives the prior-year RevPAR Index when it is missing.
+ * Derives the prior-year RevPAR Index from the aggregated index + YOY change.
  * Prior = Current Index ÷ (1 + YOY change / 100).
  * e.g. index 105.3 with +2.5% change → prior = 105.3 / 1.025 = 102.73.
- * This lets quarterly STR uploads (which report current index + % change)
- * automatically populate the prior-year index for display and comparison.
+ *
+ * Always recomputes from the aggregated (quarterly/period) index and change so
+ * every view — scorecard screen, scorecard PDF, and payouts PDFs — shows the
+ * same calculated prior-year index. A stored per-month prior is not used for
+ * display because averaging per-month priors diverges from the quarterly
+ * calculation; the prior is only left untouched when index or change is null.
  */
 function deriveRgiPrior(result) {
   if (!result) return result;
   const idx = result.revpar_index;
   const chg = result.revpar_index_change;
-  if (result.revpar_index_prior == null && idx != null && chg != null) {
+  if (idx != null && chg != null) {
     const denom = 1 + chg / 100;
     if (denom !== 0) {
       result.revpar_index_prior = Math.round((idx / denom) * 100) / 100;
