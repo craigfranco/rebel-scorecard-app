@@ -223,8 +223,8 @@ export default function StaffPdfExport({ staff, property, jobClass, selectedYear
         ['RGI (RevPAR Idx)', entry.revpar_index != null ? entry.revpar_index.toFixed(1) : '—',
           entry.revpar_index_prior != null ? entry.revpar_index_prior.toFixed(1) : '—',
           scorecard?.rgi?.incomplete ? 'No data' : `${scorecard.rgi.diff >= 0 ? '+' : ''}${scorecard.rgi.diff}% (${scorecard.rgi.tier})`],
-        ['GSS', entry.gss_actual != null ? String(entry.gss_actual) : '—',
-          entry.gss_prior != null ? String(entry.gss_prior) : '—',
+        ['GSS', entry.gss_actual != null ? entry.gss_actual.toFixed(1) : '—',
+          entry.gss_prior != null ? entry.gss_prior.toFixed(1) : '—',
           scorecard?.gss?.incomplete ? 'No data' : `${scorecard.gss.tier} (${Math.round((scorecard.gss.payoutPct ?? 0) * 100)}%)`],
       ] : [['No scorecard data', '—', '—', '—']];
 
