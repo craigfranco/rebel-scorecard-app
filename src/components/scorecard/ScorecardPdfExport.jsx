@@ -228,12 +228,11 @@ export function generateScorecardPDF(property, entry, periodType, selectedMonth,
   const cols = [
     { label: 'KPI', x: 36, w: 160, align: 'left' },
     { label: 'Weight', x: 200, w: 44, align: 'center' },
-    { label: 'Actual', x: 248, w: 80, align: 'center' },
-    { label: 'Target', x: 332, w: 100, align: 'center' },
+    { label: 'Target', x: 248, w: 100, align: 'center' },
+    { label: 'Actual', x: 352, w: 80, align: 'center' },
     { label: 'Variance', x: 436, w: 80, align: 'center' },
     { label: 'Score', x: 520, w: 56, align: 'center' },
     { label: 'Status', x: 580, w: 80, align: 'center' },
-                                   // 660 — fits within 792-28=764
   ];
 
   doc.setFont('helvetica', 'bold');
@@ -255,8 +254,10 @@ export function generateScorecardPDF(property, entry, periodType, selectedMonth,
       target: gopB != null ? fmtDollar(gopB) : '—',
       actual: fmtDollar(gopA),
       ly: fmtDollar(gopB), // LY = budget for GOP
-      variance: gopVariance != null ? fmtDollar(gopVariance) : '—',
-      variancePos: gopVariance != null ? gopVariance >= 0 : null,
+      variance: (gopA != null && gopB != null && gopB > 0)
+        ? `${gopPct.toFixed(1)}% of budget`
+        : (gopVariance != null ? `${gopVariance >= 0 ? 'Beat' : 'Missed'} $${Math.abs(Math.round(gopVariance)).toLocaleString('en-US')}` : '—'),
+      variancePos: (gopA != null && gopB != null) ? gopA >= gopB : null,
       score: scorecard.gop.score,
       max: 35,
       pass: scorecard.gop.pass,
@@ -323,35 +324,35 @@ export function generateScorecardPDF(property, entry, periodType, selectedMonth,
     doc.setTextColor(100, 116, 139);
     doc.text(row.weight, cols[1].x + cols[1].w / 2, cy, { align: 'center' });
 
-    // Actual
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(30, 41, 59);
-    doc.text(row.actual, cols[2].x + cols[2].w / 2, cy, { align: 'center' });
-
     // Target (stacked: Target value on top, LY below in smaller gray text)
-    const targetX = cols[3].x + cols[3].w / 2;
+    const targetX = cols[2].x + cols[2].w / 2;
     const isGOP = row.name === 'Budgeted GOP';
     if (isGOP) {
-      // Budgeted GOP: single line (already formatted as dollar amount)
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(8);
       doc.setTextColor(100, 116, 139);
       doc.text(row.target, targetX, cy, { align: 'center' });
     } else {
-      // Other KPIs: stacked format (Target on top, LY below)
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(7);
       doc.setTextColor(100, 116, 139);
       doc.text(row.target, targetX, cy - 4, { align: 'center' });
-      
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(6);
       doc.setTextColor(148, 163, 184);
       doc.text('LY: ' + row.ly, targetX, cy + 3, { align: 'center' });
     }
 
+    // Actual
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8);
+    doc.setTextColor(30, 41, 59);
+    doc.text(row.actual, cols[3].x + cols[3].w / 2, cy, { align: 'center' });
+
     // Variance
     const varColor = row.variancePos == null ? [100, 116, 139] : row.variancePos ? [76, 175, 80] : [239, 68, 68];
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(7);
     doc.setTextColor(...varColor);
     doc.text(row.variance, cols[4].x + cols[4].w / 2, cy, { align: 'center' });
 
