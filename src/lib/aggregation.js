@@ -192,15 +192,6 @@ export function aggregateEntries(entries, periodType, selectedMonth, selectedYea
     return Math.round((sum / values.length) * 100) / 100;
   };
 
-  // GOP MARGIN: compute per-month improvement (actual - prior), then average those improvements.
-  // This is the correct method per spec: avg improvement > 0 (exceeds prior year) → PASS.
-  const monthlyMarginImprovements = sorted
-    .filter(e => e.gop_margin_actual != null && e.gop_margin_prior != null)
-    .map(e => e.gop_margin_actual - e.gop_margin_prior);
-  const avgMarginImprovement = monthlyMarginImprovements.length > 0
-    ? Math.round((monthlyMarginImprovements.reduce((s, v) => s + v, 0) / monthlyMarginImprovements.length) * 10000) / 10000
-    : null;
-
   // Dollar-weighted actual margin: sum(GOP) / sum(Revenue) × 100
   // Matches budget-margin methodology; falls back to simple average when revenue is missing.
   const totalActualGop = sumField('budgeted_gop_actual');
@@ -209,6 +200,13 @@ export function aggregateEntries(entries, periodType, selectedMonth, selectedYea
     ? Math.round((totalActualGop / totalActualRevenue) * 100 * 100) / 100
     : avgField('gop_margin_actual');
   const calculatedPriorMargin = calculatePriorMargin(sorted, avgField);
+
+  // GOP MARGIN improvement = period-level margin difference (TY − LY), using the
+  // dollar-weighted period margins so the displayed variance matches TY% − LY%
+  // (rather than averaging per-month percentage-point differences).
+  const calculatedMarginImprovement = (calculatedActualMargin != null && calculatedPriorMargin != null)
+    ? Math.round((calculatedActualMargin - calculatedPriorMargin) * 10000) / 10000
+    : null;
 
   const totalBudgetGOP = sumField('budgeted_gop_target');
   const totalBudgetRevenue = sumField('forecast_primary_forecast');
@@ -248,7 +246,7 @@ export function aggregateEntries(entries, periodType, selectedMonth, selectedYea
     gop_margin_prior: calculatedPriorMargin,
     gop_margin_budget: calculatedBudgetMargin,
     gop_margin_variance: calculatedVariance,
-    gop_margin_improvement: avgMarginImprovement,
+    gop_margin_improvement: calculatedMarginImprovement,
     // RGI: average of monthly values
     revpar_index: avgField('revpar_index'),
     revpar_index_change: avgField('revpar_index_change'),
@@ -352,20 +350,18 @@ export function aggregateQuarterEntries(arr, rgiOverrides = [], bonusExceptions 
   const forecastResults = sorted.filter(e => e.forecast_result).map(e => e.forecast_result);
   const forecastResult = forecastResults.length > 0 && forecastResults.every(r => r === 'Hit') ? 'Hit' : 'Miss';
 
-  // GOP MARGIN: per-month improvement average (correct method per spec)
-  const qMonthlyImprovements = sorted
-    .filter(e => e.gop_margin_actual != null && e.gop_margin_prior != null)
-    .map(e => e.gop_margin_actual - e.gop_margin_prior);
-  const qAvgMarginImprovement = qMonthlyImprovements.length > 0
-    ? Math.round((qMonthlyImprovements.reduce((s, v) => s + v, 0) / qMonthlyImprovements.length) * 10000) / 10000
-    : null;
-
   const totalActualGop = sumField('budgeted_gop_actual');
   const totalActualRevenue = sumField('forecast_actual_revenue');
   const calculatedActualMargin = (totalActualGop != null && totalActualRevenue != null && totalActualRevenue !== 0)
     ? Math.round((totalActualGop / totalActualRevenue) * 100 * 100) / 100
     : avgField('gop_margin_actual');
   const calculatedPriorMargin = calculatePriorMargin(sorted, avgField);
+
+  // GOP MARGIN improvement = period-level margin difference (TY − LY), matching
+  // the dollar-weighted TY and LY margins shown in the scorecard.
+  const calculatedMarginImprovement = (calculatedActualMargin != null && calculatedPriorMargin != null)
+    ? Math.round((calculatedActualMargin - calculatedPriorMargin) * 10000) / 10000
+    : null;
   const totalBudgetGOP = sumField('budgeted_gop_target');
   const totalBudgetRevenue = sumField('forecast_primary_forecast');
   const calculatedBudgetMargin = (totalBudgetGOP != null && totalBudgetRevenue != null && totalBudgetRevenue !== 0)
@@ -386,7 +382,7 @@ export function aggregateQuarterEntries(arr, rgiOverrides = [], bonusExceptions 
     gop_margin_prior: calculatedPriorMargin,
     gop_margin_budget: calculatedBudgetMargin,
     gop_margin_variance: calculatedVariance,
-    gop_margin_improvement: qAvgMarginImprovement,
+    gop_margin_improvement: calculatedMarginImprovement,
     // RGI: AVERAGE of monthly revpar_index_change across all months in quarter
     revpar_index: avgField('revpar_index'),
     revpar_index_change: avgField('revpar_index_change'),
