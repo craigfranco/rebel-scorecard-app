@@ -270,8 +270,8 @@ export default function StaffPdfExport({ staff, property, jobClass, selectedYear
       y += rowH;
 
       const bonusRows = bonus ? [
-        { comp: 'GOP Bonus', gate: bonus.gopGatePassed ? 'Gate Passed' : 'Gate Failed', amt: fmt(bonus.gop) },
-        { comp: 'GOP Margin Bonus', gate: bonus.gopGatePassed ? 'Gate Passed' : 'Gate Failed', amt: fmt(bonus.gopMargin) },
+        { comp: 'GOP Bonus', gate: bonus.gopPassed ? 'Passed' : 'Failed', amt: fmt(bonus.gop) },
+        { comp: 'GOP Margin Bonus', gate: bonus.marginPassed ? 'Passed' : 'Failed', amt: fmt(bonus.gopMargin) },
         { comp: 'RGI Bonus', gate: bonus.rgi > 0 ? 'Earned' : 'Not earned', amt: fmt(bonus.rgi) },
         { comp: 'GSS Bonus', gate: bonus.gss > 0 ? 'Earned' : 'Not earned', amt: fmt(bonus.gss) },
         ...(bonus.redZoneKicker > 0 ? [{ comp: 'Red Zone Kicker (+25% GSS)', gate: 'Earned', amt: fmt(bonus.redZoneKicker) }] : []),
