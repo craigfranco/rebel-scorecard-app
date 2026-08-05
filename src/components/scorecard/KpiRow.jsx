@@ -35,7 +35,7 @@ export default function KpiRow({ measure, weight, target, targetLy, actual, ytdA
         {(gopActual != null && gopBudget != null) ? (
           (() => {
             const variance = gopActual - gopBudget;
-            const pass = gopActual > gopBudget;
+            const pass = gopActual >= gopBudget;
             const color = pass ? '#4CAF50' : '#ef4444';
             if (gopBudget > 0) {
               const pct = (gopActual / gopBudget) * 100;

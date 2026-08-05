@@ -126,7 +126,7 @@ export default function PropertyScorecardDetail({
                   ? activeEntry.gop_margin_actual - activeEntry.gop_margin_prior
                   : null);
             if (diff != null) {
-              const color = diff >= 0.1 ? '#4CAF50' : '#ef4444';
+              const color = diff > 0 ? '#4CAF50' : '#ef4444';
               return (
                 <span style={{ color, fontWeight: 'bold' }}>
                   {diff >= 0 ? '+' : ''}
@@ -334,7 +334,7 @@ export default function PropertyScorecardDetail({
           <div className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">GOP vs Budget</div>
           <div>
             {(() => {
-              const pass = gopVariance != null ? gopA > gopB : null;
+              const pass = gopVariance != null ? gopA >= gopB : null;
               const color = pass == null ? undefined : pass ? '#4CAF50' : '#ef4444';
               return (
                 <>

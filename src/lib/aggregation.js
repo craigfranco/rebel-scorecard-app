@@ -169,7 +169,7 @@ export function aggregateEntries(entries, periodType, selectedMonth, selectedYea
   };
 
   // GOP MARGIN: compute per-month improvement (actual - prior), then average those improvements.
-  // This is the correct method per spec: avg improvement ≥ 0.1% → PASS.
+  // This is the correct method per spec: avg improvement > 0 (exceeds prior year) → PASS.
   const monthlyMarginImprovements = sorted
     .filter(e => e.gop_margin_actual != null && e.gop_margin_prior != null)
     .map(e => e.gop_margin_actual - e.gop_margin_prior);

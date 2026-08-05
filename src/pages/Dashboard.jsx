@@ -60,7 +60,7 @@ export default function Dashboard() {
     if (gopActual == null || gopTarget == null || (gopActual === 0 && gopTarget > 0)) {
       return { prop, hasData: false };
     }
-    const pass = gopActual > gopTarget;
+    const pass = gopActual >= gopTarget;
     const details = `$${Math.round(gopActual / 1000)}K vs $${Math.round(gopTarget / 1000)}K`;
     return { prop, hasData: true, status: pass ? 'pass' : 'fail', details };
   });
@@ -76,7 +76,7 @@ export default function Dashboard() {
         : null
     );
     if (improvement == null) return { prop, hasData: false };
-    const pass = improvement >= 0.1;
+    const pass = improvement > 0;
     const ty = entry.gop_margin_actual;
     const ly = entry.gop_margin_prior;
     const details = ty != null && ly != null ? `${ty.toFixed(1)}% vs ${ly.toFixed(1)}%` : '';

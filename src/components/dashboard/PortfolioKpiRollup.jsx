@@ -169,7 +169,7 @@ export default function PortfolioKpiRollup({ properties, allEntries, periodType,
       <KpiCard title="GOP Performance">
         <div>
           {(() => {
-            const pass = s.gopVariance != null ? s.gopActual > s.gopBudget : null;
+            const pass = s.gopVariance != null ? s.gopActual >= s.gopBudget : null;
             const color = pass == null ? undefined : pass ? '#4CAF50' : '#ef4444';
             return (
               <>
