@@ -228,11 +228,11 @@ export function generateScorecardPDF(property, entry, periodType, selectedMonth,
   const cols = [
     { label: 'KPI', x: 36, w: 160, align: 'left' },
     { label: 'Weight', x: 200, w: 44, align: 'center' },
-    { label: 'Target', x: 248, w: 100, align: 'center' },
-    { label: 'Actual', x: 352, w: 80, align: 'center' },
-    { label: 'Variance', x: 436, w: 80, align: 'center' },
-    { label: 'Score', x: 520, w: 56, align: 'center' },
-    { label: 'Status', x: 580, w: 80, align: 'center' },
+    { label: 'Target', x: 248, w: 90, align: 'center' },
+    { label: 'Actual', x: 342, w: 100, align: 'center' },
+    { label: 'Variance', x: 446, w: 80, align: 'center' },
+    { label: 'Score', x: 530, w: 56, align: 'center' },
+    { label: 'Status', x: 590, w: 80, align: 'center' },
   ];
 
   doc.setFont('helvetica', 'bold');
@@ -268,6 +268,9 @@ export function generateScorecardPDF(property, entry, periodType, selectedMonth,
       weight: '35%',
       target: marginPy != null ? (marginPy + 0.1).toFixed(1) + '%' : '—',
       actual: marginTy != null ? marginTy.toFixed(1) + '%' : '—',
+      actualSub: (entry.budgeted_gop_actual != null || entry.budgeted_gop_prior != null)
+        ? `TY ${fmtDollar(entry.budgeted_gop_actual)} · LY ${fmtDollar(entry.budgeted_gop_prior)}`
+        : null,
       ly: marginPy != null ? marginPy.toFixed(1) + '%' : '—',
       variance: marginVar != null ? fmtPts(marginVar) : '—',
       variancePos: marginVar != null ? marginVar >= 0 : null,
@@ -348,6 +351,12 @@ export function generateScorecardPDF(property, entry, periodType, selectedMonth,
     doc.setFontSize(8);
     doc.setTextColor(30, 41, 59);
     doc.text(row.actual, cols[3].x + cols[3].w / 2, cy, { align: 'center' });
+    if (row.actualSub) {
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(6);
+      doc.setTextColor(148, 163, 184);
+      doc.text(row.actualSub, cols[3].x + cols[3].w / 2, cy + 6, { align: 'center' });
+    }
 
     // Variance
     const varColor = row.variancePos == null ? [100, 116, 139] : row.variancePos ? [76, 175, 80] : [239, 68, 68];

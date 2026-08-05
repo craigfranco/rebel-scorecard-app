@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 
-export default function KpiRow({ measure, weight, target, targetLy, actual, ytdActual, score, maxScore, pass, incomplete, gopActual, gopBudget }) {
+export default function KpiRow({ measure, weight, target, targetLy, actual, actualSub, ytdActual, score, maxScore, pass, incomplete, gopActual, gopBudget }) {
   const [barWidth, setBarWidth] = useState(0);
 
   useEffect(() => {
@@ -27,9 +27,16 @@ export default function KpiRow({ measure, weight, target, targetLy, actual, ytdA
         </div>
       </td>
       <td className="py-3 px-4 text-center text-sm font-semibold">
-        {gopActual != null ? (
-          <span className="font-bold text-foreground">${Math.round(gopActual).toLocaleString('en-US')}</span>
-        ) : (actual ?? '—')}
+        <div className="flex flex-col items-center gap-0.5">
+          {gopActual != null ? (
+            <span className="font-bold text-foreground">${Math.round(gopActual).toLocaleString('en-US')}</span>
+          ) : (actual ?? '—')}
+          {actualSub && (
+            <span className="text-muted-foreground font-normal" style={{ fontSize: '10px' }}>
+              {actualSub}
+            </span>
+          )}
+        </div>
       </td>
       <td className="py-3 px-4 text-center text-sm">
         {(gopActual != null && gopBudget != null) ? (

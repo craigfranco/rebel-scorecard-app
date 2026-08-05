@@ -119,6 +119,10 @@ export default function PropertyScorecardDetail({
           target: marginPy != null ? (marginPy + 0.1).toFixed(1) + '%' : '—',
           targetLy: marginPy != null ? marginPy.toFixed(1) + '%' : '—',
           actual: marginTy != null ? marginTy.toFixed(1) + '%' : '—',
+          actualSub:
+            activeEntry.budgeted_gop_actual != null || activeEntry.budgeted_gop_prior != null
+              ? `TY $${activeEntry.budgeted_gop_actual != null ? Math.round(activeEntry.budgeted_gop_actual).toLocaleString('en-US') : '—'} · LY $${activeEntry.budgeted_gop_prior != null ? Math.round(activeEntry.budgeted_gop_prior).toLocaleString('en-US') : '—'}`
+              : null,
           ytdActual: (() => {
             const diff = activeEntry.gop_margin_improvement != null
               ? activeEntry.gop_margin_improvement
