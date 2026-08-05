@@ -11,6 +11,9 @@ import { calculateActualYtdSalary } from '@/lib/salaryCalculation';
 const NAVY = [45, 75, 94];
 const LIGHT = [245, 247, 250];
 const BORDER = [214, 222, 230];
+const PASS_COLOR = [76, 175, 80];
+const FAIL_COLOR = [239, 68, 68];
+const PARTIAL_COLOR = [245, 158, 11];
 
 const fmt = (n) => `$${Math.round(n).toLocaleString('en-US')}`;
 const fmtPts = (n, max) => n != null ? `${n}/${max}` : '—';
@@ -160,10 +163,16 @@ export default function PayoutsPdfExport({ property, staff = [], jobClassificati
           doc.setFillColor(...LIGHT);
           doc.rect(margin, y, kpiTableW, kpiRowH, 'F');
         }
-        doc.setTextColor(40, 40, 40);
         cx = margin;
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(40, 40, 40);
         doc.text(row.name, cx + 2, y + 5); cx += kpiCols[0].w;
+        const statusColor = row.status === 'PASS' ? PASS_COLOR : row.status === 'PARTIAL' ? PARTIAL_COLOR : row.status === 'FAIL' ? FAIL_COLOR : [120, 120, 120];
+        doc.setTextColor(...statusColor);
+        doc.setFont('helvetica', 'bold');
         doc.text(row.status, cx + 2, y + 5); cx += kpiCols[1].w;
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(40, 40, 40);
         doc.text(String(row.score), cx + 2, y + 5); cx += kpiCols[2].w;
         doc.text(String(row.detail).substring(0, 45), cx + 2, y + 5);
         y += kpiRowH;
@@ -223,28 +232,41 @@ export default function PayoutsPdfExport({ property, staff = [], jobClassificati
       const valRows = entry ? [
         ['Budgeted GOP', fmtK(entry.budgeted_gop_actual), fmtK(entry.budgeted_gop_target),
           scorecard?.gop?.incomplete ? 'No data'
-            : `${scorecard.gop.variance >= 0 ? '+' : '-'}${fmtK(Math.abs(scorecard.gop.variance))}${gopPctVar != null ? ` (${gopPctVar >= 0 ? '+' : ''}${gopPctVar.toFixed(1)}%)` : ''}`],
+            : `${scorecard.gop.pass ? 'PASS' : 'FAIL'} ${scorecard.gop.variance >= 0 ? '+' : '-'}${fmtK(Math.abs(scorecard.gop.variance))}${gopPctVar != null ? ` (${gopPctVar >= 0 ? '+' : ''}${gopPctVar.toFixed(1)}%)` : ''}`,
+          !scorecard?.gop?.incomplete ? !!scorecard.gop.pass : null],
         ['GOP Margin', fmtPct(entry.gop_margin_actual), fmtPct(entry.gop_margin_prior),
           scorecard?.gopMargin?.incomplete ? 'No data'
-            : `${scorecard.gopMargin.diff >= 0 ? '+' : ''}${scorecard.gopMargin.diff.toFixed(1)} pts${marginPctVar != null ? ` (${marginPctVar >= 0 ? '+' : ''}${marginPctVar.toFixed(1)}%)` : ''}`],
+            : `${scorecard.gopMargin.pass ? 'PASS' : 'FAIL'} ${scorecard.gopMargin.diff >= 0 ? '+' : ''}${scorecard.gopMargin.diff.toFixed(1)} pts${marginPctVar != null ? ` (${marginPctVar >= 0 ? '+' : ''}${marginPctVar.toFixed(1)}%)` : ''}`,
+          !scorecard?.gopMargin?.incomplete ? !!scorecard.gopMargin.pass : null],
         ['RGI (RevPAR Index)', entry.revpar_index != null ? entry.revpar_index.toFixed(1) : '—',
           entry.revpar_index_prior != null ? entry.revpar_index_prior.toFixed(1) : '—',
           scorecard?.rgi?.incomplete ? 'No data'
-            : `${rgiIdxDiff != null ? `${rgiIdxDiff >= 0 ? '+' : ''}${rgiIdxDiff.toFixed(1)} pts ` : ''}${scorecard.rgi.diff >= 0 ? '+' : ''}${scorecard.rgi.diff.toFixed(1)}%`],
+            : `${scorecard.rgi.pass ? 'PASS' : 'FAIL'} ${rgiIdxDiff != null ? `${rgiIdxDiff >= 0 ? '+' : ''}${rgiIdxDiff.toFixed(1)} pts ` : ''}${scorecard.rgi.diff >= 0 ? '+' : ''}${scorecard.rgi.diff.toFixed(1)}%`,
+          !scorecard?.rgi?.incomplete ? !!scorecard.rgi.pass : null],
         ['GSS', entry.gss_actual != null ? entry.gss_actual.toFixed(1) : '—',
           entry.gss_prior != null ? entry.gss_prior.toFixed(1) : '—',
           scorecard?.gss?.incomplete ? 'No data'
-            : `${gssPtsDiff != null ? `${gssPtsDiff >= 0 ? '+' : ''}${gssPtsDiff.toFixed(1)} pts` : ''}${gssPctVar != null ? ` (${gssPctVar >= 0 ? '+' : ''}${gssPctVar.toFixed(1)}%)` : ''}`],
-      ] : [['No scorecard data for this quarter', '—', '—', '—']];
+            : `${scorecard.gss.pass ? 'PASS' : 'FAIL'} ${gssPtsDiff != null ? `${gssPtsDiff >= 0 ? '+' : ''}${gssPtsDiff.toFixed(1)} pts` : ''}${gssPctVar != null ? ` (${gssPctVar >= 0 ? '+' : ''}${gssPctVar.toFixed(1)}%)` : ''}`,
+          !scorecard?.gss?.incomplete ? !!scorecard.gss.pass : null],
+      ] : [['No scorecard data for this quarter', '—', '—', '—', null]];
 
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(8);
       valRows.forEach((row, idx) => {
         if (y > pageH - 20) { doc.addPage(); y = margin; }
         if (idx % 2 === 0) { doc.setFillColor(...LIGHT); doc.rect(margin, y, valTableW, valRowH, 'F'); }
-        doc.setTextColor(40, 40, 40);
         cx = margin;
-        row.forEach((cell, i) => { doc.text(String(cell).substring(0, 34), cx + 2, y + 5); cx += valCols[i].w; });
+        for (let i = 0; i < 4; i++) {
+          if (i === 3 && row[4] != null) {
+            doc.setTextColor(...(row[4] ? PASS_COLOR : FAIL_COLOR));
+            doc.setFont('helvetica', 'bold');
+          } else {
+            doc.setTextColor(40, 40, 40);
+            doc.setFont('helvetica', 'normal');
+          }
+          doc.text(String(row[i]).substring(0, 36), cx + 2, y + 5);
+          cx += valCols[i].w;
+        }
         y += valRowH;
       });
 
