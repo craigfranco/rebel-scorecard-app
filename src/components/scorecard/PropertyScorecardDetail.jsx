@@ -16,6 +16,7 @@ import {
   aggregateEntries,
   hasForecastData,
   normalizeGssTo100,
+  MARGIN_TARGET_IMPROVEMENT,
 } from '@/lib/scoring';
 import { useTimePeriod } from '@/lib/TimePeriodContext';
 import { useUserProfile } from '@/lib/UserProfileContext';
@@ -115,7 +116,7 @@ export default function PropertyScorecardDetail({
         {
           measure: 'GOP Margin Improvement',
           weight: '35%',
-          target: marginPy != null ? (marginPy + 0.1).toFixed(1) + '%' : '—',
+          target: marginPy != null ? (marginPy + MARGIN_TARGET_IMPROVEMENT).toFixed(1) + '%' : '—',
           targetLy: marginPy != null ? marginPy.toFixed(1) + '%' : '—',
           actual: marginTy != null ? marginTy.toFixed(1) + '%' : '—',
           actualSub:
@@ -129,7 +130,7 @@ export default function PropertyScorecardDetail({
                   ? activeEntry.gop_margin_actual - activeEntry.gop_margin_prior
                   : null);
             if (diff != null) {
-              const color = diff > 0 ? '#4CAF50' : '#ef4444';
+              const color = diff > MARGIN_TARGET_IMPROVEMENT ? '#4CAF50' : '#ef4444';
               return (
                 <span style={{ color, fontWeight: 'bold' }}>
                   {diff >= 0 ? '+' : ''}
@@ -377,7 +378,7 @@ export default function PropertyScorecardDetail({
         <div className="bg-card rounded-2xl border border-border shadow-sm p-5 flex flex-col gap-3">
           <div className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">GOP Margin Improvement (vs LY)</div>
           <div>
-            <div className="text-2xl font-black" style={{ color: yoyMargin == null ? undefined : yoyMargin >= 0 ? '#4CAF50' : '#ef4444' }}>
+            <div className="text-2xl font-black" style={{ color: yoyMargin == null ? undefined : yoyMargin > MARGIN_TARGET_IMPROVEMENT ? '#4CAF50' : '#ef4444' }}>
               {yoyMargin != null ? `${yoyMargin >= 0 ? '+' : ''}${yoyMargin.toFixed(1)} pts vs LY` : '—'}
             </div>
             <div className="text-xs text-muted-foreground">TY vs prior year margin</div>

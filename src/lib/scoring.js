@@ -41,18 +41,20 @@ export function calcGOPScore(actual, target) {
   return { score, variance, achievementPct, pass, incomplete: false };
 }
 
+// GOP Margin improvement target (percentage points above prior year) required to PASS
+export const MARGIN_TARGET_IMPROVEMENT = 0.1;
+
 export function calcGOPMarginScore(actual, prior, precomputedImprovement = null) {
-  // If a pre-aggregated improvement is available (avg of monthly actual-prior), use it directly.
-  // This is the correct quarterly method per spec.
+  // PASS when actual margin beats the target (prior year + MARGIN_TARGET_IMPROVEMENT),
+  // i.e. the improvement is greater than the target threshold. Applies to month and quarter.
   if (precomputedImprovement != null) {
-    const pass = precomputedImprovement > 0;
+    const pass = precomputedImprovement > MARGIN_TARGET_IMPROVEMENT;
     const score = pass ? 35 : 0;
     return { score, diff: Math.round(precomputedImprovement * 100) / 100, pass, incomplete: false };
   }
   if (actual == null || prior == null) return { score: 0, diff: 0, pass: false, incomplete: true };
   const diff = actual - prior;
-  // Binary: PASS = 35 pts if margin exceeds prior year (any improvement > 0), FAIL = 0 pts
-  const pass = diff > 0;
+  const pass = diff > MARGIN_TARGET_IMPROVEMENT;
   const score = pass ? 35 : 0;
   return { score, diff: Math.round(diff * 100) / 100, pass, incomplete: false };
 }

@@ -1,6 +1,6 @@
 import React from 'react';
 import { jsPDF } from 'jspdf';
-import { calculateScorecard, normalizeGssTo100, hasForecastData, MONTHS, getQuarterFromMonth, aggregateEntries } from '@/lib/scoring';
+import { calculateScorecard, normalizeGssTo100, hasForecastData, MONTHS, getQuarterFromMonth, aggregateEntries, MARGIN_TARGET_IMPROVEMENT } from '@/lib/scoring';
 import { formatBrandLabel } from '@/lib/portfolioHelpers';
 
 // REBEL Hotel Company logo URL
@@ -135,7 +135,7 @@ export function generateScorecardPDF(property, entry, periodType, selectedMonth,
     {
       title: 'GOP Margin (vs LY)',
       headline: marginVar != null ? fmtPts(marginVar) : '—',
-      headlineColor: marginVar == null ? [100,116,139] : marginVar >= 0 ? [76,175,80] : [239,68,68],
+      headlineColor: marginVar == null ? [100,116,139] : marginVar > MARGIN_TARGET_IMPROVEMENT ? [76,175,80] : [239,68,68],
       sub: 'pts vs LY',
       rows: [
         ['TY Margin', marginTy != null ? marginTy.toFixed(1) + '%' : '—'],
@@ -266,14 +266,14 @@ export function generateScorecardPDF(property, entry, periodType, selectedMonth,
     {
       name: 'GOP Margin Improvement',
       weight: '35%',
-      target: marginPy != null ? (marginPy + 0.1).toFixed(1) + '%' : '—',
+      target: marginPy != null ? (marginPy + MARGIN_TARGET_IMPROVEMENT).toFixed(1) + '%' : '—',
       actual: marginTy != null ? marginTy.toFixed(1) + '%' : '—',
       actualSub: (entry.budgeted_gop_actual != null || entry.budgeted_gop_prior != null)
         ? `TY ${fmtDollar(entry.budgeted_gop_actual)} · LY ${fmtDollar(entry.budgeted_gop_prior)}`
         : null,
       ly: marginPy != null ? marginPy.toFixed(1) + '%' : '—',
       variance: marginVar != null ? fmtPts(marginVar) : '—',
-      variancePos: marginVar != null ? marginVar >= 0 : null,
+      variancePos: marginVar != null ? marginVar > MARGIN_TARGET_IMPROVEMENT : null,
       score: scorecard.gopMargin.score,
       max: 35,
       pass: scorecard.gopMargin.pass,
