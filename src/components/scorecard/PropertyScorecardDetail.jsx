@@ -103,7 +103,6 @@ export default function PropertyScorecardDetail({
           measure: 'Budgeted GOP',
           weight: '35%',
           target: gopB != null ? `$${Math.round(gopB).toLocaleString('en-US')}` : '—',
-          targetLy: gopB != null ? `$${Math.round(gopB).toLocaleString('en-US')}` : '—',
           actual: null,
           ytdActual: null,
           gopActual: gopA,
