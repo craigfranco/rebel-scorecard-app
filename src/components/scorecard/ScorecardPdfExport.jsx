@@ -268,10 +268,12 @@ export function generateScorecardPDF(property, entry, periodType, selectedMonth,
       weight: '35%',
       target: marginPy != null ? (marginPy + MARGIN_TARGET_IMPROVEMENT).toFixed(1) + '%' : '—',
       actual: marginTy != null ? marginTy.toFixed(1) + '%' : '—',
-      actualSub: (entry.budgeted_gop_actual != null || entry.budgeted_gop_prior != null)
-        ? `TY ${fmtDollar(entry.budgeted_gop_actual)} · LY ${fmtDollar(entry.budgeted_gop_prior)}`
+      actualSub: entry.budgeted_gop_actual != null
+        ? `TY ${fmtDollar(entry.budgeted_gop_actual)}`
         : null,
-      ly: marginPy != null ? marginPy.toFixed(1) + '%' : '—',
+      ly: entry.budgeted_gop_prior != null
+        ? fmtDollar(entry.budgeted_gop_prior)
+        : (marginPy != null ? marginPy.toFixed(1) + '%' : '—'),
       variance: marginVar != null ? fmtPts(marginVar) : '—',
       variancePos: marginVar != null ? marginVar > MARGIN_TARGET_IMPROVEMENT : null,
       score: scorecard.gopMargin.score,
