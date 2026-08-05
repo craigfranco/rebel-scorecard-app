@@ -77,12 +77,12 @@ export default function SeedOnMount() {
           },
           {
             title: 'AGM / EC Members',
-            max_bonus_percentage: 30,
+            max_bonus_percentage: 40,
             gop_bonus_percentage: 10,
             gop_margin_bonus_percentage: 10,
-            rgi_bonus_percentage_low: 2.5,
-            rgi_bonus_percentage_high: 5,
-            gss_bonus_percentage: 5,
+            rgi_bonus_percentage_low: 5,
+            rgi_bonus_percentage_high: 10,
+            gss_bonus_percentage: 10,
           },
           {
             title: 'Department Heads',

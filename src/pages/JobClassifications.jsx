@@ -234,7 +234,7 @@ export default function JobClassifications() {
           </div>
           <div>
             <p className="font-semibold">AGM / EC Members</p>
-            <p>Max: 30%, GOP: 10%, Margin: 10%, RGI full: 5% / partial: 2.5%, GSS: 5%</p>
+            <p>Max: 40%, GOP: 10%, Margin: 10%, RGI full: 10% / partial: 5%, GSS: 10%</p>
           </div>
           <div>
             <p className="font-semibold">Department Heads</p>
