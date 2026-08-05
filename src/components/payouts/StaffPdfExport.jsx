@@ -13,6 +13,8 @@ const LIGHT = [245, 247, 250];
 
 const fmt = (n) => `$${Math.round(n).toLocaleString('en-US')}`;
 const fmtPts = (n, max) => n != null ? `${n}/${max}` : '—';
+const fmtK = (n) => n != null ? `$${Math.round(n / 1000).toLocaleString('en-US')}K` : '—';
+const fmtPct = (n, d = 1) => n != null ? `${n.toFixed(d)}%` : '—';
 
 function statusLabel(result) {
   if (!result || result.incomplete) return '—';
@@ -185,6 +187,56 @@ export default function StaffPdfExport({ staff, property, jobClass, selectedYear
       } else {
         y += 2;
       }
+
+      // ---- KPI Values (actual figures) ----
+      y += 6;
+      if (y > pageH - 40) { doc.addPage(); y = margin; }
+      doc.setTextColor(...NAVY);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(10);
+      doc.text('Property KPI Values', margin, y);
+      y += 3;
+
+      const valCols = [
+        { header: 'Measure', w: 48 },
+        { header: 'Actual', w: 38 },
+        { header: 'Target / Prior', w: 38 },
+        { header: 'Result', w: 52 },
+      ];
+      const valRowH = 7;
+      const valTableW = valCols.reduce((s, c) => s + c.w, 0);
+
+      doc.setFillColor(...NAVY);
+      doc.rect(margin, y, valTableW, valRowH, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(8);
+      cx = margin;
+      valCols.forEach(c => { doc.text(c.header, cx + 2, y + 5); cx += c.w; });
+      y += valRowH;
+
+      const valRows = entry ? [
+        ['Budgeted GOP', fmtK(entry.budgeted_gop_actual), fmtK(entry.budgeted_gop_target),
+          scorecard?.gop?.incomplete ? 'No data' : (scorecard.gop.pass ? `PASS (+${fmtK(scorecard.gop.variance)})` : `MISS (${fmtK(scorecard.gop.variance)})`)],
+        ['GOP Margin', fmtPct(entry.gop_margin_actual), fmtPct(entry.gop_margin_prior),
+          scorecard?.gopMargin?.incomplete ? 'No data' : `${scorecard.gopMargin.diff >= 0 ? '+' : ''}${scorecard.gopMargin.diff} pts`],
+        ['RGI (RevPAR Idx)', entry.revpar_index != null ? entry.revpar_index.toFixed(1) : '—',
+          entry.revpar_index_prior != null ? entry.revpar_index_prior.toFixed(1) : '—',
+          scorecard?.rgi?.incomplete ? 'No data' : `${scorecard.rgi.diff >= 0 ? '+' : ''}${scorecard.rgi.diff}% (${scorecard.rgi.tier})`],
+        ['GSS', entry.gss_actual != null ? String(entry.gss_actual) : '—',
+          entry.gss_prior != null ? String(entry.gss_prior) : '—',
+          scorecard?.gss?.incomplete ? 'No data' : `${scorecard.gss.tier} (${Math.round((scorecard.gss.payoutPct ?? 0) * 100)}%)`],
+      ] : [['No scorecard data', '—', '—', '—']];
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8);
+      valRows.forEach((row, idx) => {
+        if (idx % 2 === 0) { doc.setFillColor(...LIGHT); doc.rect(margin, y, valTableW, valRowH, 'F'); }
+        doc.setTextColor(40, 40, 40);
+        cx = margin;
+        row.forEach((cell, i) => { doc.text(String(cell).substring(0, 28), cx + 2, y + 5); cx += valCols[i].w; });
+        y += valRowH;
+      });
 
       // ---- Bonus payout detail ----
       y += 6;
