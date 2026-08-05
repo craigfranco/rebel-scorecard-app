@@ -387,11 +387,15 @@ export function generateScorecardPDF(property, entry, periodType, selectedMonth,
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(9);
   doc.setTextColor(255, 255, 255);
-  doc.text('TOTAL SCORE', cols[0].x, totalY + 13);
-  const anyIncomplete = kpiData.some(r => r.incomplete);
-  const totalScore = scorecard.total.total;
-  const maxPossible = scorecard.total.maxPossible;
-  doc.text(anyIncomplete ? '—' : `${totalScore} / ${maxPossible}`, cols[5].x + cols[5].w / 2, totalY + 13, { align: 'center' });
+
+  // Match on-screen logic: a missing GSS reduces the max but still shows a total;
+  // only a non-GSS incomplete KPI blanks the total.
+  const gssLabel = scorecard.gssStd.label;
+  const nonGssIncomplete = kpiData.filter(r => r.name !== `GSS — ${gssLabel}`).some(r => r.incomplete);
+  const { total: totalScore, maxPossible, gssIncomplete } = scorecard.total;
+  const totalLabel = `TOTAL SCORE${gssIncomplete && !nonGssIncomplete ? `   (GSS N/A — max ${maxPossible} pts)` : ''}`;
+  doc.text(totalLabel, cols[0].x, totalY + 13);
+  doc.text(nonGssIncomplete ? '—' : `${totalScore} / ${maxPossible}`, cols[5].x + cols[5].w / 2, totalY + 13, { align: 'center' });
   // No overall pass/fail badge — total score is a sum only, not evaluated against a threshold
 
   // ── BONUS EXCEPTION BANNER (if applicable) ─────────────────────────────────

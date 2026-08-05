@@ -217,7 +217,7 @@ export default function StaffPdfExport({ staff, property, jobClass, selectedYear
 
       const valRows = entry ? [
         ['Budgeted GOP', fmtK(entry.budgeted_gop_actual), fmtK(entry.budgeted_gop_target),
-          scorecard?.gop?.incomplete ? 'No data' : (scorecard.gop.pass ? `PASS (+${fmtK(scorecard.gop.variance)})` : `MISS (${fmtK(scorecard.gop.variance)})`)],
+          scorecard?.gop?.incomplete ? 'No data' : (scorecard.gop.pass ? `PASS (+${fmtK(scorecard.gop.variance)})` : `FAIL (${fmtK(scorecard.gop.variance)})`)],
         ['GOP Margin', fmtPct(entry.gop_margin_actual), fmtPct(entry.gop_margin_prior),
           scorecard?.gopMargin?.incomplete ? 'No data' : `${scorecard.gopMargin.diff >= 0 ? '+' : ''}${scorecard.gopMargin.diff} pts`],
         ['RGI (RevPAR Idx)', entry.revpar_index != null ? entry.revpar_index.toFixed(1) : '—',
