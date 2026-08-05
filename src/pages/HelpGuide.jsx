@@ -378,16 +378,16 @@ function PayoutsGuide() {
         <LI>Quarterly salary for each quarter (Q1–Q4) — enter only the quarters that have closed</LI>
       </UL>
 
-      <H3>Bonus Eligibility — Per-KPI Gating</H3>
-      <P>There is no overall eligibility gate. Each KPI acts as the gatekeeper for its own incentive portion only — a failed KPI zeros out only that KPI's bonus, not the others:</P>
+      <H3>Bonus Eligibility — GOP Gatekeeper</H3>
+      <P>The GOP Gatekeeper governs the GOP $ and Margin $ bonus components. Both <strong>Actual GOP ≥ Budget</strong> AND <strong>Margin Actual &gt; Margin Prior Year</strong> must be true to earn either component. If either fails, both the GOP bonus and the Margin bonus = $0. RGI and GSS calculate independently of the gatekeeper:</P>
       <UL>
-        <LI><strong>Budgeted GOP</strong> — Actual GOP ≥ Budget unlocks the <strong>GOP bonus</strong> only</LI>
-        <LI><strong>GOP Margin</strong> — Any margin improvement vs. prior year unlocks the <strong>Margin bonus</strong> only</LI>
+        <LI><strong>Budgeted GOP</strong> — Actual GOP ≥ Budget (required by the gatekeeper)</LI>
+        <LI><strong>GOP Margin</strong> — Any improvement vs. prior year (required by the gatekeeper)</LI>
         <LI><strong>RGI</strong> — 0.1%+ improvement earns the RGI bonus (partial at 0.1–2.0%, full at 2.1%+); below 0.1% earns $0</LI>
         <LI><strong>GSS</strong> — 4-tier payout (0% / 25% / 75% / 100%) based on improvement vs. brand target</LI>
       </UL>
-      <P>A failed GOP does <strong>not</strong> zero the Margin bonus, and a failed Margin does <strong>not</strong> zero the GOP bonus. Each portion is earned or lost independently based on its own KPI result.</P>
-      <InfoBox>💡 GOP is the gatekeeper for the GOP incentive portion only. Margin, RGI, and GSS each gate their own portions independently.</InfoBox>
+      <P>If either GOP $ or Margin fails, <strong>both</strong> the GOP and Margin bonuses are $0. RGI and GSS are unaffected and pay based on their own results.</P>
+      <InfoBox>💡 GOP Gatekeeper: GOP $ and Margin must both pass to earn either bonus component. RGI and GSS always calculate on their own.</InfoBox>
 
       <H3>How bonus is calculated</H3>
       <P>For each quarter, the system:</P>

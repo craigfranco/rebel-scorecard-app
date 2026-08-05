@@ -1,10 +1,7 @@
 /**
- * PER-KPI GATING: Each KPI is the gatekeeper for its OWN incentive portion only.
- *   - GOP $ pass  → unlocks the GOP $ bonus (and only that)
- *   - Margin pass → unlocks the Margin bonus (and only that)
- *   - RGI / GSS   → calculate independently of GOP and Margin
- *
- * A failed GOP does NOT zero the Margin bonus, and vice versa.
+ * GOP GATEKEEPER: Both Budgeted GOP $ AND GOP Margin must pass to earn
+ * either the GOP $ or Margin $ bonus component. If either fails → both = $0.
+ * RGI and GSS calculate independently of the gatekeeper.
  */
 export function checkGopGate(scorecard) {
   if (!scorecard) return { passed: false, gopPassed: false, marginPassed: false };
@@ -16,10 +13,12 @@ export function checkGopGate(scorecard) {
 /**
  * Quarterly bonus calculation per 2026 Incentive Plan.
  *
- * PER-KPI GATING: Each KPI gates only its own incentive portion.
- *   - GOP $ pass  → earns GOP $ bonus   (GOP is the gatekeeper for this portion only)
- *   - Margin pass → earns Margin bonus  (Margin gates its own portion only)
- *   - RGI / GSS   → always calculate independently
+ * GOP GATEKEEPER: Both Budgeted GOP $ AND GOP Margin must pass to earn
+ * either the GOP $ component or the Margin $ component. If either fails,
+ * both the GOP bonus and the Margin bonus = $0.
+ *   - GOP $ + Margin pass → earns GOP $ bonus AND Margin bonus
+ *   - Either fails        → both GOP and Margin bonuses = $0
+ *   - RGI / GSS           → always calculate independently of the gatekeeper
  *
  * GSS 4-tier: uses scorecard.gss.payoutPct (0, 0.25, 0.75, 1.0).
  * RGI two-tier: full = rgi_bonus_percentage_high × salary; partial = 50% of that.
@@ -34,13 +33,14 @@ export function calcKpiBonus(quarterlySalary, scorecard, jobClass, property = nu
 
   const sal = quarterlySalary;
 
-  // GOP $ is the gatekeeper for the GOP incentive portion ONLY.
+  // GOP GATEKEEPER: BOTH Budgeted GOP $ and GOP Margin must pass to earn
+  // either component. If either fails → both GOP and Margin bonuses = $0.
   const gopPassed = !scorecard.gop?.incomplete && scorecard.gop?.pass === true;
-  const gop = gopPassed ? sal * (jobClass.gop_bonus_percentage || 0) / 100 : 0;
-
-  // GOP Margin is the gatekeeper for the Margin incentive portion ONLY.
   const marginPassed = !scorecard.gopMargin?.incomplete && scorecard.gopMargin?.pass === true;
-  const gopMargin = marginPassed ? sal * (jobClass.gop_margin_bonus_percentage || 0) / 100 : 0;
+  const gatePassed = gopPassed && marginPassed;
+
+  const gop = gatePassed ? sal * (jobClass.gop_bonus_percentage || 0) / 100 : 0;
+  const gopMargin = gatePassed ? sal * (jobClass.gop_margin_bonus_percentage || 0) / 100 : 0;
 
   // RGI — independent, two tiers
   let rgi = 0;
@@ -69,13 +69,13 @@ export function calcKpiBonus(quarterlySalary, scorecard, jobClass, property = nu
     eligible: true,
     gopPassed,
     marginPassed,
-    gopGatePassed: gopPassed, // backward-compat alias: GOP gatekeeper for GOP portion
-    gopGate: { passed: gopPassed && marginPassed, gopPassed, marginPassed },
+    gopGatePassed: gatePassed, // combined GOP + Margin gatekeeper
+    gopGate: { passed: gatePassed, gopPassed, marginPassed },
     eligibilityReason: '',
   };
 }
 
-// Legacy: checkBonusEligibility — always eligible now (gate is GOP-only)
+// Legacy: checkBonusEligibility — always eligible now (gate is the combined GOP+Margin gatekeeper inside calcKpiBonus)
 export function checkBonusEligibility(scorecard) {
   if (!scorecard) return { eligible: false, rgiMet: false, gssMet: false, reason: 'No scorecard data' };
   // No longer gates on RGI+GSS; return eligible=true always (gate is inside calcKpiBonus)
