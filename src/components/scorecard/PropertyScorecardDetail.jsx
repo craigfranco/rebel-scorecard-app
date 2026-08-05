@@ -116,7 +116,7 @@ export default function PropertyScorecardDetail({
         {
           measure: 'GOP Margin Improvement',
           weight: '35%',
-          target: marginPy != null ? (marginPy + MARGIN_TARGET_IMPROVEMENT).toFixed(1) + '%' : '—',
+          target: marginPy != null ? marginPy.toFixed(1) + '%' : '—',
           targetLy: activeEntry.budgeted_gop_prior != null
             ? `$${Math.round(activeEntry.budgeted_gop_prior).toLocaleString('en-US')}`
             : (marginPy != null ? marginPy.toFixed(1) + '%' : '—'),

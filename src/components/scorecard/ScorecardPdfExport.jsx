@@ -266,7 +266,7 @@ export function generateScorecardPDF(property, entry, periodType, selectedMonth,
     {
       name: 'GOP Margin Improvement',
       weight: '35%',
-      target: marginPy != null ? (marginPy + MARGIN_TARGET_IMPROVEMENT).toFixed(1) + '%' : '—',
+      target: marginPy != null ? marginPy.toFixed(1) + '%' : '—',
       actual: marginTy != null ? marginTy.toFixed(1) + '%' : '—',
       actualSub: entry.budgeted_gop_actual != null
         ? `TY ${fmtDollar(entry.budgeted_gop_actual)}`
