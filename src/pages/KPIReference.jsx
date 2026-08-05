@@ -18,9 +18,9 @@ const measures = [
     name: "GOP Margin Improvement",
     weight: "35%",
     maxPts: 35,
-    target: "≥ 0.1% above prior year margin",
-    scoring: "Score = (Improvement / 5%) × 35, capped at 35 pts. 0 if below 0.1%",
-    passRule: "Margin improvement ≥ 0.1% vs prior year",
+    target: "Any improvement above prior year margin (> 0)",
+    scoring: "Binary pass/fail: any positive improvement vs prior year = 35 pts. No improvement = 0 pts",
+    passRule: "GOP margin improvement > 0 vs prior year",
     icon: TrendingUp,
   },
   {

@@ -170,7 +170,7 @@ export default function Dashboard() {
           title="GOP Margin Improvement Tracker"
           icon={<TrendingUp className="w-4 h-4 text-green-500" />}
           iconColor="text-green-500"
-          subtitle="Pass: improvement ≥ 0.1% vs LY (35 pts)"
+          subtitle="Pass: any improvement > 0 vs LY (35 pts)"
           hotels={marginHotels}
         />
 
