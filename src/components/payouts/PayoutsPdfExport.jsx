@@ -298,6 +298,37 @@ export default function PayoutsPdfExport({ property, staff = [], jobClassificati
       doc.text(fmt(grandTotalPaid), cx + 2, y + 5); cx += staffCols[5].w;
       doc.text(fmt(grandTotalHeld), cx + 2, y + 5);
 
+      // ---- Approval Signatures ----
+      y += 16;
+      if (y > pageH - 30) { doc.addPage(); y = margin + 10; }
+
+      doc.setTextColor(...NAVY);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(10);
+      doc.text('Approvals', margin, y);
+      y += 10;
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8);
+      doc.setTextColor(40, 40, 40);
+
+      const sigRoles = ['General Manager', 'Director of Finance', 'VP of Operations'];
+      const sigSpacing = (pageW - margin * 2) / sigRoles.length;
+      sigRoles.forEach((role, i) => {
+        const sx = margin + i * sigSpacing;
+        // signature line
+        doc.setDrawColor(...BORDER);
+        doc.setLineWidth(0.3);
+        doc.line(sx + 4, y, sx + sigSpacing - 8, y);
+        // label
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(...NAVY);
+        doc.text(role, sx + 4, y + 5);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(120, 120, 120);
+        doc.text('Signature / Date', sx + 4, y + 9);
+      });
+
       // Footer
       doc.setFontSize(7);
       doc.setTextColor(120, 120, 120);
