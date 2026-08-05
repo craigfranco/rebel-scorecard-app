@@ -378,17 +378,19 @@ function PayoutsGuide() {
         <LI>Quarterly salary for each quarter (Q1–Q4) — enter only the quarters that have closed</LI>
       </UL>
 
-      <H3>Bonus Eligibility Gate</H3>
-      <P>Before any bonus is calculated, the staff member must meet <strong>both</strong> of these eligibility criteria for that quarter:</P>
+      <H3>Bonus Eligibility — Per-KPI Gating</H3>
+      <P>There is no overall eligibility gate. Each KPI acts as the gatekeeper for its own incentive portion only — a failed KPI zeros out only that KPI's bonus, not the others:</P>
       <UL>
-        <LI><strong>RGI Improvement</strong> — RevPAR Index must improve by at least 0.1% YOY (partial or full pass counts)</LI>
-        <LI><strong>GSS Improvement</strong> — Normalized GSS score this year must exceed prior year (any improvement)</LI>
+        <LI><strong>Budgeted GOP</strong> — Actual GOP ≥ Budget unlocks the <strong>GOP bonus</strong> only</LI>
+        <LI><strong>GOP Margin</strong> — Any margin improvement vs. prior year unlocks the <strong>Margin bonus</strong> only</LI>
+        <LI><strong>RGI</strong> — 0.1%+ improvement earns the RGI bonus (partial at 0.1–2.0%, full at 2.1%+); below 0.1% earns $0</LI>
+        <LI><strong>GSS</strong> — 4-tier payout (0% / 25% / 75% / 100%) based on improvement vs. brand target</LI>
       </UL>
-      <P>If <strong>either RGI or GSS is not met</strong>, the staff member receives <strong>no bonus at all that quarter</strong> — even if GOP and Margin both passed. There is no minimum total score threshold.</P>
-      <InfoBox>💡 Eligibility requires both RGI and GSS. Once eligible, each KPI earns its bonus independently — GOP if passed, Margin if passed, RGI per its tier, GSS if passed.</InfoBox>
+      <P>A failed GOP does <strong>not</strong> zero the Margin bonus, and a failed Margin does <strong>not</strong> zero the GOP bonus. Each portion is earned or lost independently based on its own KPI result.</P>
+      <InfoBox>💡 GOP is the gatekeeper for the GOP incentive portion only. Margin, RGI, and GSS each gate their own portions independently.</InfoBox>
 
-      <H3>How bonus is calculated (when eligible)</H3>
-      <P>For each quarter where eligibility is met, the system:</P>
+      <H3>How bonus is calculated</H3>
+      <P>For each quarter, the system:</P>
       <UL>
         <LI>Calculates the KPI scorecard for that hotel and quarter</LI>
         <LI>For each KPI that passes, earns: <strong>quarterly salary × bonus percentage for that KPI</strong></LI>

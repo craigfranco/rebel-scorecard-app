@@ -1,11 +1,10 @@
 /**
- * GOP GATEKEEPER: Both conditions must be true to earn GOP $ bonus OR Margin $ bonus:
- *   1. Actual GOP $ >= Budgeted GOP $
- *   2. Actual GOP Margin % > Prior Year GOP Margin %
+ * PER-KPI GATING: Each KPI is the gatekeeper for its OWN incentive portion only.
+ *   - GOP $ pass  → unlocks the GOP $ bonus (and only that)
+ *   - Margin pass → unlocks the Margin bonus (and only that)
+ *   - RGI / GSS   → calculate independently of GOP and Margin
  *
- * If either fails → gop and gopMargin bonus = $0. RGI and GSS calculate independently.
- *
- * RGI and GSS have no eligibility gate — they always calculate.
+ * A failed GOP does NOT zero the Margin bonus, and vice versa.
  */
 export function checkGopGate(scorecard) {
   if (!scorecard) return { passed: false, gopPassed: false, marginPassed: false };
@@ -17,9 +16,10 @@ export function checkGopGate(scorecard) {
 /**
  * Quarterly bonus calculation per 2026 Incentive Plan.
  *
- * GOP GATEKEEPER: Both GOP $ and Margin $ must individually pass.
- * If either fails → gop = $0 AND gopMargin = $0.
- * RGI and GSS always calculate independently.
+ * PER-KPI GATING: Each KPI gates only its own incentive portion.
+ *   - GOP $ pass  → earns GOP $ bonus   (GOP is the gatekeeper for this portion only)
+ *   - Margin pass → earns Margin bonus  (Margin gates its own portion only)
+ *   - RGI / GSS   → always calculate independently
  *
  * GSS 4-tier: uses scorecard.gss.payoutPct (0, 0.25, 0.75, 1.0).
  * RGI two-tier: full = rgi_bonus_percentage_high × salary; partial = 50% of that.
@@ -29,17 +29,18 @@ export function checkGopGate(scorecard) {
  */
 export function calcKpiBonus(quarterlySalary, scorecard, jobClass, property = null) {
   if (!jobClass || !scorecard || !quarterlySalary) {
-    return { gop: 0, gopMargin: 0, rgi: 0, gss: 0, redZoneKicker: 0, total: 0, eligible: true, gopGatePassed: false, gopGate: { passed: false, gopPassed: false, marginPassed: false }, eligibilityReason: 'Missing data' };
+    return { gop: 0, gopMargin: 0, rgi: 0, gss: 0, redZoneKicker: 0, total: 0, eligible: true, gopPassed: false, marginPassed: false, gopGatePassed: false, gopGate: { passed: false, gopPassed: false, marginPassed: false }, eligibilityReason: 'Missing data' };
   }
 
   const sal = quarterlySalary;
-  const gopGate = checkGopGate(scorecard);
 
-  // GOP: only if gate passes
-  const gop = gopGate.passed ? sal * (jobClass.gop_bonus_percentage || 0) / 100 : 0;
+  // GOP $ is the gatekeeper for the GOP incentive portion ONLY.
+  const gopPassed = !scorecard.gop?.incomplete && scorecard.gop?.pass === true;
+  const gop = gopPassed ? sal * (jobClass.gop_bonus_percentage || 0) / 100 : 0;
 
-  // GOP Margin: only if gate passes
-  const gopMargin = gopGate.passed ? sal * (jobClass.gop_margin_bonus_percentage || 0) / 100 : 0;
+  // GOP Margin is the gatekeeper for the Margin incentive portion ONLY.
+  const marginPassed = !scorecard.gopMargin?.incomplete && scorecard.gopMargin?.pass === true;
+  const gopMargin = marginPassed ? sal * (jobClass.gop_margin_bonus_percentage || 0) / 100 : 0;
 
   // RGI — independent, two tiers
   let rgi = 0;
@@ -66,9 +67,11 @@ export function calcKpiBonus(quarterlySalary, scorecard, jobClass, property = nu
   return {
     gop, gopMargin, rgi, gss, redZoneKicker, total,
     eligible: true,
-    gopGatePassed: gopGate.passed,
-    gopGate,
-    eligibilityReason: gopGate.passed ? '' : `GOP Gate: GOP ${gopGate.gopPassed ? '✓' : '✗'}, Margin ${gopGate.marginPassed ? '✓' : '✗'}`,
+    gopPassed,
+    marginPassed,
+    gopGatePassed: gopPassed, // backward-compat alias: GOP gatekeeper for GOP portion
+    gopGate: { passed: gopPassed && marginPassed, gopPassed, marginPassed },
+    eligibilityReason: '',
   };
 }
 
