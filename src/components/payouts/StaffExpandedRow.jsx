@@ -111,19 +111,24 @@ export default function StaffExpandedRow({ staff, property, jobClass, colSpan = 
         <div className="bg-slate-50 border-b border-border">
 
           {/* Header */}
-          <div className="px-6 py-3 border-b border-border flex flex-wrap items-center gap-x-4 gap-y-1 text-sm bg-white">
-            <span className="font-bold text-foreground">{staff.name}</span>
-            <span className="text-muted-foreground">·</span>
-            <span className="text-muted-foreground">{property?.name}</span>
-            <span className="text-muted-foreground">·</span>
-            <span className="text-muted-foreground">{jobClass?.title}</span>
+          <div className="px-6 py-3.5 border-b border-border flex items-center gap-4 bg-white">
+            <div className="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-sm shrink-0">
+              {(staff.name || '?').split(' ').map(p => p[0]).slice(0, 2).join('').toUpperCase()}
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="font-bold text-foreground text-sm leading-tight truncate">{staff.name}</div>
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-0.5 min-w-0">
+                <span className="truncate">{property?.name || '—'}</span>
+                <span className="text-border shrink-0">·</span>
+                <span className="truncate">{jobClass?.title || '—'}</span>
+              </div>
+            </div>
             {maxBonusPct > 0 && (
-              <>
-                <span className="text-muted-foreground">·</span>
-                <span className="text-muted-foreground">Bonus Target: <span className="font-semibold text-foreground">{maxBonusPct}%</span></span>
-              </>
+              <span className="shrink-0 px-2.5 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold whitespace-nowrap">
+                Bonus Target {maxBonusPct}%
+              </span>
             )}
-            <div className="ml-auto">
+            <div className="shrink-0">
               <StaffPdfExport
                 staff={staff}
                 property={property}
