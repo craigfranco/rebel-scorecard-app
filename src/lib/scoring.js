@@ -32,8 +32,8 @@ export function normalizeGssTo100(value, parentBrand) {
 
 export function calcGOPScore(actual, target) {
   if (actual == null || target == null) return { score: 0, variance: null, pass: false, incomplete: true };
-  // PASS = actual > budget (simple comparison, works for negative budgets too)
-  const pass = actual > target;
+  // PASS = actual >= budget (meets the approved budgeted target)
+  const pass = actual >= target;
   const variance = actual - target; // positive = beat budget, negative = missed
   // Achievement % only meaningful when budget is positive
   const achievementPct = target > 0 ? (actual / target) * 100 : null;
@@ -45,14 +45,14 @@ export function calcGOPMarginScore(actual, prior, precomputedImprovement = null)
   // If a pre-aggregated improvement is available (avg of monthly actual-prior), use it directly.
   // This is the correct quarterly method per spec.
   if (precomputedImprovement != null) {
-    const pass = precomputedImprovement >= 0.1;
+    const pass = precomputedImprovement > 0;
     const score = pass ? 35 : 0;
     return { score, diff: Math.round(precomputedImprovement * 100) / 100, pass, incomplete: false };
   }
   if (actual == null || prior == null) return { score: 0, diff: 0, pass: false, incomplete: true };
   const diff = actual - prior;
-  // Binary: PASS = 35 pts if improvement >= 0.1%, FAIL = 0 pts
-  const pass = diff >= 0.1;
+  // Binary: PASS = 35 pts if margin exceeds prior year (any improvement > 0), FAIL = 0 pts
+  const pass = diff > 0;
   const score = pass ? 35 : 0;
   return { score, diff: Math.round(diff * 100) / 100, pass, incomplete: false };
 }

@@ -266,7 +266,7 @@ function KpiReferenceGuide() {
           <tbody>
             {[
               { measure: 'Budgeted GOP', weight: '35%', scoring: '100% or > of budget = 35 pts (binary pass/fail)' },
-              { measure: 'GOP Margin Improvement*', weight: '35%', scoring: '0.1%+ improvement vs LY = 35 pts (binary pass/fail)' },
+              { measure: 'GOP Margin Improvement*', weight: '35%', scoring: 'Any improvement vs LY (exceed prior-year %) = 35 pts (binary pass/fail)' },
               { measure: 'RGI Improvement**', weight: '15%', scoring: '0.1–2.0% vs LY = 7.5 pts (partial)\n2.1%+ vs LY = 15 pts (full pass)' },
               { measure: 'GSS Improvement', weight: '15%', scoring: 'Any YOY improvement (TY > LY after normalization) = 15 pts' },
             ].map((row, i) => (
@@ -279,13 +279,13 @@ function KpiReferenceGuide() {
           </tbody>
         </table>
       </div>
-      <p className="text-xs text-muted-foreground mt-2">* GOP Margin: avg of monthly (actual − prior) ≥ 0.1% to pass. &nbsp;** RGI: avg of monthly RevPAR Index % change.</p>
+      <p className="text-xs text-muted-foreground mt-2">* GOP Margin: avg of monthly (actual − prior) must exceed prior year (any improvement &gt; 0) to pass. &nbsp;** RGI: avg of monthly RevPAR Index % change.</p>
 
       <H3>Budgeted GOP</H3>
       <P>Measures whether the hotel achieved or exceeded its budgeted gross operating profit in dollar terms. Actual GOP ≥ Budget GOP = 35 pts. Below budget = 0 pts. This is the largest single KPI and acts as a financial gatekeeper.</P>
 
       <H3>GOP Margin Improvement</H3>
-      <P>Measures whether the hotel improved its GOP profit margin percentage vs. the prior year. Calculated as: avg of (Actual Margin % − Prior Year Margin %) across months in the period. A 0.1% or better improvement earns the full 35 pts.</P>
+      <P>Measures whether the hotel improved its GOP profit margin percentage vs. the prior year. Calculated as: avg of (Actual Margin % − Prior Year Margin %) across months in the period. Any positive improvement (margin exceeds prior year) earns the full 35 pts.</P>
 
       <H3>RGI (RevPAR Index) Improvement</H3>
       <P>Measures competitive performance using STR data. RGI (also called RevPAR Growth Index) tracks whether the hotel is gaining or losing share vs. its competitive set. Improvement thresholds:</P>
@@ -360,7 +360,7 @@ function KpiBreakdownGuide() {
       <H3>Pass criteria quick reference</H3>
       <UL>
         <LI><strong>GOP</strong>: Actual ≥ Budget</LI>
-        <LI><strong>Margin</strong>: Avg monthly improvement ≥ 0.1 percentage points vs. prior year</LI>
+        <LI><strong>Margin</strong>: Avg monthly margin must exceed prior year (any improvement &gt; 0)</LI>
         <LI><strong>RGI</strong>: Average index change ≥ 0.1% vs. prior year (partial at 0.1–2.0%, full at 2.1%+)</LI>
         <LI><strong>GSS</strong>: Normalized TY average &gt; Normalized LY average (any improvement)</LI>
       </UL>
