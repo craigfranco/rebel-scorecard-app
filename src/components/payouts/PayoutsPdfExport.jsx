@@ -248,7 +248,7 @@ export default function PayoutsPdfExport({ property, staff = [], jobClassificati
         { header: 'Name', w: 55 },
         { header: 'Job Classification', w: 55 },
         { header: 'Quarter Salary', w: 35 },
-        { header: 'GOP Gate', w: 25 },
+        { header: 'GOP', w: 25 },
         { header: 'Bonus Earned', w: 35 },
         { header: 'Paid Out (50%)', w: 35 },
         { header: 'Held (50%)', w: 35 },

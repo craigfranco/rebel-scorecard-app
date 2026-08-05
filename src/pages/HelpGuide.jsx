@@ -282,7 +282,7 @@ function KpiReferenceGuide() {
       <p className="text-xs text-muted-foreground mt-2">* GOP Margin: avg of monthly (actual − prior) must exceed prior year (any improvement &gt; 0) to pass. &nbsp;** RGI: avg of monthly RevPAR Index % change.</p>
 
       <H3>Budgeted GOP</H3>
-      <P>Measures whether the hotel achieved or exceeded its budgeted gross operating profit in dollar terms. Actual GOP ≥ Budget GOP = 35 pts. Below budget = 0 pts. This is the largest single KPI and acts as a financial gatekeeper.</P>
+      <P>Measures whether the hotel achieved or exceeded its budgeted gross operating profit in dollar terms. Actual GOP ≥ Budget GOP = 35 pts. Below budget = 0 pts. This is the largest single KPI.</P>
 
       <H3>GOP Margin Improvement</H3>
       <P>Measures whether the hotel improved its GOP profit margin percentage vs. the prior year. Calculated as: avg of (Actual Margin % − Prior Year Margin %) across months in the period. Any positive improvement (margin exceeds prior year) earns the full 35 pts.</P>
@@ -378,16 +378,16 @@ function PayoutsGuide() {
         <LI>Quarterly salary for each quarter (Q1–Q4) — enter only the quarters that have closed</LI>
       </UL>
 
-      <H3>Bonus Eligibility — Per-KPI Gating</H3>
-      <P>There is no overall eligibility gate. Each KPI acts as the gatekeeper for its own incentive portion only — a failed KPI zeros out only that KPI's bonus, not the others:</P>
+      <H3>Bonus Eligibility — Per-KPI</H3>
+      <P>Each KPI is evaluated independently — a failed KPI zeros out only that KPI's bonus, not the others:</P>
       <UL>
-        <LI><strong>Budgeted GOP</strong> — Actual GOP ≥ Budget unlocks the <strong>GOP bonus</strong> only</LI>
-        <LI><strong>GOP Margin</strong> — Any margin improvement vs. prior year unlocks the <strong>Margin bonus</strong> only</LI>
+        <LI><strong>Budgeted GOP</strong> — Actual GOP ≥ Budget earns the <strong>GOP bonus</strong></LI>
+        <LI><strong>GOP Margin</strong> — Any margin improvement vs. prior year earns the <strong>Margin bonus</strong></LI>
         <LI><strong>RGI</strong> — 0.1%+ improvement earns the RGI bonus (partial at 0.1–2.0%, full at 2.1%+); below 0.1% earns $0</LI>
         <LI><strong>GSS</strong> — 4-tier payout (0% / 25% / 75% / 100%) based on improvement vs. brand target</LI>
       </UL>
       <P>A failed GOP does <strong>not</strong> zero the Margin bonus, and a failed Margin does <strong>not</strong> zero the GOP bonus. Each portion is earned or lost independently based on its own KPI result.</P>
-      <InfoBox>💡 GOP is the gatekeeper for the GOP incentive portion only. Margin, RGI, and GSS each gate their own portions independently.</InfoBox>
+      <InfoBox>💡 Each KPI earns its own bonus independently. A failed GOP does not affect the Margin, RGI, or GSS bonuses, and vice versa.</InfoBox>
 
       <H3>How bonus is calculated</H3>
       <P>For each quarter, the system:</P>

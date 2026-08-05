@@ -1,7 +1,7 @@
 /**
- * PER-KPI GATING: Each KPI is the gatekeeper for its OWN incentive portion only.
- *   - GOP $ pass  → unlocks the GOP $ bonus (and only that)
- *   - Margin pass → unlocks the Margin bonus (and only that)
+ * PER-KPI EVALUATION: Each KPI earns its OWN incentive portion independently.
+ *   - GOP $ pass  → earns the GOP $ bonus (and only that)
+ *   - Margin pass → earns the Margin bonus (and only that)
  *   - RGI / GSS   → calculate independently of GOP and Margin
  *
  * A failed GOP does NOT zero the Margin bonus, and vice versa.
@@ -16,9 +16,9 @@ export function checkGopGate(scorecard) {
 /**
  * Quarterly bonus calculation per 2026 Incentive Plan.
  *
- * PER-KPI GATING: Each KPI gates only its own incentive portion.
- *   - GOP $ pass  → earns GOP $ bonus   (GOP is the gatekeeper for this portion only)
- *   - Margin pass → earns Margin bonus  (Margin gates its own portion only)
+ * PER-KPI EVALUATION: Each KPI earns only its own incentive portion.
+ *   - GOP $ pass  → earns GOP $ bonus
+ *   - Margin pass → earns Margin bonus
  *   - RGI / GSS   → always calculate independently
  *
  * GSS 4-tier: uses scorecard.gss.payoutPct (0, 0.25, 0.75, 1.0).
@@ -34,11 +34,11 @@ export function calcKpiBonus(quarterlySalary, scorecard, jobClass, property = nu
 
   const sal = quarterlySalary;
 
-  // GOP $ is the gatekeeper for the GOP incentive portion ONLY.
+  // GOP $ result earns the GOP incentive portion only.
   const gopPassed = !scorecard.gop?.incomplete && scorecard.gop?.pass === true;
   const gop = gopPassed ? sal * (jobClass.gop_bonus_percentage || 0) / 100 : 0;
 
-  // GOP Margin is the gatekeeper for the Margin incentive portion ONLY.
+  // GOP Margin result earns the Margin incentive portion only.
   const marginPassed = !scorecard.gopMargin?.incomplete && scorecard.gopMargin?.pass === true;
   const gopMargin = marginPassed ? sal * (jobClass.gop_margin_bonus_percentage || 0) / 100 : 0;
 
@@ -69,13 +69,13 @@ export function calcKpiBonus(quarterlySalary, scorecard, jobClass, property = nu
     eligible: true,
     gopPassed,
     marginPassed,
-    gopGatePassed: gopPassed, // backward-compat alias: GOP gatekeeper for GOP portion
+    gopGatePassed: gopPassed, // backward-compat alias: GOP portion earned
     gopGate: { passed: gopPassed && marginPassed, gopPassed, marginPassed },
     eligibilityReason: '',
   };
 }
 
-// Legacy: checkBonusEligibility — always eligible now (gate is GOP-only)
+// Legacy: checkBonusEligibility — always eligible now (eligibility is per-KPI inside calcKpiBonus)
 export function checkBonusEligibility(scorecard) {
   if (!scorecard) return { eligible: false, rgiMet: false, gssMet: false, reason: 'No scorecard data' };
   // No longer gates on RGI+GSS; return eligible=true always (gate is inside calcKpiBonus)

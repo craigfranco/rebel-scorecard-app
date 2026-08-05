@@ -56,7 +56,7 @@ export default function BonusSummaryTable({ jobClassifications = [] }) {
 
         {/* Footnote */}
         <div className="px-6 py-3 border-t border-border text-xs text-muted-foreground bg-muted/20">
-          <p>RGI partial (0.1–2.0%) earns 50% of that role's RGI full rate. Full (2.1%+) earns 100%. GOP Gate: both GOP $ and Margin $ bonus = $0 if Actual GOP &lt; Budget OR Margin Actual ≤ Margin Prior Year.</p>
+          <p>RGI partial (0.1–2.0%) earns 50% of that role's RGI full rate. Full (2.1%+) earns 100%. Each KPI's bonus is earned independently based on its own result.</p>
         </div>
       </div>
 
@@ -73,14 +73,14 @@ export default function BonusSummaryTable({ jobClassifications = [] }) {
           </p>
         </div>
 
-        {/* GOP Gatekeeper Card */}
+        {/* Per-KPI Bonus Card */}
         <div className="bg-orange-50 rounded-2xl border border-orange-200 p-5">
           <h4 className="font-bold text-orange-900 mb-2 flex items-center gap-2">
             <AlertCircle className="w-4 h-4" />
-            GOP GATEKEEPER
+            PER-KPI BONUS
           </h4>
           <p className="text-xs text-orange-800 leading-relaxed">
-            Both <strong>Actual GOP ≥ Budget</strong> AND <strong>Margin Actual &gt; Margin Prior Year</strong> must be true to earn either the GOP $ component or the Margin $ component. If either fails → both GOP and Margin bonuses = $0. RGI and GSS always calculate independently.
+            Each KPI earns its bonus independently. <strong>Actual GOP ≥ Budget</strong> earns the GOP $ bonus; <strong>Margin Actual &gt; Margin Prior Year</strong> earns the Margin $ bonus. A failed KPI only zeros out that KPI's bonus. RGI and GSS always calculate independently.
           </p>
         </div>
 

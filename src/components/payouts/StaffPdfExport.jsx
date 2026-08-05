@@ -252,7 +252,7 @@ export default function StaffPdfExport({ staff, property, jobClass, selectedYear
 
       const bonusCols = [
         { header: 'Component', w: 55 },
-        { header: 'Gate', w: 30 },
+        { header: 'Status', w: 30 },
         { header: 'Amount', w: 40 },
       ];
       const bonusTableW = bonusCols.reduce((s, c) => s + c.w, 0);

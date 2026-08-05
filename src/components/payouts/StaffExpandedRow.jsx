@@ -165,10 +165,10 @@ export default function StaffExpandedRow({ staff, property, jobClass, colSpan = 
                       {bonus && (
                         <div className="flex flex-wrap gap-2">
                           <span className={`rounded px-2 py-1 text-xs font-semibold ${bonus.gopPassed ? 'bg-green-50 text-green-800' : 'bg-orange-50 text-orange-800'}`}>
-                            {bonus.gopPassed ? '✅ GOP Gate — Passed' : '⚠️ GOP Gate — Failed (no GOP bonus)'}
+                            {bonus.gopPassed ? '✅ GOP — Passed' : '⚠️ GOP — Failed (no GOP bonus)'}
                           </span>
                           <span className={`rounded px-2 py-1 text-xs font-semibold ${bonus.marginPassed ? 'bg-green-50 text-green-800' : 'bg-orange-50 text-orange-800'}`}>
-                            {bonus.marginPassed ? '✅ Margin Gate — Passed' : '⚠️ Margin Gate — Failed (no Margin bonus)'}
+                            {bonus.marginPassed ? '✅ Margin — Passed' : '⚠️ Margin — Failed (no Margin bonus)'}
                           </span>
                         </div>
                       )}
