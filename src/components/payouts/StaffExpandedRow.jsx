@@ -16,20 +16,19 @@ const QUARTERS = [
 const fmt = (n) => `$${Math.round(n).toLocaleString('en-US')}`;
 const fmtPts = (n) => n != null ? String(n) : '—';
 
-function kpiRows(scorecard, salary, jobClass) {
+function kpiRows(scorecard, salary, jobClass, bonus) {
   if (!scorecard || !jobClass) return [];
   const highRgiPct = jobClass.rgi_bonus_percentage_high || 0;
 
-  const row = (name, result, pts, max, bonusPct, detailLabel = null) => {
+  // `earned` comes from the gated calcKpiBonus result so the per-KPI breakdown
+  // matches the gatekeeper and sums exactly to the bonus total.
+  const row = (name, result, pts, max, bonusPct, earned, detailLabel = null) => {
     let icon = '—';
     if (!result?.incomplete) {
       if (result?.tier === 'partial') icon = '⚡';
       else if (result?.pass) icon = '✅';
       else icon = '❌';
     }
-    const earned = (!result?.incomplete && result?.pass && salary > 0)
-      ? salary * bonusPct / 100
-      : 0;
     return { name, icon, pts: result?.incomplete ? null : pts, max, bonusPct, earned, detailLabel };
   };
 
@@ -51,10 +50,10 @@ function kpiRows(scorecard, salary, jobClass) {
   }
 
   return [
-    row('Budgeted GOP',    scorecard.gop,       scorecard.gop?.score,       35, jobClass.gop_bonus_percentage || 0),
-    row('GOP Margin',      scorecard.gopMargin, scorecard.gopMargin?.score, 35, jobClass.gop_margin_bonus_percentage || 0),
-    row('RGI',             scorecard.rgi,       scorecard.rgi?.score,       15, rgiPct, rgiDetail),
-    row('GSS',             scorecard.gss,       scorecard.gss?.score,       15, jobClass.gss_bonus_percentage || 0),
+    row('Budgeted GOP',    scorecard.gop,       scorecard.gop?.score,       35, jobClass.gop_bonus_percentage || 0,        bonus?.gop ?? 0),
+    row('GOP Margin',      scorecard.gopMargin, scorecard.gopMargin?.score, 35, jobClass.gop_margin_bonus_percentage || 0, bonus?.gopMargin ?? 0),
+    row('RGI',             scorecard.rgi,       scorecard.rgi?.score,       15, rgiPct,                                     bonus?.rgi ?? 0, rgiDetail),
+    row('GSS',             scorecard.gss,       scorecard.gss?.score,       15, jobClass.gss_bonus_percentage || 0,        bonus?.gss ?? 0),
   ];
 }
 
@@ -94,7 +93,7 @@ export default function StaffExpandedRow({ staff, property, jobClass, colSpan = 
     const bonus = salary && scorecard ? calcKpiBonus(salary, scorecard, jobClass, property) : null;
     const bonusEarned = bonus?.total ?? null;
     const eligibility = scorecard ? checkBonusEligibility(scorecard) : null;
-    const rows = scorecard ? kpiRows(scorecard, salary, jobClass) : [];
+    const rows = scorecard ? kpiRows(scorecard, salary, jobClass, bonus) : [];
     return { q, label, salary, kpiScore, maxPossible, bonus, bonusEarned, eligibility, rows };
   });
 
