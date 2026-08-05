@@ -147,6 +147,11 @@ export default function ImportWizard({ file, properties, onClose, onSuccess }) {
         if (row.revpar_index_change != null) rgiPatch.revpar_index_change = row.revpar_index_change;
         if (row.revpar_index != null) rgiPatch.revpar_index = row.revpar_index;
         if (row.revpar_index_prior != null) rgiPatch.revpar_index_prior = row.revpar_index_prior;
+        // Derive prior-year index from this year's index + YOY change when not provided
+        if (rgiPatch.revpar_index_prior == null && rgiPatch.revpar_index != null && rgiPatch.revpar_index_change != null) {
+          const denom = 1 + rgiPatch.revpar_index_change / 100;
+          if (denom !== 0) rgiPatch.revpar_index_prior = Math.round((rgiPatch.revpar_index / denom) * 100) / 100;
+        }
         if (Object.keys(rgiPatch).length === 0) { fail++; continue; }
         const existingRgi = await base44.entities.RgiQuarterlyReport.filter({ property_id: prop.id, year: periodYear, quarter: periodQuarter });
         if (existingRgi.length > 0) {
@@ -168,6 +173,11 @@ export default function ImportWizard({ file, properties, onClose, onSuccess }) {
       if (row.revpar_index_change != null) patch.revpar_index_change = row.revpar_index_change;
       if (row.revpar_index != null)        patch.revpar_index        = row.revpar_index;
       if (row.revpar_index_prior != null)  patch.revpar_index_prior  = row.revpar_index_prior;
+      // Derive prior-year index from this year's index + YOY change when not provided
+      if (patch.revpar_index_prior == null && row.revpar_index != null && row.revpar_index_change != null) {
+        const denom = 1 + row.revpar_index_change / 100;
+        if (denom !== 0) patch.revpar_index_prior = Math.round((row.revpar_index / denom) * 100) / 100;
+      }
       if (row.gss_actual != null)          patch.gss_actual          = row.gss_actual;
        if (row.gss_prior != null)           patch.gss_prior           = row.gss_prior;
        if (row.forecast_actual_revenue != null) patch.forecast_actual_revenue = row.forecast_actual_revenue;

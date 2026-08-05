@@ -46,6 +46,26 @@ function applyRgiOverride(result, overrides, propertyId, year, quarter) {
 }
 
 /**
+ * Derives the prior-year RevPAR Index when it is missing.
+ * Prior = Current Index ÷ (1 + YOY change / 100).
+ * e.g. index 105.3 with +2.5% change → prior = 105.3 / 1.025 = 102.73.
+ * This lets quarterly STR uploads (which report current index + % change)
+ * automatically populate the prior-year index for display and comparison.
+ */
+function deriveRgiPrior(result) {
+  if (!result) return result;
+  const idx = result.revpar_index;
+  const chg = result.revpar_index_change;
+  if (result.revpar_index_prior == null && idx != null && chg != null) {
+    const denom = 1 + chg / 100;
+    if (denom !== 0) {
+      result.revpar_index_prior = Math.round((idx / denom) * 100) / 100;
+    }
+  }
+  return result;
+}
+
+/**
  * Applies approved bonus exceptions (quarterly add-backs) to the aggregated result.
  * Adds the exception dollar amount to actual GOP, then recalculates margins.
  *
@@ -257,10 +277,10 @@ export function aggregateEntries(entries, periodType, selectedMonth, selectedYea
 
   // Quarterly RGI override: use exact STR quarterly figures when available
   if (periodType === 'quarter') {
-    return applyRgiOverride(finalResult, rgiOverrides, last.property_id, selectedYear, getQuarterFromMonth(selectedMonth));
+    return deriveRgiPrior(applyRgiOverride(finalResult, rgiOverrides, last.property_id, selectedYear, getQuarterFromMonth(selectedMonth)));
   }
 
-  return finalResult;
+  return deriveRgiPrior(finalResult);
 }
 
 /**
@@ -385,6 +405,6 @@ export function aggregateQuarterEntries(arr, rgiOverrides = [], bonusExceptions 
   const quarter = sorted[0] ? getQuarterFromMonth(sorted[0].month) : null;
   const withExceptions = applyBonusExceptions(result, bonusExceptions, last.property_id, quarter ? [quarter] : []);
 
-  // Quarterly RGI override: use exact STR quarterly figures when available
-  return applyRgiOverride(withExceptions, rgiOverrides, last.property_id, year, quarter);
+  // Quarterly RGI override: use exact STR quarterly figures when available, then derive prior-year index
+  return deriveRgiPrior(applyRgiOverride(withExceptions, rgiOverrides, last.property_id, year, quarter));
 }

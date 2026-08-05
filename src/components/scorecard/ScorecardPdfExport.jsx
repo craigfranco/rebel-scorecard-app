@@ -112,7 +112,9 @@ export function generateScorecardPDF(property, entry, periodType, selectedMonth,
 
   const rgiTy = entry.revpar_index;
   const rgiChg = entry.revpar_index_change;
-  const rgiLy = (rgiTy != null && rgiChg != null) ? rgiTy / (1 + rgiChg / 100) : null;
+  const rgiLy = entry.revpar_index_prior != null
+    ? entry.revpar_index_prior
+    : (rgiTy != null && rgiChg != null) ? rgiTy / (1 + rgiChg / 100) : null;
 
   const gssNorm = normalizeGssTo100(entry.gss_actual, brand);
   const gssPriorNorm = normalizeGssTo100(entry.gss_prior, brand);
