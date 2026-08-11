@@ -30,39 +30,69 @@ const DEPLOYMENT_FIELDS = [
   { field: 'website', label: 'Website' },
 ];
 
+const normHeader = (h) => String(h || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+
+// The deployment sheet uses a grouped two-row header (a "DEPLOYMENT / Corporate Lead /
+// Property Lead" band sits above the real column names). parseFile may latch onto that
+// band as the header row, so we re-detect the real header row by looking for the row
+// that actually holds the STR ID + Hotel Name columns.
+function findDeploymentHeaderRow(allRows) {
+  for (let i = 0; i < Math.min(allRows.length, 8); i++) {
+    const cells = allRows[i].map(normHeader);
+    const hasStr = cells.some((c) => c === 'strid' || c.includes('strid') || c === 'str');
+    const hasHotel = cells.some((c) => c.includes('hotelname') || c.includes('propertyname') || c.includes('hotel'));
+    if (hasStr && hasHotel) return i;
+  }
+  return null;
+}
+
+const DEPLOYMENT_CANDIDATES = {
+  str_id: ['strid', 'str', 'deploymentid'],
+  name: ['hotelname', 'propertyname', 'hotel', 'property', 'name'],
+  city: ['city'],
+  state: ['state'],
+  rooms: ['rooms', 'roomcount', 'keys'],
+  parent_brand: ['parentbrand', 'parent', 'brand'],
+  sub_brand: ['subbrand', 'sub'],
+  corporate_operations: ['operations', 'operation'],
+  corporate_finance: ['finance'],
+  corporate_hr: ['humanresources', 'hr'],
+  corporate_revenue: ['revenue'],
+  corporate_sales: ['salesmktg', 'salesmarketing', 'sales'],
+  corporate_ecommerce: ['ecommerce', 'ecomm'],
+  property_gm: ['gm', 'generalmanager'],
+  property_dof: ['dof', 'directoroffinance'],
+  property_hrd: ['hrd', 'directorofhr'],
+  property_dorm: ['dorm', 'directorofrevenue'],
+  property_dosm: ['dosm', 'directorofsales'],
+  property_doe: ['doe', 'directorofengineering'],
+  address: ['physicaladdress', 'address'],
+  website: ['websiteaddress', 'website', 'url'],
+};
+
+// Two-pass matcher: exact normalized matches first (so "Human Resources"→corporate_hr
+// and "HRD"→property_hrd don't collide), then substring matches for anything left,
+// never reusing a column that already matched another field.
 function autoMapDeployment(headers) {
-  const norm = (h) => String(h || '').toLowerCase().replace(/[^a-z0-9]/g, '');
-  const h = headers.map(norm);
-  const find = (...terms) => {
+  const h = headers.map(normHeader);
+  const used = new Set();
+  const result = {};
+
+  Object.entries(DEPLOYMENT_CANDIDATES).forEach(([field, terms]) => {
     for (const t of terms) {
-      const idx = h.findIndex((x) => x === t || x.includes(t));
-      if (idx !== -1) return idx;
+      const idx = h.findIndex((x, i) => x === t && !used.has(i));
+      if (idx !== -1) { result[field] = idx; used.add(idx); return; }
     }
-    return null;
-  };
-  return {
-    str_id: find('strid', 'str', 'deploymentid'),
-    name: find('hotelname', 'hotel', 'propertyname', 'property', 'name'),
-    city: find('city'),
-    state: find('state'),
-    rooms: find('rooms', 'roomcount', 'keys'),
-    parent_brand: find('parentbrand', 'parent', 'brand'),
-    sub_brand: find('subbrand', 'sub'),
-    corporate_operations: find('operations', 'operation'),
-    corporate_finance: find('finance'),
-    corporate_hr: find('humanresources', 'hr'),
-    corporate_revenue: find('revenue'),
-    corporate_sales: find('salesmktg', 'salesmarketing', 'sales'),
-    corporate_ecommerce: find('ecommerce', 'ecomm'),
-    property_gm: find('gm', 'generalmanager'),
-    property_dof: find('dof', 'directoroffinance'),
-    property_hrd: find('hrd', 'directorofhr'),
-    property_dorm: find('dorm', 'directorofrevenue'),
-    property_dosm: find('dosm', 'directorofsales'),
-    property_doe: find('doe', 'directorofengineering'),
-    address: find('physicaladdress', 'address'),
-    website: find('websiteaddress', 'website', 'url'),
-  };
+  });
+  Object.entries(DEPLOYMENT_CANDIDATES).forEach(([field, terms]) => {
+    if (result[field] != null) return;
+    for (const t of terms) {
+      const idx = h.findIndex((x, i) => x.includes(t) && !used.has(i));
+      if (idx !== -1) { result[field] = idx; used.add(idx); return; }
+    }
+    result[field] = null;
+  });
+  return result;
 }
 
 const strVal = (v) => (v != null && String(v).trim() !== '' ? String(v).trim() : null);
@@ -84,8 +114,20 @@ export default function DeploymentImportWizard({ file, onClose, onSuccess }) {
   useEffect(() => {
     parseFile(file)
       .then((res) => {
-        setParsed(res);
-        setMapping(autoMapDeployment(res.headers));
+        // Re-detect the real column-header row (skips the grouped "DEPLOYMENT /
+        // Corporate Lead / Property Lead" band that sits above it).
+        const all = [res.headers, ...res.rows];
+        const idx = findDeploymentHeaderRow(all);
+        let headers, rows;
+        if (idx != null) {
+          headers = all[idx].map((hd, i) => (hd !== '' && hd != null ? String(hd).trim() : `col_${i}`));
+          rows = all.slice(idx + 1);
+        } else {
+          headers = res.headers;
+          rows = res.rows;
+        }
+        setParsed({ headers, rows });
+        setMapping(autoMapDeployment(headers));
         setStep('mapping');
       })
       .catch((err) => {
