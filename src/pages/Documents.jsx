@@ -3,13 +3,14 @@ import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { FileText, Download, Trash2, Building2, Globe, Loader2, Eraser, Trash, Search, X } from 'lucide-react';
+import { FileText, Download, Trash2, Building2, Globe, Loader2, Eraser, Trash, Search, X, Users } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { MONTHS, getQuarterFromMonth } from '../lib/scoring';
 import UploadZone from '@/components/documents/UploadZone';
 import ImportWizard from '@/components/documents/ImportWizard';
 import DataHealthPanel from '@/components/documents/DataHealthPanel';
-import DashboardSyncButton from '@/components/documents/DashboardSyncButton';
+import DeploymentImportWizard from '@/components/documents/DeploymentImportWizard';
+import { useUserProfile } from '@/lib/UserProfileContext';
 
 const CURRENT_YEAR = 2026;
 const CURRENT_MONTH = 1;
@@ -41,8 +42,11 @@ const DOC_TYPE_FIELDS = {
 export default function Documents() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { isAdmin } = useUserProfile();
 
   const [pendingFile, setPendingFile] = useState(null);
+  const [deploymentFile, setDeploymentFile] = useState(null);
+  const [deploymentParsing, setDeploymentParsing] = useState(false);
   const [parsing, setParsing] = useState(false);
   const [clearMonth, setClearMonth] = useState(CURRENT_MONTH);
   const [clearYear] = useState(CURRENT_YEAR);
@@ -81,6 +85,14 @@ export default function Documents() {
     setTimeout(() => {
       setParsing(false);
       setPendingFile(file);
+    }, 100);
+  };
+
+  const handleDeploymentFile = (file) => {
+    setDeploymentParsing(true);
+    setTimeout(() => {
+      setDeploymentParsing(false);
+      setDeploymentFile(file);
     }, 100);
   };
 
@@ -140,7 +152,6 @@ export default function Documents() {
           <h1 className="text-2xl font-bold">Documents</h1>
           <p className="text-white/70 text-sm mt-1">Upload Excel or CSV files — data is parsed client-side and imported directly into scorecards</p>
         </div>
-        <DashboardSyncButton />
       </div>
 
       {/* Data Health */}
@@ -159,6 +170,27 @@ export default function Documents() {
           subLabel="Supports .xlsx, .xls, .csv — PDFs can be stored for reference only"
         />
       </div>
+
+      {/* Deployment Roster Upload (admin only) */}
+      {isAdmin && (
+        <div className="bg-card rounded-2xl border border-border shadow-sm p-6 space-y-4">
+          <div className="flex items-center gap-2">
+            <Users className="w-4 h-4 text-primary" />
+            <div>
+              <h2 className="font-bold text-foreground">Upload Deployment Roster</h2>
+              <p className="text-sm text-muted-foreground">
+                Upload the REBEL deployment spreadsheet to update the hotel roster, leadership assignments, and the lead-person filters. Properties no longer in the file are deactivated.
+              </p>
+            </div>
+          </div>
+          <UploadZone
+            onFile={handleDeploymentFile}
+            loading={deploymentParsing}
+            label="Drop Deployment spreadsheet here, or click to browse"
+            subLabel="Expects a 'Deployment' sheet with STR ID, Hotel Name, brand, and Corporate/Property lead columns"
+          />
+        </div>
+      )}
 
       {/* Clear KPI Data */}
       <div className="bg-card rounded-2xl border border-border shadow-sm p-5">
@@ -351,6 +383,20 @@ export default function Documents() {
             if (result.ok > 0) {
               toast({ title: '✅ Import complete!', description: `${result.ok} hotel records updated for ${result.periodLabel || `${MONTHS[CURRENT_MONTH - 1]} ${CURRENT_YEAR}`}.` });
             }
+          }}
+        />
+      )}
+
+      {/* Deployment Import Wizard Modal */}
+      {deploymentFile && (
+        <DeploymentImportWizard
+          file={deploymentFile}
+          onClose={() => setDeploymentFile(null)}
+          onSuccess={(res) => {
+            toast({
+              title: '✅ Deployment roster updated',
+              description: `${res.properties_upserted ?? 0} properties upserted, ${res.properties_deactivated ?? 0} deactivated.`,
+            });
           }}
         />
       )}

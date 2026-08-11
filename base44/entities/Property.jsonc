@@ -24,6 +24,18 @@
     "state": {
       "type": "string"
     },
+    "rooms": {
+      "type": "number",
+      "description": "Number of rooms/keys"
+    },
+    "address": {
+      "type": "string",
+      "description": "Physical address"
+    },
+    "website": {
+      "type": "string",
+      "description": "Website URL"
+    },
     "gm_name": {
       "type": "string",
       "description": "General Manager name"
@@ -43,6 +55,54 @@
     "department": {
       "type": "string",
       "description": "Department classification"
+    },
+    "corporate_operations": {
+      "type": "string",
+      "description": "Corporate Operations lead (per deployment roster)"
+    },
+    "corporate_finance": {
+      "type": "string",
+      "description": "Corporate Finance lead (per deployment roster)"
+    },
+    "corporate_hr": {
+      "type": "string",
+      "description": "Corporate HR lead (per deployment roster)"
+    },
+    "corporate_revenue": {
+      "type": "string",
+      "description": "Corporate Revenue lead (per deployment roster)"
+    },
+    "corporate_sales": {
+      "type": "string",
+      "description": "Corporate Sales lead (per deployment roster)"
+    },
+    "corporate_ecommerce": {
+      "type": "string",
+      "description": "Corporate E-Commerce lead (per deployment roster)"
+    },
+    "property_gm": {
+      "type": "string",
+      "description": "Property General Manager (per deployment roster)"
+    },
+    "property_dof": {
+      "type": "string",
+      "description": "Director of Finance (per deployment roster)"
+    },
+    "property_hrd": {
+      "type": "string",
+      "description": "Director of HR (per deployment roster)"
+    },
+    "property_dorm": {
+      "type": "string",
+      "description": "Director of Revenue (per deployment roster)"
+    },
+    "property_dosm": {
+      "type": "string",
+      "description": "Director of Sales & Marketing (per deployment roster)"
+    },
+    "property_doe": {
+      "type": "string",
+      "description": "Director of Engineering (per deployment roster)"
     },
     "is_active": {
       "type": "boolean",
