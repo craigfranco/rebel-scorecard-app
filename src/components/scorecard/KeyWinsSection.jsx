@@ -117,7 +117,7 @@ export default function KeyWinsSection({ property, entry, periodType, selectedMo
             </label>
             {!isEditing ? (
               initiatives[category][idx] ? (
-                <div className="text-sm text-foreground leading-relaxed break-words line-clamp-4" title={initiatives[category][idx]}>
+                <div className="text-sm text-foreground leading-relaxed break-words whitespace-pre-wrap">
                   {initiatives[category][idx]}
                 </div>
               ) : (
