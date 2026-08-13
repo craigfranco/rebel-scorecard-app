@@ -3,9 +3,24 @@ import { ChevronRight, ChevronDown } from 'lucide-react';
 import PropertyScorecardDetail from '@/components/scorecard/PropertyScorecardDetail';
 import LeadershipGroupSummary from './LeadershipGroupSummary';
 
-function ScoreCell({ value }) {
-  if (value == null) return <span className="text-muted-foreground">—</span>;
-  return <span className="font-semibold">{value.toFixed(1)}</span>;
+function fmt$K(val) {
+  if (val == null) return '—';
+  const abs = Math.abs(val);
+  if (abs >= 1e6) return '$' + (val / 1e6).toFixed(1) + 'M';
+  if (abs >= 1e3) return '$' + Math.round(val / 1e3) + 'K';
+  return '$' + Math.round(val);
+}
+function fmt1(val) { return val == null ? '—' : val.toFixed(1); }
+function fmtPct(val) { return val == null ? '—' : val.toFixed(1) + '%'; }
+
+function KpiCell({ score, actual, goal }) {
+  return (
+    <td className="py-2.5 px-3 text-center align-top">
+      <div className="font-semibold text-sm">{score != null ? score.toFixed(1) : '—'}</div>
+      <div className="text-[10px] text-muted-foreground leading-tight mt-0.5">{actual}</div>
+      <div className="text-[10px] text-muted-foreground leading-tight">{goal}</div>
+    </td>
+  );
 }
 
 function scoreColor(total, maxPossible) {
@@ -106,10 +121,26 @@ export default function LeadershipGroupCard({ groupName, roleLabel, entries, exp
                     </td>
                     {r.hasData ? (
                       <>
-                        <td className="py-3 px-3 text-center text-sm"><ScoreCell value={r.gop} /></td>
-                        <td className="py-3 px-3 text-center text-sm"><ScoreCell value={r.gopMargin} /></td>
-                        <td className="py-3 px-3 text-center text-sm"><ScoreCell value={r.rgi} /></td>
-                        <td className="py-3 px-3 text-center text-sm"><ScoreCell value={r.gss} /></td>
+                        <KpiCell
+                          score={r.gop}
+                          actual={fmt$K(r.gopActual)}
+                          goal={`Budget ${fmt$K(r.gopBudget)}`}
+                        />
+                        <KpiCell
+                          score={r.gopMargin}
+                          actual={fmtPct(r.entry?.gop_margin_actual)}
+                          goal={`LY ${fmtPct(r.entry?.gop_margin_prior)}`}
+                        />
+                        <KpiCell
+                          score={r.rgi}
+                          actual={fmt1(r.entry?.revpar_index)}
+                          goal={`LY ${fmt1(r.entry?.revpar_index_prior)}`}
+                        />
+                        <KpiCell
+                          score={r.gss}
+                          actual={fmt1(r.sc?.gss?.normActual)}
+                          goal={`LY ${fmt1(r.sc?.gss?.normPrior)}`}
+                        />
                         <td className="py-3 px-3 text-center">
                           <span className="font-black text-sm" style={{ color: scoreColor(r.total, r.maxPossible) }}>
                             {r.total != null ? r.total.toFixed(1) : '—'}
