@@ -91,6 +91,9 @@ export default function LeadershipScorecard() {
       map[p.id] = {
         property: p,
         hasData: true,
+        entry,
+        sc,
+        rooms: p.rooms || 0,
         gop: sc.gop?.score ?? null,
         gopMargin: sc.gopMargin?.score ?? null,
         rgi: sc.rgi?.score ?? null,

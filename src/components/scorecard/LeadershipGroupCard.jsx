@@ -1,6 +1,7 @@
 import React from 'react';
 import { ChevronRight, ChevronDown } from 'lucide-react';
 import PropertyScorecardDetail from '@/components/scorecard/PropertyScorecardDetail';
+import LeadershipGroupSummary from './LeadershipGroupSummary';
 
 function ScoreCell({ value }) {
   if (value == null) return <span className="text-muted-foreground">—</span>;
@@ -41,12 +42,6 @@ export default function LeadershipGroupCard({ groupName, roleLabel, entries, exp
   });
 
   const withData = entries.filter(r => r.hasData);
-  const avgTotal = withData.length
-    ? withData.reduce((s, r) => s + (r.total || 0), 0) / withData.length
-    : null;
-  const gopActual = withData.reduce((s, r) => s + (r.gopActual || 0), 0);
-  const gopBudget = withData.reduce((s, r) => s + (r.gopBudget || 0), 0);
-  const gopVariance = gopActual - gopBudget;
 
   return (
     <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
@@ -56,25 +51,15 @@ export default function LeadershipGroupCard({ groupName, roleLabel, entries, exp
           <div className="text-[11px] uppercase tracking-widest text-muted-foreground font-semibold">{roleLabel}</div>
           <div className="text-lg font-bold text-foreground">{groupName}</div>
         </div>
-        <div className="flex flex-wrap items-center gap-6">
+        <div className="flex items-center gap-6">
           <div className="flex flex-col">
             <span className="text-[10px] text-muted-foreground uppercase tracking-wide">Hotels</span>
-            <span className="text-sm font-bold text-foreground">{entries.length}</span>
-          </div>
-          <div className="flex flex-col">
-            <span className="text-[10px] text-muted-foreground uppercase tracking-wide">Avg Total Score</span>
-            <span className="text-sm font-bold" style={{ color: scoreColor(avgTotal, 100) }}>
-              {avgTotal != null ? `${avgTotal.toFixed(1)} / 100` : '—'}
-            </span>
-          </div>
-          <div className="flex flex-col">
-            <span className="text-[10px] text-muted-foreground uppercase tracking-wide">Group GOP (vs Budget)</span>
-            <span className="text-sm font-bold" style={{ color: gopVariance >= 0 ? '#4CAF50' : '#ef4444' }}>
-              {fmt$(gopActual)} vs {fmt$(gopBudget)} ({gopVariance >= 0 ? '+' : '-'}{fmt$(Math.abs(gopVariance)).replace('$', '$')})
-            </span>
+            <span className="text-sm font-bold text-foreground">{entries.length}{withData.length < entries.length ? ` · ${withData.length} w/ data` : ''}</span>
           </div>
         </div>
       </div>
+
+      <LeadershipGroupSummary rows={entries} />
 
       {/* Hotels table */}
       <div className="overflow-x-auto">
