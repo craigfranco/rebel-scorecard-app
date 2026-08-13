@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTimePeriod } from '@/lib/TimePeriodContext';
 
 function fmt$(v) { return v == null ? '—' : '$' + Math.round(v).toLocaleString('en-US'); }
 
@@ -61,6 +62,8 @@ function ActualTile({ label, value, sub, foot, footColor }) {
 }
 
 export default function LeadershipGroupSummary({ rows }) {
+  const { getPeriodLabel } = useTimePeriod();
+  const periodLabel = getPeriodLabel();
   const withData = rows.filter(r => r.hasData);
   if (!withData.length) {
     return (
@@ -171,15 +174,15 @@ export default function LeadershipGroupSummary({ rows }) {
           footColor={gssDelta != null && gssDelta > 0 ? '#4CAF50' : '#ef4444'}
         />
         <ActualTile
-          label="Forecast"
+          label={`Forecast · ${periodLabel}`}
           value={`${forecastHits}/${withForecast.length}`}
-          sub="hit rate"
+          sub="hotels hitting forecast"
           footColor={forecastRate != null && forecastRate >= 0.7 ? '#4CAF50' : '#f59e0b'}
         />
         <ActualTile
-          label="Red Zone"
+          label={`Red Zone · ${periodLabel}`}
           value={`${redZoneCompliant}/${withData.length}`}
-          sub="compliant"
+          sub="hotels out of red zone"
           footColor={redZoneRate != null && redZoneRate >= 0.7 ? '#4CAF50' : '#f59e0b'}
         />
       </div>
