@@ -8,6 +8,8 @@ import { useUserProfile } from '@/lib/UserProfileContext';
 import { useTimePeriod } from '@/lib/TimePeriodContext';
 import { getLeadTypes } from '@/functions/getLeadTypes';
 import { calculateScorecard, aggregateEntries, hasForecastData } from '@/lib/scoring';
+import { Info } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 const EMPTY_FILTERS = { brand: '', subBrand: '', city: '', state: '', leadRole: '', leadPerson: '' };
 
@@ -137,7 +139,34 @@ export default function LeadershipScorecard() {
 
       {/* Header */}
       <div className="rounded-2xl text-white p-6 shadow-lg" style={{ background: 'linear-gradient(135deg, #2d4b5e 0%, #1e3547 100%)' }}>
-        <h1 className="text-2xl font-bold">Leadership Scorecard</h1>
+        <div className="flex items-center gap-2">
+          <h1 className="text-2xl font-bold">Leadership Scorecard</h1>
+          <Popover>
+            <PopoverTrigger asChild>
+              <button type="button" className="text-white/70 hover:text-white transition-colors" aria-label="How the score is derived">
+                <Info className="w-4 h-4" />
+              </button>
+            </PopoverTrigger>
+            <PopoverContent className="w-80 text-sm leading-relaxed">
+              <div className="font-semibold text-foreground mb-1.5">How the score is derived</div>
+              <p className="text-muted-foreground mb-2">
+                Each hotel's total score is out of <span className="font-semibold text-foreground">100</span>, combining four weighted KPIs:
+              </p>
+              <ul className="space-y-1 mb-2">
+                <li className="flex justify-between"><span>GOP Achievement</span><span className="font-semibold">35 pts</span></li>
+                <li className="flex justify-between"><span>GOP Margin Improvement</span><span className="font-semibold">35 pts</span></li>
+                <li className="flex justify-between"><span>RGI (RevPAR Index)</span><span className="font-semibold">15 pts</span></li>
+                <li className="flex justify-between"><span>GSS (Guest Satisfaction)</span><span className="font-semibold">15 pts</span></li>
+              </ul>
+              <p className="text-muted-foreground mb-2">
+                The <span className="font-semibold text-foreground">Portfolio Score</span> is a rooms-weighted average of all reporting hotels' total scores.
+              </p>
+              <p className="text-muted-foreground">
+                Hotels with no data for the selected period are excluded from the rollup.
+              </p>
+            </PopoverContent>
+          </Popover>
+        </div>
         <p className="text-white/70 text-sm mt-1">
           Hotels grouped by {groupLabel.toLowerCase()} — {getPeriodLabel()} · {reportingCount} reporting hotel{reportingCount !== 1 ? 's' : ''} in {groups.length} group(s){filteredProperties.length !== reportingCount ? ` · ${filteredProperties.length - reportingCount} without data` : ''}
         </p>
