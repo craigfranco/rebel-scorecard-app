@@ -59,7 +59,7 @@ const COLS = [
   { key: 'portfolio', label: 'Portfolio', align: 'center' },
 ];
 
-export default function LeadershipOverviewTable({ groups, roleLabel }) {
+export default function LeadershipOverviewTable({ groups, roleLabel, onSelectOperator }) {
   const [sortKey, setSortKey] = useState('portfolio');
   const [sortDir, setSortDir] = useState('desc');
 
@@ -144,7 +144,13 @@ export default function LeadershipOverviewTable({ groups, roleLabel }) {
           <td key={r._col} className="py-2.5 px-3">
             <span className="inline-flex items-center gap-2">
               <span className="text-xs font-bold text-muted-foreground w-6 h-6 rounded-full bg-muted border border-border flex items-center justify-center shrink-0">{r._idx + 1}</span>
-              <span className="font-semibold text-foreground leading-tight">{r.name}</span>
+              <button
+                type="button"
+                onClick={() => onSelectOperator?.(r.name)}
+                className="font-semibold text-foreground leading-tight text-left hover:text-primary hover:underline transition-colors"
+              >
+                {r.name}
+              </button>
             </span>
             <div className="text-[10px] text-muted-foreground mt-0.5 ml-8">{r.hotels} hotel{r.hotels !== 1 ? 's' : ''} · {r.rooms.toLocaleString('en-US')} rms</div>
           </td>

@@ -29,6 +29,8 @@ const ROLE_LABELS = {
   property_doe: 'Director of Engineering',
 };
 
+const slug = (s) => 'group-' + s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+
 export default function LeadershipScorecard() {
   const { filterPropertiesForUser } = useUserProfile();
   const { selectedMonth, selectedYear, periodType, getPeriodLabel } = useTimePeriod();
@@ -36,6 +38,15 @@ export default function LeadershipScorecard() {
   const [filters, setFilters] = useState({ ...EMPTY_FILTERS, leadRole: 'corporate_operations' });
   const [fieldToPersonStrIds, setFieldToPersonStrIds] = useState({});
   const [expandedId, setExpandedId] = useState(null);
+
+  const handleSelectOperator = (name) => {
+    const el = document.getElementById(slug(name));
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      el.classList.add('ring-2', 'ring-primary');
+      setTimeout(() => el.classList.remove('ring-2', 'ring-primary'), 2000);
+    }
+  };
 
   useEffect(() => {
     getLeadTypes({}).then(res => {
@@ -188,7 +199,7 @@ export default function LeadershipScorecard() {
 
       {/* Operator overview — all groups ranked together */}
       {groups.length > 0 && (
-        <LeadershipOverviewTable groups={groups} roleLabel={groupLabel} />
+        <LeadershipOverviewTable groups={groups} roleLabel={groupLabel} onSelectOperator={handleSelectOperator} />
       )}
 
       {/* Group cards */}
@@ -199,14 +210,15 @@ export default function LeadershipScorecard() {
       ) : (
         <div className="space-y-6">
           {groups.map(([leaderName, entries]) => (
-            <LeadershipGroupCard
-              key={leaderName}
-              groupName={leaderName}
-              roleLabel={groupLabel}
-              entries={entries}
-              expandedId={expandedId}
-              onToggle={setExpandedId}
-            />
+            <div key={leaderName} id={slug(leaderName)} className="scroll-mt-24 rounded-2xl transition-shadow">
+              <LeadershipGroupCard
+                groupName={leaderName}
+                roleLabel={groupLabel}
+                entries={entries}
+                expandedId={expandedId}
+                onToggle={setExpandedId}
+              />
+            </div>
           ))}
         </div>
       )}
