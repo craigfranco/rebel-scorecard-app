@@ -13,11 +13,12 @@ function fmt$K(val) {
 function fmt1(val) { return val == null ? '—' : val.toFixed(1); }
 function fmtPct(val) { return val == null ? '—' : val.toFixed(1) + '%'; }
 
-function KpiCell({ score, actual, goal }) {
+function KpiCell({ score, actual, goal, hit }) {
+  const actualColor = hit == null ? 'text-muted-foreground' : (hit ? 'text-pass' : 'text-fail');
   return (
     <td className="py-2.5 px-3 text-center align-top">
       <div className="font-semibold text-sm">{score != null ? score.toFixed(1) : '—'}</div>
-      <div className="text-[10px] text-muted-foreground leading-tight mt-0.5">{actual}</div>
+      <div className={`text-[10px] font-bold leading-tight mt-0.5 ${actualColor}`}>{actual}</div>
       <div className="text-[10px] text-muted-foreground leading-tight">{goal}</div>
     </td>
   );
@@ -125,21 +126,25 @@ export default function LeadershipGroupCard({ groupName, roleLabel, entries, exp
                           score={r.gop}
                           actual={fmt$K(r.gopActual)}
                           goal={`Budget ${fmt$K(r.gopBudget)}`}
+                          hit={(r.gopActual != null && r.gopBudget != null) ? r.gopActual >= r.gopBudget : null}
                         />
                         <KpiCell
                           score={r.gopMargin}
                           actual={fmtPct(r.entry?.gop_margin_actual)}
                           goal={`LY ${fmtPct(r.entry?.gop_margin_prior)}`}
+                          hit={(r.entry?.gop_margin_actual != null && r.entry?.gop_margin_prior != null) ? r.entry.gop_margin_actual >= r.entry.gop_margin_prior : null}
                         />
                         <KpiCell
                           score={r.rgi}
                           actual={fmt1(r.entry?.revpar_index)}
                           goal={`LY ${fmt1(r.entry?.revpar_index_prior)}`}
+                          hit={(r.entry?.revpar_index != null && r.entry?.revpar_index_prior != null) ? r.entry.revpar_index >= r.entry.revpar_index_prior : null}
                         />
                         <KpiCell
                           score={r.gss}
                           actual={fmt1(r.sc?.gss?.normActual)}
                           goal={`LY ${fmt1(r.sc?.gss?.normPrior)}`}
+                          hit={(r.sc?.gss?.normActual != null && r.sc?.gss?.normPrior != null) ? r.sc.gss.normActual >= r.sc.gss.normPrior : null}
                         />
                         <td className="py-3 px-3 text-center">
                           <span className="font-black text-sm" style={{ color: scoreColor(r.total, r.maxPossible) }}>
