@@ -94,6 +94,15 @@ export default function LeadershipGroupSummary({ rows }) {
 
   const rgiIndex = weightedAvg(withData, r => r.entry?.revpar_index, rooms);
   const rgiChange = simpleAvg(withData, r => r.entry?.revpar_index_change);
+  // LY RGI index: use stored prior value, else derive from current index and YOY change
+  const rgiPrior = weightedAvg(withData, r => {
+    const e = r.entry;
+    if (e?.revpar_index_prior != null) return e.revpar_index_prior;
+    if (e?.revpar_index != null && e?.revpar_index_change != null) {
+      return e.revpar_index / (1 + e.revpar_index_change / 100);
+    }
+    return null;
+  }, rooms);
 
   const gssActual = weightedAvg(withData, r => r.sc?.gss?.normActual, rooms);
   const gssPrior = weightedAvg(withData, r => r.sc?.gss?.normPrior, rooms);
@@ -150,7 +159,8 @@ export default function LeadershipGroupSummary({ rows }) {
         <ActualTile
           label="RGI Index"
           value={rgiIndex != null ? rgiIndex.toFixed(1) : '—'}
-          sub={`Change ${rgiChange != null ? (rgiChange >= 0 ? '+' : '') + rgiChange.toFixed(1) + '%' : '—'}`}
+          sub={`LY ${rgiPrior != null ? rgiPrior.toFixed(1) : '—'}`}
+          foot={rgiChange != null ? `${rgiChange >= 0 ? '+' : ''}${rgiChange.toFixed(1)}%` : '—'}
           footColor={rgiChange != null && rgiChange >= 0.1 ? '#4CAF50' : '#ef4444'}
         />
         <ActualTile

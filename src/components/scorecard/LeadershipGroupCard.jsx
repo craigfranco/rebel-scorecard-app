@@ -72,7 +72,7 @@ export default function LeadershipGroupCard({ groupName, roleLabel, entries, exp
               <th className="py-2.5 px-3 text-center font-semibold">Margin /35</th>
               <th className="py-2.5 px-3 text-center font-semibold">RGI /15</th>
               <th className="py-2.5 px-3 text-center font-semibold">GSS /15</th>
-              <th className="py-2.5 px-3 text-center font-semibold">Total</th>
+              <th className="py-2.5 px-3 text-center font-semibold">Total /100</th>
               <th className="py-2.5 px-3 text-center font-semibold">Forecast</th>
               <th className="py-2.5 px-3 text-center font-semibold">Red Zone</th>
               <th className="py-2.5 px-3 text-center font-semibold w-10"></th>
@@ -104,7 +104,7 @@ export default function LeadershipGroupCard({ groupName, roleLabel, entries, exp
                         <td className="py-3 px-3 text-center text-sm"><ScoreCell value={r.gss} /></td>
                         <td className="py-3 px-3 text-center">
                           <span className="font-black text-sm" style={{ color: scoreColor(r.total, r.maxPossible) }}>
-                            {r.total != null ? `${r.total} / ${r.maxPossible}` : '—'}
+                            {r.total != null ? r.total.toFixed(1) : '—'}
                           </span>
                         </td>
                         <td className="py-3 px-3 text-center"><KickerPill state={r.forecast} /></td>
