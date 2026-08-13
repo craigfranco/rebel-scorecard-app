@@ -29,6 +29,14 @@ function KickerPill({ state }) {
   );
 }
 
+function NoDataPill() {
+  return (
+    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold text-muted-foreground bg-muted border border-border">
+      NO DATA
+    </span>
+  );
+}
+
 function fmt$(val) {
   if (val == null) return '—';
   return '$' + Math.round(val).toLocaleString('en-US');
@@ -107,7 +115,7 @@ export default function LeadershipGroupCard({ groupName, roleLabel, entries, exp
                             {r.total != null ? r.total.toFixed(1) : '—'}
                           </span>
                         </td>
-                        <td className="py-3 px-3 text-center"><KickerPill state={r.forecast} /></td>
+                        <td className="py-3 px-3 text-center">{r.forecast == null ? <NoDataPill /> : <KickerPill state={r.forecast} />}</td>
                         <td className="py-3 px-3 text-center"><KickerPill state={r.redzone} /></td>
                       </>
                     ) : (
