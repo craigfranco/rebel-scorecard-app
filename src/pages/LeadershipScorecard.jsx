@@ -3,6 +3,7 @@ import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import PropertyFilters from '@/components/filters/PropertyFilters';
 import LeadershipGroupCard from '@/components/scorecard/LeadershipGroupCard';
+import LeadershipOverviewTable from '@/components/scorecard/LeadershipOverviewTable';
 import SeedOnMount from '../components/SeedOnMount';
 import { useUserProfile } from '@/lib/UserProfileContext';
 import { useTimePeriod } from '@/lib/TimePeriodContext';
@@ -184,6 +185,11 @@ export default function LeadershipScorecard() {
       <div className="bg-card rounded-2xl border border-border p-4 shadow-sm">
         <PropertyFilters properties={properties} filters={filters} onChange={setFilters} />
       </div>
+
+      {/* Operator overview — all groups ranked together */}
+      {groups.length > 0 && (
+        <LeadershipOverviewTable groups={groups} roleLabel={groupLabel} />
+      )}
 
       {/* Group cards */}
       {groups.length === 0 ? (
