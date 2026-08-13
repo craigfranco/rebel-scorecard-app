@@ -113,12 +113,16 @@ export default function LeadershipScorecard() {
   const groupField = filters.leadRole || 'property_gm';
   const groupLabel = ROLE_LABELS[groupField] || 'Leader';
 
+  const reportingCount = filteredProperties.filter(p => rowsByProperty[p.id]?.hasData).length;
+
   const groups = useMemo(() => {
     const map = new Map();
     filteredProperties.forEach(p => {
+      const row = rowsByProperty[p.id];
+      if (!row?.hasData) return; // exclude hotels with no data for the period
       const leader = (p[groupField] || '').trim() || 'Unassigned';
       if (!map.has(leader)) map.set(leader, []);
-      map.get(leader).push(rowsByProperty[p.id]);
+      map.get(leader).push(row);
     });
     return [...map.entries()].sort((a, b) => {
       if (a[0] === 'Unassigned') return 1;
@@ -135,7 +139,7 @@ export default function LeadershipScorecard() {
       <div className="rounded-2xl text-white p-6 shadow-lg" style={{ background: 'linear-gradient(135deg, #2d4b5e 0%, #1e3547 100%)' }}>
         <h1 className="text-2xl font-bold">Leadership Scorecard</h1>
         <p className="text-white/70 text-sm mt-1">
-          Hotels grouped by {groupLabel.toLowerCase()} — {getPeriodLabel()} · {filteredProperties.length} hotels in {groups.length} group(s)
+          Hotels grouped by {groupLabel.toLowerCase()} — {getPeriodLabel()} · {reportingCount} reporting hotel{reportingCount !== 1 ? 's' : ''} in {groups.length} group(s){filteredProperties.length !== reportingCount ? ` · ${filteredProperties.length - reportingCount} without data` : ''}
         </p>
       </div>
 
