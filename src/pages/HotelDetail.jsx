@@ -9,6 +9,7 @@ import { calculateScorecard, MONTHS, getQuarterFromMonth, aggregateEntries } fro
 import { formatBrandLabel } from '@/lib/portfolioHelpers';
 import { useToast } from '@/components/ui/use-toast';
 import { useTimePeriod } from '@/lib/TimePeriodContext';
+import { boxesToText } from '@/lib/narrative';
 
 
 export default function HotelDetail() {
@@ -161,9 +162,9 @@ export default function HotelDetail() {
 
       // Notes panels
       const panels = [
-        { title: 'Key Wins & Risks', value: activeEntry.key_wins || '—' },
-        { title: 'Previous Period Results', value: activeEntry.previous_results || '—' },
-        { title: 'Next Period Priorities', value: activeEntry.next_priorities || '—' },
+        { title: 'Key Wins & Risks', value: boxesToText(activeEntry.key_wins) || '—' },
+        { title: 'Previous Period Results', value: boxesToText(activeEntry.previous_results) || '—' },
+        { title: 'Next Period Priorities', value: boxesToText(activeEntry.next_priorities) || '—' },
       ];
 
       panels.forEach((panel, i) => {
@@ -326,9 +327,9 @@ export default function HotelDetail() {
       {/* Notes panels */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {[
-          { title: '🏆 Key Wins & Risks', value: activeEntry.key_wins },
-          { title: '📊 Previous Period Results', value: activeEntry.previous_results },
-          { title: '🎯 Next Period Priorities', value: activeEntry.next_priorities },
+          { title: '🏆 Key Wins & Risks', value: boxesToText(activeEntry.key_wins) },
+          { title: '📊 Previous Period Results', value: boxesToText(activeEntry.previous_results) },
+          { title: '🎯 Next Period Priorities', value: boxesToText(activeEntry.next_priorities) },
         ].map(({ title, value }) => (
           <div key={title} className="bg-card rounded-2xl border border-border p-4 shadow-sm">
             <h3 className="font-semibold text-sm mb-2">{title}</h3>

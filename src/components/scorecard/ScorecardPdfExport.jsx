@@ -2,6 +2,7 @@ import React from 'react';
 import { jsPDF } from 'jspdf';
 import { calculateScorecard, normalizeGssTo100, hasForecastData, MONTHS, getQuarterFromMonth, aggregateEntries, MARGIN_TARGET_IMPROVEMENT } from '@/lib/scoring';
 import { formatBrandLabel } from '@/lib/portfolioHelpers';
+import { boxesToText } from '@/lib/narrative';
 
 // REBEL Hotel Company logo URL
 const REBEL_LOGO_URL = 'https://media.base44.com/images/public/69d3e20c8254476c324dc91c/624d887cf_RHC_Blue.png';
@@ -551,9 +552,9 @@ export function generateScorecardPDF(property, entry, periodType, selectedMonth,
   doc.roundedRect(narX, bottomY, narW, bottomH, 4, 4, 'FD');
 
   const narSections = [
-    { label: 'KEY WINS', value: entry.key_wins },
-    { label: 'PREVIOUS RESULTS', value: entry.previous_results },
-    { label: 'NEXT PRIORITIES', value: entry.next_priorities },
+    { label: 'KEY WINS', value: boxesToText(entry.key_wins) },
+    { label: 'PREVIOUS RESULTS', value: boxesToText(entry.previous_results) },
+    { label: 'NEXT PRIORITIES', value: boxesToText(entry.next_priorities) },
   ];
 
   const narColW = Math.floor(narW / 3) - 6;

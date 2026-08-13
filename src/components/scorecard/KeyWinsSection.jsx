@@ -6,26 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
 import { getQuarterFromMonth, getQuarterStartMonth, MONTHS } from '@/lib/scoring';
-
-// Parse initiatives from stored text into array of 3
-function parseInitiatives(text) {
-  if (!text) return ['', '', ''];
-  // Split by numbered patterns (1., 2., 3. or 1) 2) 3))
-  const lines = text.split(/\d+[.)]\s*/).filter(line => line.trim());
-  const result = ['', '', ''];
-  for (let i = 0; i < 3; i++) {
-    result[i] = lines[i] ? lines[i].trim() : '';
-  }
-  return result;
-}
-
-// Convert array of 3 initiatives back to numbered text
-function formatInitiatives(initiatives) {
-  return initiatives
-    .map((text, i) => text.trim() ? `${i + 1}. ${text.trim()}` : '')
-    .filter(t => t)
-    .join('\n');
-}
+import { parseBoxes, formatBoxes } from '@/lib/narrative';
 
 /**
  * KeyWinsSection — GM narrative section for monthly/quarterly scorecards.
@@ -47,9 +28,9 @@ export default function KeyWinsSection({ property, entry, periodType, selectedMo
   // Sync local state when entry changes
   useEffect(() => {
     setInitiatives({
-      key_wins: parseInitiatives(entry?.key_wins || ''),
-      previous_results: parseInitiatives(entry?.previous_results || ''),
-      next_priorities: parseInitiatives(entry?.next_priorities || ''),
+      key_wins: parseBoxes(entry?.key_wins || ''),
+      previous_results: parseBoxes(entry?.previous_results || ''),
+      next_priorities: parseBoxes(entry?.next_priorities || ''),
     });
   }, [entry]);
 
@@ -66,9 +47,9 @@ export default function KeyWinsSection({ property, entry, periodType, selectedMo
       }
 
       const data = {
-        key_wins: formatInitiatives(initiatives.key_wins),
-        previous_results: formatInitiatives(initiatives.previous_results),
-        next_priorities: formatInitiatives(initiatives.next_priorities),
+        key_wins: formatBoxes(initiatives.key_wins),
+        previous_results: formatBoxes(initiatives.previous_results),
+        next_priorities: formatBoxes(initiatives.next_priorities),
       };
 
       if (!entry?.id) {
@@ -111,9 +92,9 @@ export default function KeyWinsSection({ property, entry, periodType, selectedMo
 
   const handleCancel = () => {
     setInitiatives({
-      key_wins: parseInitiatives(entry?.key_wins || ''),
-      previous_results: parseInitiatives(entry?.previous_results || ''),
-      next_priorities: parseInitiatives(entry?.next_priorities || ''),
+      key_wins: parseBoxes(entry?.key_wins || ''),
+      previous_results: parseBoxes(entry?.previous_results || ''),
+      next_priorities: parseBoxes(entry?.next_priorities || ''),
     });
     setIsEditing(false);
   };
