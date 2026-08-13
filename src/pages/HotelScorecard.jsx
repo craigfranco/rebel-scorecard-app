@@ -2,16 +2,12 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import PropertyScorecardDetail from '@/components/scorecard/PropertyScorecardDetail';
-import PropertyFilters from '@/components/filters/PropertyFilters';
 import PortfolioKpiRollup from '@/components/dashboard/PortfolioKpiRollup';
 import ScorecardLeaderboard from '@/components/scorecard/ScorecardLeaderboard';
 import SeedOnMount from '../components/SeedOnMount';
 import { useUserProfile } from '@/lib/UserProfileContext';
 import { useTimePeriod } from '@/lib/TimePeriodContext';
-import { getLeadTypes } from '@/functions/getLeadTypes';
 import { calculateScorecard, aggregateEntries, hasForecastData } from '@/lib/scoring';
-
-const EMPTY_FILTERS = { brand: '', subBrand: '', city: '', state: '', leadRole: '', leadPerson: '' };
 
 export default function HotelScorecard() {
   const { filterPropertiesForUser } = useUserProfile();
@@ -21,16 +17,8 @@ export default function HotelScorecard() {
   const paramPropertyId = urlParams.get('propertyId');
 
   const [selectedPropertyId, setSelectedPropertyId] = useState(paramPropertyId || '');
-  const [filters, setFilters] = useState(EMPTY_FILTERS);
-  const [fieldToPersonStrIds, setFieldToPersonStrIds] = useState({});
   const [sortCol, setSortCol] = useState('total');
   const [sortDir, setSortDir] = useState('desc');
-
-  useEffect(() => {
-    getLeadTypes({}).then(res => {
-      if (res?.data?.fieldToPersonStrIds) setFieldToPersonStrIds(res.data.fieldToPersonStrIds);
-    }).catch(() => {});
-  }, []);
 
   const { data: rawProperties = [] } = useQuery({
     queryKey: ['properties'],
@@ -51,26 +39,8 @@ export default function HotelScorecard() {
     queryFn: () => base44.entities.BonusException.filter({ year: selectedYear }),
   });
 
-  const filteredProperties = useMemo(() => {
-    return properties.filter(p => {
-      if (filters.brand && p.parent_brand !== filters.brand) return false;
-      if (filters.subBrand && p.sub_brand !== filters.subBrand) return false;
-      if (filters.city && p.city !== filters.city) return false;
-      if (filters.state && p.state !== filters.state) return false;
-      if (filters.leadRole && filters.leadPerson) {
-        const strIds = (fieldToPersonStrIds[filters.leadRole] || {})[filters.leadPerson] || [];
-        if (!strIds.includes(p.str_id)) return false;
-      } else if (filters.leadRole) {
-        const personMap = fieldToPersonStrIds[filters.leadRole] || {};
-        const allStrIds = new Set(Object.values(personMap).flat());
-        if (!allStrIds.has(p.str_id)) return false;
-      }
-      return true;
-    });
-  }, [properties, filters, fieldToPersonStrIds]);
-
   const rows = useMemo(() => {
-    return filteredProperties.map(p => {
+    return properties.map(p => {
       const propEntries = allEntries.filter(e => e.property_id === p.id);
       if (!propEntries.length) return { property: p, hasData: false };
       const entry = aggregateEntries(propEntries, periodType, selectedMonth, selectedYear, rgiQuarterlyReports, bonusExceptions) || {};
@@ -88,14 +58,14 @@ export default function HotelScorecard() {
         redzone: entry.red_zone_kicker ?? null,
       };
     });
-  }, [filteredProperties, allEntries, periodType, selectedMonth, selectedYear, rgiQuarterlyReports, bonusExceptions]);
+  }, [properties, allEntries, periodType, selectedMonth, selectedYear, rgiQuarterlyReports, bonusExceptions]);
 
-  // Keep the selected hotel within the filtered set
+  // Keep the selected hotel within the set
   useEffect(() => {
-    if (!filteredProperties.length) return;
-    const exists = filteredProperties.find(p => p.id === selectedPropertyId);
-    if (!exists) setSelectedPropertyId(filteredProperties[0].id);
-  }, [filteredProperties, selectedPropertyId]);
+    if (!properties.length) return;
+    const exists = properties.find(p => p.id === selectedPropertyId);
+    if (!exists) setSelectedPropertyId(properties[0].id);
+  }, [properties, selectedPropertyId]);
 
   useEffect(() => {
     if (paramPropertyId && properties.length && selectedPropertyId !== paramPropertyId) {
@@ -105,9 +75,7 @@ export default function HotelScorecard() {
   }, [paramPropertyId, properties]);
 
   const selectedProperty =
-    filteredProperties.find(p => p.id === selectedPropertyId) ||
-    properties.find(p => p.id === selectedPropertyId) ||
-    null;
+    properties.find(p => p.id === selectedPropertyId) || null;
 
   const handleSort = (col) => {
     if (sortCol === col) setSortDir(d => (d === 'asc' ? 'desc' : 'asc'));
@@ -135,14 +103,9 @@ export default function HotelScorecard() {
         <p className="text-white/70 text-sm mt-1">Portfolio summary & per-hotel scorecard — {getPeriodLabel()}</p>
       </div>
 
-      {/* Filters */}
-      <div className="bg-card rounded-2xl border border-border p-4 shadow-sm">
-        <PropertyFilters properties={properties} filters={filters} onChange={setFilters} />
-      </div>
-
-      {/* KPI rollup cards (filtered) */}
+      {/* KPI rollup cards */}
       <PortfolioKpiRollup
-        properties={filteredProperties}
+        properties={properties}
         allEntries={allEntries}
         periodType={periodType}
         selectedMonth={selectedMonth}
@@ -150,7 +113,7 @@ export default function HotelScorecard() {
         getPeriodMonths={getPeriodMonths}
       />
 
-      {/* Leaderboard (filtered) */}
+      {/* Leaderboard */}
       <ScorecardLeaderboard
         rows={sortedRows}
         sortCol={sortCol}
@@ -163,8 +126,8 @@ export default function HotelScorecard() {
       {/* Selected hotel full scorecard */}
       <PropertyScorecardDetail
         property={selectedProperty}
-        showPropertySelector={filteredProperties.length > 1}
-        properties={filteredProperties}
+        showPropertySelector={properties.length > 1}
+        properties={properties}
         selectedPropertyId={selectedPropertyId}
         onPropertyChange={setSelectedPropertyId}
       />
