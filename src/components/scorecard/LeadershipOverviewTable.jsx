@@ -49,23 +49,14 @@ function KpiCell({ value, sub, subColor, valueColor }) {
 
 const COLS = [
   { key: 'name', label: 'Operator', align: 'left' },
-  { key: 'hotels', label: 'Hotels', align: 'center' },
-  { key: 'rooms', label: 'Rooms', align: 'center' },
-  // KPI actual + score pairs
-  { key: 'gopActual', label: 'GOP Actual', align: 'center' },
-  { key: 'gop', label: 'GOP /35', align: 'center' },
-  { key: 'marginActual', label: 'GOP Margin', align: 'center' },
-  { key: 'gopMargin', label: 'Margin /35', align: 'center' },
-  { key: 'rgiIndex', label: 'RGI Index', align: 'center' },
-  { key: 'rgi', label: 'RGI /15', align: 'center' },
-  { key: 'gssActual', label: 'GSS Score', align: 'center' },
-  { key: 'gss', label: 'GSS /15', align: 'center' },
-  // Kickers
-  { key: 'forecastHits', label: 'Forecast', align: 'center' },
-  { key: 'redZoneCompliant', label: 'Red Zone', align: 'center' },
-  // Combined scores
+  { key: 'gop', label: 'GOP', align: 'center' },
+  { key: 'gopMargin', label: 'GOP Margin', align: 'center' },
+  { key: 'rgi', label: 'RGI', align: 'center' },
+  { key: 'gss', label: 'GSS', align: 'center' },
+  { key: 'forecast', label: 'Forecast', align: 'center' },
+  { key: 'redzone', label: 'Red Zone', align: 'center' },
   { key: 'avg', label: 'Avg Score', align: 'center' },
-  { key: 'portfolio', label: 'Portfolio Score', align: 'center' },
+  { key: 'portfolio', label: 'Portfolio', align: 'center' },
 ];
 
 export default function LeadershipOverviewTable({ groups, roleLabel }) {
@@ -150,63 +141,58 @@ export default function LeadershipOverviewTable({ groups, roleLabel }) {
     switch (r._col) {
       case 'name':
         return (
-          <td key={r._col} className="py-3 px-4">
+          <td key={r._col} className="py-2.5 px-3">
             <span className="inline-flex items-center gap-2">
               <span className="text-xs font-bold text-muted-foreground w-6 h-6 rounded-full bg-muted border border-border flex items-center justify-center shrink-0">{r._idx + 1}</span>
-              <span className="font-semibold text-foreground">{r.name}</span>
+              <span className="font-semibold text-foreground leading-tight">{r.name}</span>
             </span>
+            <div className="text-[10px] text-muted-foreground mt-0.5 ml-8">{r.hotels} hotel{r.hotels !== 1 ? 's' : ''} · {r.rooms.toLocaleString('en-US')} rms</div>
           </td>
         );
-      case 'hotels':
-        return <td key={r._col} className="py-3 px-4 text-center text-foreground">{r.hotels}</td>;
-      case 'rooms':
-        return <td key={r._col} className="py-3 px-4 text-center text-muted-foreground">{r.rooms.toLocaleString('en-US')}</td>;
       case 'gop':
-      case 'gopMargin':
-      case 'rgi':
-      case 'gss':
-        return <td key={r._col} className="py-3 px-4 text-center text-foreground">{fmt(r[r._col])}</td>;
-      case 'gopActual':
         return (
           <KpiCell key={r._col}
             value={fmtFull$(r.gopActual)}
-            sub={`Budget ${fmt$(r.gopBudget)}`}
-            subColor={r.gopVar >= 0 ? '#4CAF50' : '#ef4444'}
             valueColor={r.gopVar >= 0 ? '#4CAF50' : '#ef4444'}
+            sub={`${fmt(r.gop)} /35 · Bdgt ${fmt$(r.gopBudget)}`}
+            subColor={r.gopVar >= 0 ? '#4CAF50' : '#ef4444'}
           />
         );
-      case 'marginActual':
+      case 'gopMargin':
         return (
           <KpiCell key={r._col}
             value={r.marginActual != null ? `${r.marginActual.toFixed(1)}%` : '—'}
-            sub={r.marginDelta != null ? `${r.marginDelta >= 0 ? '+' : ''}${r.marginDelta.toFixed(1)} pts vs LY` : `LY ${r.marginPrior != null ? r.marginPrior.toFixed(1) + '%' : '—'}`}
+            valueColor={r.marginDelta >= 0 ? '#4CAF50' : '#ef4444'}
+            sub={`${fmt(r.gopMargin)} /35 · ${r.marginDelta != null ? (r.marginDelta >= 0 ? '+' : '') + r.marginDelta.toFixed(1) : '—'} vs LY`}
             subColor={r.marginDelta != null && r.marginDelta > 0.1 ? '#4CAF50' : r.marginDelta != null && r.marginDelta < 0 ? '#ef4444' : '#94a3b8'}
           />
         );
-      case 'rgiIndex':
+      case 'rgi':
         return (
           <KpiCell key={r._col}
             value={fmt(r.rgiIndex)}
-            sub={r.rgiChange != null ? `${r.rgiChange >= 0 ? '+' : ''}${r.rgiChange.toFixed(1)}% YOY` : '—'}
+            valueColor={r.rgiChange >= 0 ? '#4CAF50' : '#ef4444'}
+            sub={`${fmt(r.rgi)} /15 · ${r.rgiChange != null ? (r.rgiChange >= 0 ? '+' : '') + r.rgiChange.toFixed(1) + '%' : '—'} YOY`}
             subColor={r.rgiChange != null && r.rgiChange >= 0.1 ? '#4CAF50' : '#ef4444'}
           />
         );
-      case 'gssActual':
+      case 'gss':
         return (
           <KpiCell key={r._col}
             value={fmt(r.gssActual)}
-            sub={r.gssDelta != null ? `${r.gssDelta >= 0 ? '+' : ''}${r.gssDelta.toFixed(1)} vs LY` : `LY ${r.gssPrior != null ? r.gssPrior.toFixed(1) : '—'}`}
+            valueColor={r.gssDelta >= 0 ? '#4CAF50' : '#ef4444'}
+            sub={`${fmt(r.gss)} /15 · ${r.gssDelta != null ? (r.gssDelta >= 0 ? '+' : '') + r.gssDelta.toFixed(1) : '—'} vs LY`}
             subColor={r.gssDelta != null && r.gssDelta > 0 ? '#4CAF50' : '#ef4444'}
           />
         );
-      case 'forecastHits':
-        return <td key={r._col} className="py-3 px-4 text-center align-top"><div className="font-bold text-sm text-foreground">{r.forecastHits}/{r.forecastTotal}</div><div className="text-[10px] text-muted-foreground mt-0.5">hitting</div></td>;
-      case 'redZoneCompliant':
-        return <td key={r._col} className="py-3 px-4 text-center align-top"><div className="font-bold text-sm text-foreground">{r.redZoneCompliant}/{r.redZoneTotal}</div><div className="text-[10px] text-muted-foreground mt-0.5">out of zone</div></td>;
+      case 'forecast':
+        return <td key={r._col} className="py-2.5 px-3 text-center align-top"><div className="font-bold text-sm text-foreground">{r.forecastHits}/{r.forecastTotal}</div><div className="text-[10px] text-muted-foreground mt-0.5">hitting</div></td>;
+      case 'redzone':
+        return <td key={r._col} className="py-2.5 px-3 text-center align-top"><div className="font-bold text-sm text-foreground">{r.redZoneCompliant}/{r.redZoneTotal}</div><div className="text-[10px] text-muted-foreground mt-0.5">out of zone</div></td>;
       case 'avg':
-        return <td key={r._col} className="py-3 px-4 text-center"><span className="font-bold" style={{ color: scoreColor(r.avg) }}>{fmt(r.avg)}</span></td>;
+        return <td key={r._col} className="py-2.5 px-3 text-center"><span className="font-bold" style={{ color: scoreColor(r.avg) }}>{fmt(r.avg)}</span></td>;
       case 'portfolio':
-        return <td key={r._col} className="py-3 px-4 text-center"><span className="font-black text-base" style={{ color: scoreColor(r.portfolio) }}>{fmt(r.portfolio)}</span></td>;
+        return <td key={r._col} className="py-2.5 px-3 text-center"><span className="font-black text-base" style={{ color: scoreColor(r.portfolio) }}>{fmt(r.portfolio)}</span></td>;
       default:
         return null;
     }
