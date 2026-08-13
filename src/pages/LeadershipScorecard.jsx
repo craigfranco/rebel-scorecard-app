@@ -30,7 +30,7 @@ export default function LeadershipScorecard() {
   const { filterPropertiesForUser } = useUserProfile();
   const { selectedMonth, selectedYear, periodType, getPeriodLabel } = useTimePeriod();
 
-  const [filters, setFilters] = useState(EMPTY_FILTERS);
+  const [filters, setFilters] = useState({ ...EMPTY_FILTERS, leadRole: 'corporate_operations' });
   const [fieldToPersonStrIds, setFieldToPersonStrIds] = useState({});
   const [expandedId, setExpandedId] = useState(null);
 
