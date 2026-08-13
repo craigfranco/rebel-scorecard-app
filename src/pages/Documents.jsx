@@ -10,6 +10,7 @@ import UploadZone from '@/components/documents/UploadZone';
 import ImportWizard from '@/components/documents/ImportWizard';
 import DataHealthPanel from '@/components/documents/DataHealthPanel';
 import DeploymentImportWizard from '@/components/documents/DeploymentImportWizard';
+import DashboardSyncButton from '@/components/documents/DashboardSyncButton';
 import { useUserProfile } from '@/lib/UserProfileContext';
 
 const CURRENT_YEAR = 2026;
@@ -174,14 +175,17 @@ export default function Documents() {
       {/* Deployment Roster Upload (admin only) */}
       {isAdmin && (
         <div className="bg-card rounded-2xl border border-border shadow-sm p-6 space-y-4">
-          <div className="flex items-center gap-2">
-            <Users className="w-4 h-4 text-primary" />
-            <div>
-              <h2 className="font-bold text-foreground">Upload Deployment Roster</h2>
-              <p className="text-sm text-muted-foreground">
-                Upload the REBEL deployment spreadsheet to update the hotel roster, leadership assignments, and the lead-person filters. Properties no longer in the file are deactivated.
-              </p>
+          <div className="flex items-start justify-between gap-3 flex-wrap">
+            <div className="flex items-center gap-2">
+              <Users className="w-4 h-4 text-primary" />
+              <div>
+                <h2 className="font-bold text-foreground">Upload Deployment Roster</h2>
+                <p className="text-sm text-muted-foreground">
+                  Upload the REBEL deployment spreadsheet, or sync directly from the REBEL Dashboard app to update the hotel roster, leadership assignments, and the lead-person filters. Properties no longer in the source are deactivated.
+                </p>
+              </div>
             </div>
+            <DashboardSyncButton />
           </div>
           <UploadZone
             onFile={handleDeploymentFile}
