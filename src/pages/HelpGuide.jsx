@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import {
   ChevronDown, ChevronRight, LayoutDashboard, ClipboardList,
   Building2, PieChart, DollarSign, Shield, Upload, HelpCircle,
-  BookOpen
+  BookOpen, Users
 } from 'lucide-react';
 
 const SECTIONS = [
@@ -26,6 +26,13 @@ const SECTIONS = [
     title: 'Hotel Performance Scorecard',
     icon: ClipboardList,
     content: <ScorecardGuide />,
+  },
+  {
+    id: 'leadership-scorecard',
+    emoji: '👥',
+    title: 'Leadership Scorecard',
+    icon: Users,
+    content: <LeadershipScorecardGuide />,
   },
   {
     id: 'kpi-reference',
@@ -128,6 +135,7 @@ function GettingStarted() {
       <UL>
         <LI><strong>Dashboard</strong> — Portfolio-level KPI tracker overview (admin only)</LI>
         <LI><strong>Hotel Performance Scorecard</strong> — Property-level scorecard with full KPI detail</LI>
+        <LI><strong>Leadership Scorecard</strong> — Portfolio grouped by leader (e.g. Corporate Ops, GM)</LI>
         <LI><strong>All Properties</strong> — Sortable table of all hotels with scores (admin only)</LI>
         <LI><strong>KPI Breakdown</strong> — Detailed KPI definitions and pass/fail logic</LI>
         <LI><strong>Payouts</strong> — Staff bonus calculations per quarter</LI>
@@ -246,6 +254,44 @@ function ScorecardGuide() {
 
       <H3>PDF Export</H3>
       <P>Use the "Download PDF" button on the scorecard to generate a print-ready PDF of the current hotel's scorecard for the selected period. The PDF includes the bonus exception adjustment details when applicable. This is useful for weekly reviews and board reporting.</P>
+    </>
+  );
+}
+
+function LeadershipScorecardGuide() {
+  return (
+    <>
+      <H3>What the Leadership Scorecard shows</H3>
+      <P>The Leadership Scorecard groups the portfolio's reporting hotels by their leader for the selected period — for example all hotels under a specific Corporate Operations lead or General Manager. Each leader gets a group card with a portfolio rollup at the top and a sortable table of their hotels beneath.</P>
+
+      <H3>Choosing a leadership group</H3>
+      <P>Use the <strong>Filter by Lead Type</strong> dropdown (Corporate or Property roles) to group hotels by that role. Pick a specific person in the second dropdown to narrow to just their hotels. The page defaults to <strong>Corporate Operations</strong>.</P>
+
+      <H3>Group rollup tiles</H3>
+      <P>Each group card shows two combined scores so you can compare performance at a glance:</P>
+      <UL>
+        <LI><strong>Avg Score</strong> — a simple mean; every reporting hotel counts equally regardless of size</LI>
+        <LI><strong>Portfolio Score</strong> — a rooms-weighted mean; larger properties pull the number more, reflecting actual room exposure</LI>
+      </UL>
+      <P>The Forecast and Red Zone tiles show how many hotels in the group hit each kicker, labeled with the current period (e.g. "Q2 2026"). Hotels with no data for the selected period are excluded from the rollup and counts.</P>
+
+      <H3>Reading the hotel rows</H3>
+      <P>Each hotel row shows the four KPI score columns plus a total, with the TY actual and the goal/LY beneath each score:</P>
+      <UL>
+        <LI><strong>GOP /35</strong> — score, with actual $ vs. Budget $</LI>
+        <LI><strong>Margin /35</strong> — score, with actual % vs. LY %</LI>
+        <LI><strong>RGI /15</strong> — score, with index vs. LY index</LI>
+        <LI><strong>GSS /15</strong> — score, with normalized actual vs. LY</LI>
+        <LI><strong>Total /100</strong> — combined score (shown as a number only)</LI>
+        <LI><strong>Forecast / Red Zone</strong> — HIT or MISS pills (NO DATA if the period has no forecast figures)</LI>
+      </UL>
+      <InfoBox>💡 The TY actual value is <span className="font-bold text-emerald-700">bold green</span> when it meets or beats the goal (GOP ≥ Budget; Margin/RGI/GSS ≥ LY) and <span className="font-bold text-red-700">bold red</span> when it misses — so you can scan wins and misses across the group instantly.</InfoBox>
+
+      <H3>Expanding a hotel</H3>
+      <P>Click any hotel row to expand the full property scorecard inline, with the same KPI detail, bonus exceptions, and PDF export as the Hotel Performance Scorecard page.</P>
+
+      <H3>How the score is derived</H3>
+      <P>Each hotel's total is out of 100, combining four weighted KPIs: GOP Achievement (35), GOP Margin Improvement (35), RGI (15), and GSS (15). Forecast accuracy and Red Zone are binary kickers (gate-keepers) rather than additive points. Hover the info icon next to the page title for the full breakdown at any time.</P>
     </>
   );
 }
@@ -569,7 +615,7 @@ export default function HelpGuide() {
       {/* Footer */}
       <div className="mt-10 pt-4 border-t border-border text-xs text-muted-foreground flex items-center justify-between">
         <span>REBEL Hotel Performance Scorecard — Help &amp; User Guide</span>
-        <span>Last Updated: June 2026</span>
+        <span>Last Updated: August 2026</span>
       </div>
     </div>
   );
