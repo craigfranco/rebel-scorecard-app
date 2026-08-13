@@ -57,6 +57,21 @@ Deno.serve(async (req) => {
         gm_name: d.property_gm || d.gm_name || d.general_manager || null,
         lead_type: d.lead_type || null,
         department: d.department || null,
+        rooms: d.rooms != null ? Number(d.rooms) : null,
+        address: d.address || null,
+        website: d.website || null,
+        corporate_operations: d.corporate_operations || null,
+        corporate_finance: d.corporate_finance || null,
+        corporate_hr: d.corporate_hr || null,
+        corporate_revenue: d.corporate_revenue || null,
+        corporate_sales: d.corporate_sales || null,
+        corporate_ecommerce: d.corporate_ecommerce || null,
+        property_gm: d.property_gm || d.gm_name || null,
+        property_dof: d.property_dof || null,
+        property_hrd: d.property_hrd || null,
+        property_dorm: d.property_dorm || null,
+        property_dosm: d.property_dosm || null,
+        property_doe: d.property_doe || null,
       })).filter(p => p.name);
       body.source = 'dashboard_pull';
     }
