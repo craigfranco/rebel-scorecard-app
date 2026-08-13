@@ -2,7 +2,6 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import PropertyScorecardDetail from '@/components/scorecard/PropertyScorecardDetail';
-import PortfolioKpiRollup from '@/components/dashboard/PortfolioKpiRollup';
 import ScorecardLeaderboard from '@/components/scorecard/ScorecardLeaderboard';
 import SeedOnMount from '../components/SeedOnMount';
 import { useUserProfile } from '@/lib/UserProfileContext';
@@ -102,16 +101,6 @@ export default function HotelScorecard() {
         <h1 className="text-2xl font-bold">Hotel Performance Scorecard</h1>
         <p className="text-white/70 text-sm mt-1">Portfolio summary & per-hotel scorecard — {getPeriodLabel()}</p>
       </div>
-
-      {/* KPI rollup cards */}
-      <PortfolioKpiRollup
-        properties={properties}
-        allEntries={allEntries}
-        periodType={periodType}
-        selectedMonth={selectedMonth}
-        selectedYear={selectedYear}
-        getPeriodMonths={getPeriodMonths}
-      />
 
       {/* Leaderboard */}
       <ScorecardLeaderboard
