@@ -51,16 +51,16 @@ const COLS = [
   { key: 'name', label: 'Operator', align: 'left' },
   { key: 'hotels', label: 'Hotels', align: 'center' },
   { key: 'rooms', label: 'Rooms', align: 'center' },
-  // Score columns
-  { key: 'gop', label: 'GOP /35', align: 'center' },
-  { key: 'gopMargin', label: 'Margin /35', align: 'center' },
-  { key: 'rgi', label: 'RGI /15', align: 'center' },
-  { key: 'gss', label: 'GSS /15', align: 'center' },
-  // Actual KPI + target columns
+  // KPI actual + score pairs
   { key: 'gopActual', label: 'GOP Actual', align: 'center' },
+  { key: 'gop', label: 'GOP /35', align: 'center' },
   { key: 'marginActual', label: 'GOP Margin', align: 'center' },
+  { key: 'gopMargin', label: 'Margin /35', align: 'center' },
   { key: 'rgiIndex', label: 'RGI Index', align: 'center' },
+  { key: 'rgi', label: 'RGI /15', align: 'center' },
   { key: 'gssActual', label: 'GSS Score', align: 'center' },
+  { key: 'gss', label: 'GSS /15', align: 'center' },
+  // Kickers
   { key: 'forecastHits', label: 'Forecast', align: 'center' },
   { key: 'redZoneCompliant', label: 'Red Zone', align: 'center' },
   // Combined scores
