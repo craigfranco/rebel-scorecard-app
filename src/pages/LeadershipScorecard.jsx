@@ -159,10 +159,18 @@ export default function LeadershipScorecard() {
                 <li className="flex justify-between"><span>GSS (Guest Satisfaction)</span><span className="font-semibold">15 pts</span></li>
               </ul>
               <p className="text-muted-foreground mb-2">
-                The <span className="font-semibold text-foreground">Portfolio Score</span> is a rooms-weighted average of all reporting hotels' total scores.
+                Each group shows two combined scores:
               </p>
+              <ul className="space-y-1 mb-2">
+                <li className="text-muted-foreground">
+                  <span className="font-semibold text-foreground">Avg Score</span> — a simple mean; every reporting hotel counts equally regardless of size.
+                </li>
+                <li className="text-muted-foreground">
+                  <span className="font-semibold text-foreground">Portfolio Score</span> — a rooms-weighted mean; larger properties pull the number more, reflecting actual room exposure.
+                </li>
+              </ul>
               <p className="text-muted-foreground">
-                Hotels with no data for the selected period are excluded from the rollup.
+                The two match when a group's hotels are similar in size, and diverge when large and small properties score differently. Hotels with no data for the selected period are excluded from the rollup.
               </p>
             </PopoverContent>
           </Popover>
