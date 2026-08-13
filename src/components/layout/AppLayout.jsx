@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link, useLocation, Outlet } from 'react-router-dom';
 import {
   LayoutDashboard, BookOpen, Building2, Menu, PieChart,
-  FolderOpen, DollarSign, ChevronDown, ClipboardList, Shield, LogOut, User, HelpCircle,
+  FolderOpen, DollarSign, ChevronDown, ClipboardList, Shield, LogOut, User, HelpCircle, Users,
 } from 'lucide-react';
 import TimePeriodSelector from '@/components/layout/TimePeriodSelector';
 import { useUserProfile } from '@/lib/UserProfileContext';
@@ -19,6 +19,7 @@ export default function AppLayout() {
   const mainNavItems = [
     ...(isAdmin ? [{ path: '/', icon: LayoutDashboard, label: 'Dashboard' }] : []),
     { path: '/hotel-scorecard', icon: ClipboardList, label: 'Hotel Performance Scorecard' },
+    { path: '/leadership-scorecard', icon: Users, label: 'Leadership Scorecard' },
     ...(isAdmin ? [{ path: '/properties', icon: Building2, label: 'All Properties' }] : []),
     { path: '/kpi-breakdown', icon: PieChart, label: 'KPI Breakdown' },
     { path: '/payouts', icon: DollarSign, label: 'Payouts' },

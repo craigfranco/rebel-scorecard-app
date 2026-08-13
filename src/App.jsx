@@ -22,6 +22,7 @@ import Payouts from '@/pages/Payouts';
 import JobClassifications from '@/pages/JobClassifications';
 import AdminPanel from '@/pages/AdminPanel.jsx';
 import HelpGuide from '@/pages/HelpGuide';
+import LeadershipScorecard from '@/pages/LeadershipScorecard';
 
 const LoadingScreen = () => (
   <div className="fixed inset-0 flex items-center justify-center" style={{ backgroundColor: '#f0f4f7' }}>
@@ -68,6 +69,7 @@ const AuthenticatedApp = () => {
 
         {/* All users */}
         <Route path="/hotel-scorecard" element={<HotelScorecard />} />
+        <Route path="/leadership-scorecard" element={<LeadershipScorecard />} />
         <Route path="/kpi-breakdown" element={<KpiBreakdown />} />
         <Route path="/payouts" element={<Payouts />} />
         <Route path="/kpi-reference" element={<KpiReference />} />
