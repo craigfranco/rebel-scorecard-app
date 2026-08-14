@@ -558,6 +558,9 @@ export function generateScorecardPDF(property, entry, periodType, selectedMonth,
   ];
 
   const narColW = Math.floor(narW / 3) - 6;
+  const narLineH = 10;
+  const narMaxLines = Math.floor((bottomH - 24) / narLineH);
+  const overflow = [];
   narSections.forEach((sec, i) => {
     const nx = narX + 8 + i * (narColW + 6);
     doc.setFont('helvetica', 'bold');
@@ -571,7 +574,8 @@ export function generateScorecardPDF(property, entry, periodType, selectedMonth,
       doc.setFontSize(7.5);
       doc.setTextColor(51, 65, 85);
       const lines = doc.splitTextToSize(sec.value, narColW);
-      doc.text(lines.slice(0, Math.floor((bottomH - 24) / 10)), nx, bottomY + 26);
+      doc.text(lines.slice(0, narMaxLines), nx, bottomY + 26);
+      if (lines.length > narMaxLines) overflow.push({ label: sec.label, lines: lines.slice(narMaxLines) });
     } else {
       doc.setFont('helvetica', 'italic');
       doc.setFontSize(7);
@@ -580,22 +584,90 @@ export function generateScorecardPDF(property, entry, periodType, selectedMonth,
     }
   });
 
-  // ── FOOTER ───────────────────────────────────────────────────────────────────
-  doc.setFillColor(248, 250, 252);
-  doc.rect(0, H - 22, W, 22, 'F');
-  doc.setDrawColor(226, 232, 240);
-  doc.line(0, H - 22, W, H - 22);
+  // ── CONTINUATION PAGES for overflow narrative ───────────────────────────────
+  if (overflow.length) {
+    const contLineH = 12;
+    const contTop = 44;
+    const contBottom = H - 30;
+    const drawContHeader = () => {
+      doc.setFillColor(...accent);
+      doc.rect(0, 0, W, 8, 'F');
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(11);
+      doc.setTextColor(...accent);
+      doc.text(`Narrative (continued) — ${property?.name || ''}`, 28, 30);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8);
+      doc.setTextColor(100, 116, 139);
+      doc.text(periodLabel, W - 28, 30, { align: 'right' });
+    };
 
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(7);
-  doc.setTextColor(100, 116, 139);
-  const preparedBy = entry.prepared_by ? `Prepared by: ${entry.prepared_by}` : '';
-  const reviewedBy = entry.reviewed_by ? `Reviewed by: ${entry.reviewed_by}` : '';
-  const footerLeft = [preparedBy, reviewedBy].filter(Boolean).join('   |   ');
-  if (footerLeft) doc.text(footerLeft, 28, H - 8);
-  doc.text('Page 1 of 1', W - 28, H - 8, { align: 'right' });
-  doc.setTextColor(...accent);
-  doc.text('REBEL Hotel Co. — Confidential', W / 2, H - 8, { align: 'center' });
+    doc.addPage();
+    drawContHeader();
+    let cy = contTop + 8;
+
+    overflow.forEach((sec) => {
+      if (cy + 20 > contBottom) {
+        doc.addPage();
+        drawContHeader();
+        cy = contTop + 8;
+      }
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(8);
+      doc.setTextColor(...accent);
+      doc.text(sec.label, 28, cy);
+      doc.setDrawColor(226, 232, 240);
+      doc.line(28, cy + 4, W - 28, cy + 4);
+      cy += 16;
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8.5);
+      doc.setTextColor(51, 65, 85);
+      sec.lines.forEach((line) => {
+        if (cy + contLineH > contBottom) {
+          doc.addPage();
+          drawContHeader();
+          cy = contTop + 8;
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(8);
+          doc.setTextColor(...accent);
+          doc.text(`${sec.label} (continued)`, 28, cy);
+          doc.setDrawColor(226, 232, 240);
+          doc.line(28, cy + 4, W - 28, cy + 4);
+          cy += 16;
+          doc.setFont('helvetica', 'normal');
+          doc.setFontSize(8.5);
+          doc.setTextColor(51, 65, 85);
+        }
+        doc.text(line, 28, cy);
+        cy += contLineH;
+      });
+      cy += 10;
+    });
+  }
+
+  // ── FOOTER (all pages) ───────────────────────────────────────────────────────
+  const totalPages = doc.internal.getNumberOfPages();
+  for (let p = 1; p <= totalPages; p++) {
+    doc.setPage(p);
+    doc.setFillColor(248, 250, 252);
+    doc.rect(0, H - 22, W, 22, 'F');
+    doc.setDrawColor(226, 232, 240);
+    doc.line(0, H - 22, W, H - 22);
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7);
+    doc.setTextColor(100, 116, 139);
+    if (p === 1) {
+      const preparedBy = entry.prepared_by ? `Prepared by: ${entry.prepared_by}` : '';
+      const reviewedBy = entry.reviewed_by ? `Reviewed by: ${entry.reviewed_by}` : '';
+      const footerLeft = [preparedBy, reviewedBy].filter(Boolean).join('   |   ');
+      if (footerLeft) doc.text(footerLeft, 28, H - 8);
+    }
+    doc.text(`Page ${p} of ${totalPages}`, W - 28, H - 8, { align: 'right' });
+    doc.setTextColor(...accent);
+    doc.text('REBEL Hotel Co. — Confidential', W / 2, H - 8, { align: 'center' });
+  }
 
   // ── SAVE ─────────────────────────────────────────────────────────────────────
   const filename = `scorecard_${(property?.name || 'hotel').replace(/\s+/g, '_')}_${periodLabel.replace(/\s+/g, '_')}.pdf`;
