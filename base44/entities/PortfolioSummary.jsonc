@@ -12,13 +12,23 @@
       "minimum": 1,
       "maximum": 4
     },
+    "lead_role": {
+      "type": "string",
+      "description": "Leadership grouping role (e.g. corporate_operations, property_gm)"
+    },
+    "leader_name": {
+      "type": "string",
+      "description": "Operator / leader name for this summary"
+    },
     "summary_text": {
       "type": "string",
-      "description": "Executive narrative summarizing portfolio performance for the quarter"
+      "description": "Executive narrative for this operator and quarter"
     }
   },
   "required": [
     "year",
-    "quarter"
+    "quarter",
+    "lead_role",
+    "leader_name"
   ]
 }

@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { ChevronRight, ChevronDown, ChevronUp } from 'lucide-react';
 import PropertyScorecardDetail from '@/components/scorecard/PropertyScorecardDetail';
 import LeadershipGroupSummary from './LeadershipGroupSummary';
+import OperatorSummarySection from './OperatorSummarySection';
 
 const SORT_COLS = [
   { key: 'name', label: 'Hotel', align: 'left' },
@@ -80,7 +81,7 @@ function fmt$(val) {
   return '$' + Math.round(val).toLocaleString('en-US');
 }
 
-export default function LeadershipGroupCard({ groupName, roleLabel, entries, expandedId, onToggle }) {
+export default function LeadershipGroupCard({ groupName, roleLabel, leadRole, year, quarter, periodLabel, entries, expandedId, onToggle }) {
   const [sortKey, setSortKey] = useState('total');
   const [sortDir, setSortDir] = useState('desc');
 
@@ -232,6 +233,15 @@ export default function LeadershipGroupCard({ groupName, roleLabel, entries, exp
           </tbody>
         </table>
       </div>
+      <OperatorSummarySection
+        leaderName={groupName}
+        leadRole={leadRole}
+        year={year}
+        quarter={quarter}
+        periodLabel={periodLabel}
+        roleLabel={roleLabel}
+        entries={entries}
+      />
     </div>
   );
 }

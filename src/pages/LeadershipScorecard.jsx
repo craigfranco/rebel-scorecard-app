@@ -4,8 +4,6 @@ import { useQuery } from '@tanstack/react-query';
 import PropertyFilters from '@/components/filters/PropertyFilters';
 import LeadershipGroupCard from '@/components/scorecard/LeadershipGroupCard';
 import LeadershipOverviewTable from '@/components/scorecard/LeadershipOverviewTable';
-import PortfolioSummarySection from '@/components/scorecard/PortfolioSummarySection';
-import LeadershipRollupPdfExport from '@/components/scorecard/LeadershipRollupPdfExport';
 import SeedOnMount from '../components/SeedOnMount';
 import { useUserProfile } from '@/lib/UserProfileContext';
 import { useTimePeriod } from '@/lib/TimePeriodContext';
@@ -76,11 +74,6 @@ export default function LeadershipScorecard() {
   });
 
   const quarter = getQuarterFromMonth(selectedMonth);
-  const { data: summaryRecords = [] } = useQuery({
-    queryKey: ['portfolio-summary', selectedYear, quarter],
-    queryFn: () => base44.entities.PortfolioSummary.filter({ year: selectedYear, quarter }),
-  });
-  const summaryText = summaryRecords[0]?.summary_text || '';
 
   const filteredProperties = useMemo(() => {
     return properties.filter(p => {
@@ -160,8 +153,7 @@ export default function LeadershipScorecard() {
 
       {/* Header */}
       <div className="rounded-2xl text-white p-6 shadow-lg" style={{ background: 'linear-gradient(135deg, #2d4b5e 0%, #1e3547 100%)' }}>
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2">
           <h1 className="text-2xl font-bold">Leadership Scorecard</h1>
           <Popover>
             <PopoverTrigger asChild>
@@ -196,13 +188,6 @@ export default function LeadershipScorecard() {
               </p>
             </PopoverContent>
           </Popover>
-          </div>
-          <LeadershipRollupPdfExport
-            groups={groups}
-            roleLabel={groupLabel}
-            periodLabel={getPeriodLabel()}
-            summaryText={summaryText}
-          />
         </div>
         <p className="text-white/70 text-sm mt-1">
           Hotels grouped by {groupLabel.toLowerCase()} — {getPeriodLabel()} · {reportingCount} reporting hotel{reportingCount !== 1 ? 's' : ''} in {groups.length} group(s){filteredProperties.length !== reportingCount ? ` · ${filteredProperties.length - reportingCount} without data` : ''}
@@ -213,9 +198,6 @@ export default function LeadershipScorecard() {
       <div className="bg-card rounded-2xl border border-border p-4 shadow-sm">
         <PropertyFilters properties={properties} filters={filters} onChange={setFilters} />
       </div>
-
-      {/* Portfolio summary */}
-      <PortfolioSummarySection selectedMonth={selectedMonth} selectedYear={selectedYear} periodType={periodType} />
 
       {/* Operator overview — all groups ranked together */}
       {groups.length > 0 && (
@@ -234,6 +216,10 @@ export default function LeadershipScorecard() {
               <LeadershipGroupCard
                 groupName={leaderName}
                 roleLabel={groupLabel}
+                leadRole={groupField}
+                year={selectedYear}
+                quarter={quarter}
+                periodLabel={getPeriodLabel()}
                 entries={entries}
                 expandedId={expandedId}
                 onToggle={setExpandedId}

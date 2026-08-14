@@ -42,7 +42,7 @@ function buildSummaries(groups) {
   });
 }
 
-export default function LeadershipRollupPdfExport({ groups, roleLabel, periodLabel, summaryText }) {
+export default function LeadershipRollupPdfExport({ groups, roleLabel, periodLabel, summaryText, title = 'LEADERSHIP SCORECARD — PORTFOLIO ROLLUP', label = 'Download PDF' }) {
   const [busy, setBusy] = useState(false);
 
   const handleDownload = async () => {
@@ -95,7 +95,7 @@ export default function LeadershipRollupPdfExport({ groups, roleLabel, periodLab
       doc.setTextColor(...WHITE);
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(13);
-      doc.text('LEADERSHIP SCORECARD — PORTFOLIO ROLLUP', M, 13);
+      doc.text(title, M, 13);
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(9);
       doc.text(`Grouped by ${roleLabel}  ·  ${periodLabel}`, M, 22);
@@ -253,7 +253,7 @@ export default function LeadershipRollupPdfExport({ groups, roleLabel, periodLab
       size="sm"
     >
       {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-      Download PDF
+      {label}
     </Button>
   );
 }
