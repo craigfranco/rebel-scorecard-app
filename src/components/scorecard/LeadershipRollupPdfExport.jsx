@@ -231,12 +231,12 @@ export default function LeadershipRollupPdfExport({ groups, roleLabel, periodLab
           doc.setTextColor(...scoreColor(r.rgi, 15)); doc.text(fmt(r.rgi), hX.rgi, y + 4.4, { align: 'center' });
           doc.setTextColor(...scoreColor(r.gss, 15)); doc.text(fmt(r.gss), hX.gss, y + 4.4, { align: 'center' });
           doc.setTextColor(...scoreColor(r.total, r.maxPossible || 100)); doc.text(r.total != null ? r.total.toFixed(1) : '—', hX.total, y + 4.4, { align: 'center' });
-          doc.setTextColor(r.forecast == null ? GREY : (r.forecast ? GREEN : RED)); doc.text(r.forecast == null ? '—' : (r.forecast ? 'HIT' : 'MISS'), hX.fcst, y + 4.4, { align: 'center' });
+          doc.setTextColor(...(r.forecast == null ? GREY : (r.forecast ? GREEN : RED))); doc.text(r.forecast == null ? '—' : (r.forecast ? 'HIT' : 'MISS'), hX.fcst, y + 4.4, { align: 'center' });
           {
             const rzNa = r.property?.parent_brand === 'Independent';
             const rzLabel = rzNa ? 'N/A' : (r.redzone == null ? '—' : (r.redzone ? 'HIT' : 'OUT'));
             const rzColor = (rzNa || r.redzone == null || r.redzone === false) ? GREY : GREEN;
-            doc.setTextColor(rzColor); doc.text(rzLabel, hX.redz, y + 4.4, { align: 'center' });
+            doc.setTextColor(...rzColor); doc.text(rzLabel, hX.redz, y + 4.4, { align: 'center' });
           }
           y += 6.5;
         });
