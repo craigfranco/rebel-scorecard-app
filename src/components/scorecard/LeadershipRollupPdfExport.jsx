@@ -36,7 +36,8 @@ function buildSummaries(groups) {
       portfolio,
       forecastHits: withData.filter(r => r.forecast === true).length,
       forecastTotal: withData.filter(r => r.forecast != null).length,
-      redZoneCompliant: withData.filter(r => r.redzone === true).length,
+      redZoneApplicable: withData.filter(r => r.property?.parent_brand !== 'Independent').length,
+      redZoneCompliant: withData.filter(r => r.property?.parent_brand !== 'Independent' && r.redzone === true).length,
       rows: withData,
     };
   });
@@ -167,7 +168,7 @@ export default function LeadershipRollupPdfExport({ groups, roleLabel, periodLab
         doc.setTextColor(...scoreColor(g.rgi, 15)); doc.text(fmt(g.rgi), cX.rgi, y + 4.6, { align: 'center' });
         doc.setTextColor(...scoreColor(g.gss, 15)); doc.text(fmt(g.gss), cX.gss, y + 4.6, { align: 'center' });
         doc.setTextColor(...GREY); doc.setFont('helvetica', 'normal'); doc.text(`${g.forecastHits}/${g.forecastTotal}`, cX.fcst, y + 4.6, { align: 'center' });
-        doc.text(`${g.redZoneCompliant}/${g.hotels}`, cX.redz, y + 4.6, { align: 'center' });
+        doc.text(g.redZoneApplicable > 0 ? `${g.redZoneCompliant}/${g.redZoneApplicable}` : 'N/A', cX.redz, y + 4.6, { align: 'center' });
         doc.setTextColor(...scoreColor(g.avg)); doc.setFont('helvetica', 'bold'); doc.text(fmt(g.avg), cX.avg, y + 4.6, { align: 'center' });
         doc.setTextColor(...scoreColor(g.portfolio)); doc.text(fmt(g.portfolio), cX.port, y + 4.6, { align: 'center' });
         y += 7;
@@ -231,7 +232,12 @@ export default function LeadershipRollupPdfExport({ groups, roleLabel, periodLab
           doc.setTextColor(...scoreColor(r.gss, 15)); doc.text(fmt(r.gss), hX.gss, y + 4.4, { align: 'center' });
           doc.setTextColor(...scoreColor(r.total, r.maxPossible || 100)); doc.text(r.total != null ? r.total.toFixed(1) : '—', hX.total, y + 4.4, { align: 'center' });
           doc.setTextColor(r.forecast == null ? GREY : (r.forecast ? GREEN : RED)); doc.text(r.forecast == null ? '—' : (r.forecast ? 'HIT' : 'MISS'), hX.fcst, y + 4.4, { align: 'center' });
-          doc.setTextColor(r.redzone == null ? GREY : (r.redzone ? GREEN : RED)); doc.text(r.redzone == null ? '—' : (r.redzone ? 'HIT' : 'MISS'), hX.redz, y + 4.4, { align: 'center' });
+          {
+            const rzNa = r.property?.parent_brand === 'Independent';
+            const rzLabel = rzNa ? 'N/A' : (r.redzone == null ? '—' : (r.redzone ? 'HIT' : 'OUT'));
+            const rzColor = (rzNa || r.redzone == null || r.redzone === false) ? GREY : GREEN;
+            doc.setTextColor(rzColor); doc.text(rzLabel, hX.redz, y + 4.4, { align: 'center' });
+          }
           y += 6.5;
         });
         y += 5;

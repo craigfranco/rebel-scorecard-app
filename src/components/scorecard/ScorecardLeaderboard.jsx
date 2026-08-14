@@ -1,5 +1,6 @@
 import React from 'react';
 import { ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
+import { isRedZoneApplicable } from '@/lib/redZone';
 
 const SortIcon = ({ col, sortCol, sortDir }) => {
   if (sortCol !== col) return <ChevronsUpDown className="w-3 h-3 opacity-30 group-hover:opacity-60 transition-opacity" />;
@@ -35,6 +36,29 @@ function KickerPill({ state }) {
       style={{ backgroundColor: hit ? '#4CAF50' : '#ef4444' }}
     >
       {hit ? 'HIT' : 'MISS'}
+    </span>
+  );
+}
+
+function RedZonePill({ property, state }) {
+  if (!isRedZoneApplicable(property)) {
+    return (
+      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold text-slate-400 bg-slate-100 border border-slate-200">
+        N/A
+      </span>
+    );
+  }
+  if (state == null) return <span className="text-xs text-muted-foreground">—</span>;
+  if (state === true) {
+    return (
+      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold text-white" style={{ backgroundColor: '#4CAF50' }}>
+        HIT
+      </span>
+    );
+  }
+  return (
+    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold text-slate-400 bg-slate-100 border border-slate-200">
+      OUT
     </span>
   );
 }
@@ -109,7 +133,7 @@ export default function ScorecardLeaderboard({ rows, sortCol, sortDir, onSort, s
                         </span>
                       </td>
                       <td className="py-3 px-3 text-center"><KickerPill state={r.forecast} /></td>
-                      <td className="py-3 px-3 text-center"><KickerPill state={r.redzone} /></td>
+                      <td className="py-3 px-3 text-center"><RedZonePill property={r.property} state={r.redzone} /></td>
                     </>
                   ) : (
                     <td colSpan={7} className="py-3 px-3 text-center text-xs text-muted-foreground italic">
