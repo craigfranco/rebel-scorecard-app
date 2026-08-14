@@ -96,8 +96,6 @@ export default function KpiBreakdown() {
   const rows = useMemo(() => {
     return properties
       .filter(p => {
-        // For red zone kicker, exclude Independent properties
-        if (activeKpi === 'redzone' && p.parent_brand === 'Independent') return false;
         // Apply user filters
         if (filters.brand && p.parent_brand !== filters.brand) return false;
         if (filters.subBrand && p.sub_brand !== filters.subBrand) return false;
@@ -178,10 +176,17 @@ export default function KpiBreakdown() {
             ? entry.forecast_actual_revenue - entry.forecast_primary_forecast : null;
 
         } else if (activeKpi === 'redzone') {
-          pass = entry.red_zone_kicker || false;
-          score = pass ? 1 : 0;
-          actual = pass ? 'HIT' : 'MISS';
-          target = 'Exit & stay out';
+          if (p.parent_brand === 'Independent') {
+            pass = null;
+            score = null;
+            actual = 'N/A';
+            target = 'N/A';
+          } else {
+            pass = entry.red_zone_kicker || false;
+            score = pass ? 1 : 0;
+            actual = pass ? 'HIT' : 'MISS';
+            target = 'Exit & stay out';
+          }
         }
 
         return { property: p, entry, score, pass, actual, target };
@@ -447,16 +452,19 @@ export default function KpiBreakdown() {
                     <td className="py-3 px-4 text-center">
                       {entry !== null ? (
                         (() => {
-                          const isRzOut = activeKpi === 'redzone' && !pass;
-                          const label = activeKpi === 'forecast'
-                            ? (pass ? 'HIT' : !hasForecastData(entry) ? '✗ No Data' : '✗ MISS')
-                            : activeKpi === 'redzone'
-                              ? (pass ? 'HIT' : 'OUT')
-                              : (pass ? 'PASS' : 'FAIL');
+                          const isRzNa = activeKpi === 'redzone' && property.parent_brand === 'Independent';
+                          const isRzOut = activeKpi === 'redzone' && !pass && !isRzNa;
+                          const label = isRzNa
+                            ? 'N/A'
+                            : activeKpi === 'forecast'
+                              ? (pass ? 'HIT' : !hasForecastData(entry) ? '✗ No Data' : '✗ MISS')
+                              : activeKpi === 'redzone'
+                                ? (pass ? 'HIT' : 'OUT')
+                                : (pass ? 'PASS' : 'FAIL');
                           return (
                             <span
                               className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold"
-                              style={isRzOut
+                              style={isRzNa || isRzOut
                                 ? { backgroundColor: '#f1f5f9', color: '#94a3b8' }
                                 : { backgroundColor: pass ? '#4CAF50' : '#ef4444', color: '#ffffff' }}
                             >
