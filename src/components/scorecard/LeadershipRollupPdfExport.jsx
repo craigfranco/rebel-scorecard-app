@@ -255,10 +255,11 @@ export default function LeadershipRollupPdfExport({ groups, roleLabel, periodLab
     <Button
       onClick={handleDownload}
       disabled={busy || !groups?.length}
-      className="bg-white/20 hover:bg-white/30 text-white border border-white/30 gap-2"
+      variant="outline"
       size="sm"
+      className="text-xs gap-1.5"
     >
-      {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+      {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
       {label}
     </Button>
   );
