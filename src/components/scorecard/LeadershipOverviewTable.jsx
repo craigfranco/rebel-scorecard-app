@@ -59,6 +59,19 @@ const COLS = [
   { key: 'portfolio', label: 'Portfolio', align: 'center' },
 ];
 
+// Maps each sortable column key to the numeric (or string) value used for sorting.
+const SORT_ACCESSOR = {
+  name: r => r.name,
+  gop: r => r.gop,
+  gopMargin: r => r.gopMargin,
+  rgi: r => r.rgi,
+  gss: r => r.gss,
+  forecast: r => r.forecastHits,
+  redzone: r => r.redZoneCompliant,
+  avg: r => r.avg,
+  portfolio: r => r.portfolio,
+};
+
 export default function LeadershipOverviewTable({ groups, roleLabel, onSelectOperator }) {
   const [sortKey, setSortKey] = useState('portfolio');
   const [sortDir, setSortDir] = useState('desc');
@@ -116,10 +129,11 @@ export default function LeadershipOverviewTable({ groups, roleLabel, onSelectOpe
 
   const sorted = useMemo(() => {
     const dir = sortDir === 'desc' ? -1 : 1;
+    const accessor = SORT_ACCESSOR[sortKey] || (r => r[sortKey]);
     return [...summaryRows].sort((a, b) => {
-      const av = a[sortKey];
-      const bv = b[sortKey];
-      if (sortKey === 'name') return av.localeCompare(bv) * dir;
+      const av = accessor(a);
+      const bv = accessor(b);
+      if (sortKey === 'name') return String(av ?? '').localeCompare(String(bv ?? '')) * dir;
       if (av == null) return 1;
       if (bv == null) return -1;
       return (av - bv) * dir;
