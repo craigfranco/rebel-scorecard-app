@@ -1,7 +1,29 @@
-import React from 'react';
-import { ChevronRight, ChevronDown } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { ChevronRight, ChevronDown, ChevronUp } from 'lucide-react';
 import PropertyScorecardDetail from '@/components/scorecard/PropertyScorecardDetail';
 import LeadershipGroupSummary from './LeadershipGroupSummary';
+
+const SORT_COLS = [
+  { key: 'name', label: 'Hotel', align: 'left' },
+  { key: 'gop', label: 'GOP /35', align: 'center' },
+  { key: 'gopMargin', label: 'Margin /35', align: 'center' },
+  { key: 'rgi', label: 'RGI /15', align: 'center' },
+  { key: 'gss', label: 'GSS /15', align: 'center' },
+  { key: 'total', label: 'Total /100', align: 'center' },
+  { key: 'forecast', label: 'Forecast', align: 'center' },
+  { key: 'redzone', label: 'Red Zone', align: 'center' },
+];
+
+const ACCESSOR = {
+  name: r => r.property?.name,
+  gop: r => r.gop,
+  gopMargin: r => r.gopMargin,
+  rgi: r => r.rgi,
+  gss: r => r.gss,
+  total: r => r.total,
+  forecast: r => r.forecast,
+  redzone: r => r.redzone,
+};
 
 function fmt$K(val) {
   if (val == null) return '—';
@@ -59,11 +81,33 @@ function fmt$(val) {
 }
 
 export default function LeadershipGroupCard({ groupName, roleLabel, entries, expandedId, onToggle }) {
-  const sorted = [...entries].sort((a, b) => {
-    const av = a.hasData ? (a.total ?? -1) : -1;
-    const bv = b.hasData ? (b.total ?? -1) : -1;
-    return bv - av;
-  });
+  const [sortKey, setSortKey] = useState('total');
+  const [sortDir, setSortDir] = useState('desc');
+
+  const toggleSort = (key) => {
+    if (key === sortKey) {
+      setSortDir(d => d === 'desc' ? 'asc' : 'desc');
+    } else {
+      setSortKey(key);
+      setSortDir(key === 'name' ? 'asc' : 'desc');
+    }
+  };
+
+  const sorted = useMemo(() => {
+    const dir = sortDir === 'desc' ? -1 : 1;
+    const accessor = ACCESSOR[sortKey];
+    return [...entries].sort((a, b) => {
+      if (!a.hasData && b.hasData) return 1;
+      if (a.hasData && !b.hasData) return -1;
+      if (!a.hasData && !b.hasData) return 0;
+      const av = accessor(a);
+      const bv = accessor(b);
+      if (sortKey === 'name') return String(av ?? '').localeCompare(String(bv ?? '')) * dir;
+      if (av == null) return 1;
+      if (bv == null) return -1;
+      return (av - bv) * dir;
+    });
+  }, [entries, sortKey, sortDir]);
 
   const withData = entries.filter(r => r.hasData);
 
@@ -91,14 +135,24 @@ export default function LeadershipGroupCard({ groupName, roleLabel, entries, exp
           <thead>
             <tr className="bg-muted/40 text-muted-foreground text-xs uppercase tracking-wide">
               <th className="py-2.5 px-3 text-left font-semibold w-10">Rank</th>
-              <th className="py-2.5 px-3 text-left font-semibold">Hotel</th>
-              <th className="py-2.5 px-3 text-center font-semibold">GOP /35</th>
-              <th className="py-2.5 px-3 text-center font-semibold">Margin /35</th>
-              <th className="py-2.5 px-3 text-center font-semibold">RGI /15</th>
-              <th className="py-2.5 px-3 text-center font-semibold">GSS /15</th>
-              <th className="py-2.5 px-3 text-center font-semibold">Total /100</th>
-              <th className="py-2.5 px-3 text-center font-semibold">Forecast</th>
-              <th className="py-2.5 px-3 text-center font-semibold">Red Zone</th>
+              {SORT_COLS.map(c => {
+                const active = sortKey === c.key;
+                const align = c.align === 'center' ? 'text-center' : 'text-left';
+                return (
+                  <th
+                    key={c.key}
+                    onClick={() => toggleSort(c.key)}
+                    className={`py-2.5 px-3 ${align} font-semibold cursor-pointer select-none hover:text-foreground transition-colors whitespace-nowrap ${active ? 'text-primary' : ''}`}
+                  >
+                    <span className={`inline-flex items-center gap-1 ${c.align === 'center' ? 'justify-center' : ''}`}>
+                      {c.label}
+                      {active && (sortDir === 'desc'
+                        ? <ChevronDown className="w-3 h-3" />
+                        : <ChevronUp className="w-3 h-3" />)}
+                    </span>
+                  </th>
+                );
+              })}
               <th className="py-2.5 px-3 text-center font-semibold w-10"></th>
             </tr>
           </thead>
