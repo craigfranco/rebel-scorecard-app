@@ -217,7 +217,7 @@ export default function LeadershipOverviewTable({ groups, roleLabel, onSelectOpe
             ) : (
               <>
                 <div className="font-bold text-sm text-foreground">{r.redZoneCompliant}/{r.redZoneTotal}</div>
-                <div className="text-[10px] text-muted-foreground mt-0.5">out of zone</div>
+                <div className="text-[10px] text-muted-foreground mt-0.5">earned kicker</div>
               </>
             )}
           </td>

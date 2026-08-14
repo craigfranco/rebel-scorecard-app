@@ -25,8 +25,9 @@ const KPI_TABS = [
 
 // Using aggregateEntries from lib/scoring.js
 
-function getRowColor(pass, score, max) {
+function getRowColor(pass, score, max, kpi) {
   if (max === null) {
+    if (kpi === 'redzone') return pass ? 'bg-green-50 hover:bg-green-100' : 'bg-slate-50 hover:bg-slate-100';
     return pass ? 'bg-green-50 hover:bg-green-100' : 'bg-red-50 hover:bg-red-100';
   }
   if (pass) return 'bg-green-50 hover:bg-green-100';
@@ -329,7 +330,7 @@ export default function KpiBreakdown() {
             </thead>
             <tbody>
               {sortedRows.map(({ property, entry, score, pass, actual, target }, idx) => {
-                const rowBg = entry ? getRowColor(pass, score, kpiTab.max) : '';
+                const rowBg = entry ? getRowColor(pass, score, kpiTab.max, activeKpi) : '';
                 return (
                   <tr
                     key={property.id}
@@ -445,14 +446,24 @@ export default function KpiBreakdown() {
                     </td>
                     <td className="py-3 px-4 text-center">
                       {entry !== null ? (
-                        <span
-                          className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold text-white"
-                          style={{ backgroundColor: pass ? '#4CAF50' : '#ef4444' }}
-                        >
-                          {activeKpi === 'forecast'
+                        (() => {
+                          const isRzOut = activeKpi === 'redzone' && !pass;
+                          const label = activeKpi === 'forecast'
                             ? (pass ? 'HIT' : !hasForecastData(entry) ? '✗ No Data' : '✗ MISS')
-                            : (pass ? 'PASS' : 'FAIL')}
-                        </span>
+                            : activeKpi === 'redzone'
+                              ? (pass ? 'HIT' : 'OUT')
+                              : (pass ? 'PASS' : 'FAIL');
+                          return (
+                            <span
+                              className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold"
+                              style={isRzOut
+                                ? { backgroundColor: '#f1f5f9', color: '#94a3b8' }
+                                : { backgroundColor: pass ? '#4CAF50' : '#ef4444', color: '#ffffff' }}
+                            >
+                              {label}
+                            </span>
+                          );
+                        })()
                       ) : (
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-muted text-muted-foreground">
                           NO DATA

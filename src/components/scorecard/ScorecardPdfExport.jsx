@@ -529,13 +529,21 @@ export function generateScorecardPDF(property, entry, periodType, selectedMonth,
   doc.line(fcX + 8, bottomY + 104, fcX + fcW - 8, bottomY + 104);
   const rzHit = entry.red_zone_kicker || false;
   if (brand !== 'Independent') {
-    const rzColor = rzHit ? [76, 175, 80] : [239, 68, 68];
-    doc.setFillColor(...rzColor);
-    doc.roundedRect(fcX + 8, bottomY + 110, 50, 14, 3, 3, 'F');
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(8);
-    doc.setTextColor(255, 255, 255);
-    doc.text(rzHit ? 'HIT ✓' : 'MISS ✗', fcX + 33, bottomY + 120, { align: 'center' });
+    if (rzHit) {
+      doc.setFillColor(76, 175, 80);
+      doc.roundedRect(fcX + 8, bottomY + 110, 50, 14, 3, 3, 'F');
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(8);
+      doc.setTextColor(255, 255, 255);
+      doc.text('HIT ✓', fcX + 33, bottomY + 120, { align: 'center' });
+    } else {
+      doc.setFillColor(241, 245, 249);
+      doc.roundedRect(fcX + 8, bottomY + 110, 50, 14, 3, 3, 'F');
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(8);
+      doc.setTextColor(148, 163, 184);
+      doc.text('OUT', fcX + 33, bottomY + 120, { align: 'center' });
+    }
   } else {
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(7);

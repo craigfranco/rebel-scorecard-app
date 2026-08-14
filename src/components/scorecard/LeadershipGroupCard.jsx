@@ -85,6 +85,22 @@ function NaPill() {
   );
 }
 
+function RedZonePill({ state }) {
+  if (state == null) return <NoDataPill />;
+  if (state === true) {
+    return (
+      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold text-white" style={{ backgroundColor: '#4CAF50' }}>
+        HIT
+      </span>
+    );
+  }
+  return (
+    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold text-slate-400 bg-slate-100 border border-slate-200">
+      OUT
+    </span>
+  );
+}
+
 function fmt$(val) {
   if (val == null) return '—';
   return '$' + Math.round(val).toLocaleString('en-US');
@@ -216,7 +232,7 @@ export default function LeadershipGroupCard({ groupName, roleLabel, leadRole, ye
                           </span>
                         </td>
                         <td className="py-3 px-3 text-center">{r.forecast == null ? <NoDataPill /> : <KickerPill state={r.forecast} />}</td>
-                        <td className="py-3 px-3 text-center">{isRedZoneApplicable(r.property) ? <KickerPill state={r.redzone} /> : <NaPill />}</td>
+                        <td className="py-3 px-3 text-center">{isRedZoneApplicable(r.property) ? <RedZonePill state={r.redzone} /> : <NaPill />}</td>
                       </>
                     ) : (
                       <td colSpan={7} className="py-3 px-3 text-center text-xs text-muted-foreground italic">

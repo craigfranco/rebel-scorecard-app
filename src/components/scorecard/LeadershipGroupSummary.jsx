@@ -184,7 +184,7 @@ export default function LeadershipGroupSummary({ rows }) {
         <ActualTile
           label={`Red Zone · ${periodLabel}`}
           value={redZoneApplicable.length ? `${redZoneCompliant}/${redZoneApplicable.length}` : <span className="text-slate-400">N/A</span>}
-          sub="hotels out of red zone"
+          sub="hotels that earned kicker"
           footColor={redZoneRate != null && redZoneRate >= 0.7 ? '#4CAF50' : '#f59e0b'}
         />
       </div>

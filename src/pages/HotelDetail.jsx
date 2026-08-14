@@ -158,7 +158,7 @@ export default function HotelDetail() {
       doc.text('BONUS KICKERS', 12, y + 1);
       doc.setFont('helvetica', 'normal');
       doc.text(`Forecast Accuracy: ${activeEntry.forecast_kicker ? 'HIT ✓' : 'MISS ✗'}`, 12, y + 7);
-      doc.text(`Red Zone: ${isRedZoneApplicable(property) ? (activeEntry.red_zone_kicker ? 'HIT ✓' : 'MISS ✗') : 'N/A'}`, 90, y + 7);
+      doc.text(`Red Zone: ${isRedZoneApplicable(property) ? (activeEntry.red_zone_kicker ? 'HIT ✓' : 'OUT') : 'N/A'}`, 90, y + 7);
       y += 18;
 
       // Notes panels
@@ -315,9 +315,11 @@ export default function HotelDetail() {
             <div className="flex items-center gap-2">
               <span className="text-sm font-medium text-muted-foreground">Red Zone Kicker:</span>
               {isRedZoneApplicable(property) ? (
-                <span className={`text-sm font-bold ${activeEntry.red_zone_kicker ? 'text-green-600' : 'text-red-500'}`}>
-                  {activeEntry.red_zone_kicker ? 'HIT ✓' : 'MISS ✗'}
-                </span>
+                activeEntry.red_zone_kicker ? (
+                  <span className="text-sm font-bold text-green-600">HIT ✓</span>
+                ) : (
+                  <span className="text-sm font-semibold text-slate-400">OUT</span>
+                )
               ) : (
                 <span className="text-sm font-semibold text-slate-400">N/A</span>
               )}

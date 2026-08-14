@@ -4,9 +4,10 @@ import { Zap, Shield } from 'lucide-react';
 export default function KickerBadge({ type, hit, missingData, notApplicable }) {
   const isMissing = type === 'forecast' && missingData;
   const isFail = isMissing || !hit;
-  const color = notApplicable ? '#94a3b8' : (hit && !isMissing ? '#4CAF50' : '#ef4444');
-  const bg = notApplicable ? '#f1f5f9' : (hit && !isMissing ? '#f0fdf4' : '#fef2f2');
-  const border = notApplicable ? '#e2e8f0' : (hit && !isMissing ? '#bbf7d0' : '#fecaca');
+  const isOut = type === 'redzone' && !notApplicable && !hit;
+  const color = (notApplicable || isOut) ? '#94a3b8' : (hit && !isMissing ? '#4CAF50' : '#ef4444');
+  const bg = (notApplicable || isOut) ? '#f1f5f9' : (hit && !isMissing ? '#f0fdf4' : '#fef2f2');
+  const border = (notApplicable || isOut) ? '#e2e8f0' : (hit && !isMissing ? '#bbf7d0' : '#fecaca');
 
   const labels = {
     forecast: { icon: Zap, title: 'Forecast Kicker', desc: '+3% salary if 3/4 forecasts within ±3%' },
@@ -17,16 +18,18 @@ export default function KickerBadge({ type, hit, missingData, notApplicable }) {
 
   const badgeLabel = notApplicable
     ? 'N/A'
-    : type === 'forecast'
-      ? (hit && !isMissing ? 'HIT' : isMissing ? '✗ No Data' : '✗ MISS')
-      : (hit ? 'HIT' : 'MISS');
+    : isOut
+      ? 'OUT'
+      : type === 'forecast'
+        ? (hit && !isMissing ? 'HIT' : isMissing ? '✗ No Data' : '✗ MISS')
+        : (hit ? 'HIT' : 'MISS');
 
   return (
     <div
       className="flex items-start gap-3 p-3 rounded-xl border transition-all"
       style={{ backgroundColor: bg, borderColor: border }}
     >
-      <div className="p-2 rounded-lg" style={{ backgroundColor: notApplicable ? '#e2e8f0' : (hit && !isMissing ? '#dcfce7' : '#fee2e2') }}>
+      <div className="p-2 rounded-lg" style={{ backgroundColor: (notApplicable || isOut) ? '#e2e8f0' : (hit && !isMissing ? '#dcfce7' : '#fee2e2') }}>
         {Icon && <Icon className="w-4 h-4" style={{ color }} />}
       </div>
       <div className="flex-1 min-w-0">
