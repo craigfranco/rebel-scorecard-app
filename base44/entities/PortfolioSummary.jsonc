@@ -1,0 +1,24 @@
+{
+  "name": "PortfolioSummary",
+  "type": "object",
+  "properties": {
+    "year": {
+      "type": "integer",
+      "description": "Report year"
+    },
+    "quarter": {
+      "type": "integer",
+      "description": "Quarter (1-4)",
+      "minimum": 1,
+      "maximum": 4
+    },
+    "summary_text": {
+      "type": "string",
+      "description": "Executive narrative summarizing portfolio performance for the quarter"
+    }
+  },
+  "required": [
+    "year",
+    "quarter"
+  ]
+}
