@@ -10,7 +10,7 @@ import { parseBoxes, formatBoxes } from '@/lib/narrative';
 
 /**
  * KeyWinsSection — GM narrative section for monthly/quarterly scorecards.
- * Three categories (Key Wins, Previous Results, Next Priorities), each with 3 numbered initiatives.
+ * Two categories (Key Wins, Next Priorities), each with 3 numbered initiatives.
  */
 export default function KeyWinsSection({ property, entry, periodType, selectedMonth, selectedYear }) {
   const queryClient = useQueryClient();
@@ -19,7 +19,6 @@ export default function KeyWinsSection({ property, entry, periodType, selectedMo
   // Store as arrays of 3 initiatives each
   const [initiatives, setInitiatives] = useState({
     key_wins: ['', '', ''],
-    previous_results: ['', '', ''],
     next_priorities: ['', '', ''],
   });
 
@@ -29,7 +28,6 @@ export default function KeyWinsSection({ property, entry, periodType, selectedMo
   useEffect(() => {
     setInitiatives({
       key_wins: parseBoxes(entry?.key_wins || ''),
-      previous_results: parseBoxes(entry?.previous_results || ''),
       next_priorities: parseBoxes(entry?.next_priorities || ''),
     });
   }, [entry]);
@@ -48,7 +46,7 @@ export default function KeyWinsSection({ property, entry, periodType, selectedMo
 
       const data = {
         key_wins: formatBoxes(initiatives.key_wins),
-        previous_results: formatBoxes(initiatives.previous_results),
+        previous_results: '',
         next_priorities: formatBoxes(initiatives.next_priorities),
       };
 
@@ -93,7 +91,6 @@ export default function KeyWinsSection({ property, entry, periodType, selectedMo
   const handleCancel = () => {
     setInitiatives({
       key_wins: parseBoxes(entry?.key_wins || ''),
-      previous_results: parseBoxes(entry?.previous_results || ''),
       next_priorities: parseBoxes(entry?.next_priorities || ''),
     });
     setIsEditing(false);
@@ -179,7 +176,7 @@ export default function KeyWinsSection({ property, entry, periodType, selectedMo
         )}
       </div>
 
-      <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Key Wins */}
         <div className="space-y-2">
           <h3 className="font-semibold text-sm text-foreground flex items-center gap-1.5">
@@ -187,15 +184,6 @@ export default function KeyWinsSection({ property, entry, periodType, selectedMo
             Key Wins
           </h3>
           {renderInitiatives('Key Win', 'key_wins', 'green')}
-        </div>
-
-        {/* Previous Months Results */}
-        <div className="space-y-2">
-          <h3 className="font-semibold text-sm text-foreground flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-blue-500"></span>
-            Previous Months Results
-          </h3>
-          {renderInitiatives('Result', 'previous_results', 'blue')}
         </div>
 
         {/* Next Months Priorities */}

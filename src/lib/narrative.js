@@ -1,6 +1,6 @@
-// Helpers for the 3-box GM narrative fields (key_wins, previous_results, next_priorities).
-// Boxes are stored as a JSON array of 3 strings so each box stays fully independent
-// of its siblings' content (pasted numbered lists, decimals, multi-line text, etc.).
+// Helpers for the GM narrative fields (key_wins, next_priorities).
+// Each field is stored as a JSON array of 3 strings so the numbered initiatives stay
+// fully independent of each other (pasted numbered lists, decimals, multi-line text, etc.).
 // Legacy data stored as "1. ...\n2. ...\n3. ..." text is still parsed for back-compat.
 
 export const NARRATIVE_BOX_COUNT = 3;

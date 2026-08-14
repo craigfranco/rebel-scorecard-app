@@ -553,11 +553,10 @@ export function generateScorecardPDF(property, entry, periodType, selectedMonth,
 
   const narSections = [
     { label: 'KEY WINS', value: boxesToText(entry.key_wins) },
-    { label: 'PREVIOUS RESULTS', value: boxesToText(entry.previous_results) },
     { label: 'NEXT PRIORITIES', value: boxesToText(entry.next_priorities) },
   ];
 
-  const narColW = Math.floor(narW / 3) - 6;
+  const narColW = Math.floor(narW / 2) - 6;
   const narLineH = 10;
   const narMaxLines = Math.floor((bottomH - 24) / narLineH);
   const overflow = [];

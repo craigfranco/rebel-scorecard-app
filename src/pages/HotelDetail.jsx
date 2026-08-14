@@ -163,25 +163,24 @@ export default function HotelDetail() {
       // Notes panels
       const panels = [
         { title: 'Key Wins & Risks', value: boxesToText(activeEntry.key_wins) || '—' },
-        { title: 'Previous Period Results', value: boxesToText(activeEntry.previous_results) || '—' },
         { title: 'Next Period Priorities', value: boxesToText(activeEntry.next_priorities) || '—' },
       ];
 
       panels.forEach((panel, i) => {
-        const x = 12 + i * 66;
+        const x = 12 + i * 100;
         doc.setFillColor(...NAVY);
-        doc.rect(x - 2, y - 5, 64, 7, 'F');
+        doc.rect(x - 2, y - 5, 92, 7, 'F');
         doc.setTextColor(...WHITE);
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(7);
         doc.text(panel.title, x, y - 0.5);
 
         doc.setFillColor(250, 252, 255);
-        doc.rect(x - 2, y + 2, 64, 35, 'F');
+        doc.rect(x - 2, y + 2, 92, 35, 'F');
         doc.setTextColor(50, 70, 90);
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(7);
-        const lines = doc.splitTextToSize(panel.value, 60);
+        const lines = doc.splitTextToSize(panel.value, 88);
         doc.text(lines.slice(0, 7), x, y + 8);
       });
       y += 46;
@@ -325,10 +324,9 @@ export default function HotelDetail() {
       )}
 
       {/* Notes panels */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {[
           { title: '🏆 Key Wins & Risks', value: boxesToText(activeEntry.key_wins) },
-          { title: '📊 Previous Period Results', value: boxesToText(activeEntry.previous_results) },
           { title: '🎯 Next Period Priorities', value: boxesToText(activeEntry.next_priorities) },
         ].map(({ title, value }) => (
           <div key={title} className="bg-card rounded-2xl border border-border p-4 shadow-sm">
