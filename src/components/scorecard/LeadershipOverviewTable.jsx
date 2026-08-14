@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { ChevronUp, ChevronDown } from 'lucide-react';
+import { isRedZoneApplicable } from '@/lib/redZone';
 
 const scoreColor = (total, max = 100) => {
   if (total == null) return undefined;
@@ -110,7 +111,8 @@ export default function LeadershipOverviewTable({ groups, roleLabel, onSelectOpe
       const withForecast = withData.filter(r => r.forecast != null);
       const forecastHits = withForecast.filter(r => r.forecast === true).length;
 
-      const redZoneCompliant = withData.filter(r => r.redzone === true).length;
+      const redZoneApplicable = withData.filter(r => isRedZoneApplicable(r.property));
+      const redZoneCompliant = redZoneApplicable.filter(r => r.redzone === true).length;
 
       return {
         name,
@@ -122,7 +124,7 @@ export default function LeadershipOverviewTable({ groups, roleLabel, onSelectOpe
         rgiIndex, rgiChange,
         gssActual, gssPrior, gssDelta,
         forecastHits, forecastTotal: withForecast.length,
-        redZoneCompliant, redZoneTotal: withData.length,
+        redZoneCompliant, redZoneTotal: redZoneApplicable.length,
       };
     });
   }, [groups]);
@@ -208,7 +210,18 @@ export default function LeadershipOverviewTable({ groups, roleLabel, onSelectOpe
       case 'forecast':
         return <td key={r._col} className="py-2.5 px-3 text-center align-top"><div className="font-bold text-sm text-foreground">{r.forecastHits}/{r.forecastTotal}</div><div className="text-[10px] text-muted-foreground mt-0.5">hitting</div></td>;
       case 'redzone':
-        return <td key={r._col} className="py-2.5 px-3 text-center align-top"><div className="font-bold text-sm text-foreground">{r.redZoneCompliant}/{r.redZoneTotal}</div><div className="text-[10px] text-muted-foreground mt-0.5">out of zone</div></td>;
+        return (
+          <td key={r._col} className="py-2.5 px-3 text-center align-top">
+            {r.redZoneTotal === 0 ? (
+              <span className="text-sm font-semibold text-slate-400">N/A</span>
+            ) : (
+              <>
+                <div className="font-bold text-sm text-foreground">{r.redZoneCompliant}/{r.redZoneTotal}</div>
+                <div className="text-[10px] text-muted-foreground mt-0.5">out of zone</div>
+              </>
+            )}
+          </td>
+        );
       case 'avg':
         return <td key={r._col} className="py-2.5 px-3 text-center"><span className="font-bold" style={{ color: scoreColor(r.avg) }}>{fmt(r.avg)}</span></td>;
       case 'portfolio':

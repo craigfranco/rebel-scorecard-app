@@ -10,6 +10,7 @@ import { formatBrandLabel } from '@/lib/portfolioHelpers';
 import { useToast } from '@/components/ui/use-toast';
 import { useTimePeriod } from '@/lib/TimePeriodContext';
 import { boxesToText } from '@/lib/narrative';
+import { isRedZoneApplicable } from '@/lib/redZone';
 
 
 export default function HotelDetail() {
@@ -157,7 +158,7 @@ export default function HotelDetail() {
       doc.text('BONUS KICKERS', 12, y + 1);
       doc.setFont('helvetica', 'normal');
       doc.text(`Forecast Accuracy: ${activeEntry.forecast_kicker ? 'HIT ✓' : 'MISS ✗'}`, 12, y + 7);
-      doc.text(`Red Zone: ${activeEntry.red_zone_kicker ? 'HIT ✓' : 'MISS ✗'}`, 90, y + 7);
+      doc.text(`Red Zone: ${isRedZoneApplicable(property) ? (activeEntry.red_zone_kicker ? 'HIT ✓' : 'MISS ✗') : 'N/A'}`, 90, y + 7);
       y += 18;
 
       // Notes panels
@@ -311,14 +312,16 @@ export default function HotelDetail() {
                  </span>
                )}
              </div>
-            {property?.parent_brand !== 'Independent' && (
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-muted-foreground">Red Zone Kicker:</span>
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium text-muted-foreground">Red Zone Kicker:</span>
+              {isRedZoneApplicable(property) ? (
                 <span className={`text-sm font-bold ${activeEntry.red_zone_kicker ? 'text-green-600' : 'text-red-500'}`}>
                   {activeEntry.red_zone_kicker ? 'HIT ✓' : 'MISS ✗'}
                 </span>
-              </div>
-            )}
+              ) : (
+                <span className="text-sm font-semibold text-slate-400">N/A</span>
+              )}
+            </div>
           </div>
         </div>
       )}

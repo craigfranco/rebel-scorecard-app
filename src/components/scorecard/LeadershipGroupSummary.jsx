@@ -1,5 +1,6 @@
 import React from 'react';
 import { useTimePeriod } from '@/lib/TimePeriodContext';
+import { isRedZoneApplicable } from '@/lib/redZone';
 
 function fmt$(v) { return v == null ? '—' : '$' + Math.round(v).toLocaleString('en-US'); }
 
@@ -115,8 +116,9 @@ export default function LeadershipGroupSummary({ rows }) {
   const forecastHits = withForecast.filter(r => r.forecast === true).length;
   const forecastRate = withForecast.length ? forecastHits / withForecast.length : null;
 
-  const redZoneCompliant = withData.filter(r => r.redzone === true).length;
-  const redZoneRate = withData.length ? redZoneCompliant / withData.length : null;
+  const redZoneApplicable = withData.filter(r => isRedZoneApplicable(r.property));
+  const redZoneCompliant = redZoneApplicable.filter(r => r.redzone === true).length;
+  const redZoneRate = redZoneApplicable.length ? redZoneCompliant / redZoneApplicable.length : null;
 
   return (
     <div className="px-6 py-4 border-b border-border bg-muted/10 space-y-4">
@@ -181,7 +183,7 @@ export default function LeadershipGroupSummary({ rows }) {
         />
         <ActualTile
           label={`Red Zone · ${periodLabel}`}
-          value={`${redZoneCompliant}/${withData.length}`}
+          value={redZoneApplicable.length ? `${redZoneCompliant}/${redZoneApplicable.length}` : <span className="text-slate-400">N/A</span>}
           sub="hotels out of red zone"
           footColor={redZoneRate != null && redZoneRate >= 0.7 ? '#4CAF50' : '#f59e0b'}
         />

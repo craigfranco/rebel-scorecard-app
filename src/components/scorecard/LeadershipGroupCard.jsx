@@ -3,6 +3,7 @@ import { ChevronRight, ChevronDown, ChevronUp } from 'lucide-react';
 import PropertyScorecardDetail from '@/components/scorecard/PropertyScorecardDetail';
 import LeadershipGroupSummary from './LeadershipGroupSummary';
 import OperatorSummarySection from './OperatorSummarySection';
+import { isRedZoneApplicable } from '@/lib/redZone';
 
 const SORT_COLS = [
   { key: 'name', label: 'Hotel', align: 'left' },
@@ -23,7 +24,7 @@ const ACCESSOR = {
   gss: r => r.gss,
   total: r => r.total,
   forecast: r => r.forecast,
-  redzone: r => r.redzone,
+  redzone: r => isRedZoneApplicable(r.property) ? r.redzone : null,
 };
 
 function fmt$K(val) {
@@ -72,6 +73,14 @@ function NoDataPill() {
   return (
     <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold text-muted-foreground bg-muted border border-border">
       NO DATA
+    </span>
+  );
+}
+
+function NaPill() {
+  return (
+    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold text-slate-400 bg-slate-100 border border-slate-200">
+      N/A
     </span>
   );
 }
@@ -207,7 +216,7 @@ export default function LeadershipGroupCard({ groupName, roleLabel, leadRole, ye
                           </span>
                         </td>
                         <td className="py-3 px-3 text-center">{r.forecast == null ? <NoDataPill /> : <KickerPill state={r.forecast} />}</td>
-                        <td className="py-3 px-3 text-center"><KickerPill state={r.redzone} /></td>
+                        <td className="py-3 px-3 text-center">{isRedZoneApplicable(r.property) ? <KickerPill state={r.redzone} /> : <NaPill />}</td>
                       </>
                     ) : (
                       <td colSpan={7} className="py-3 px-3 text-center text-xs text-muted-foreground italic">

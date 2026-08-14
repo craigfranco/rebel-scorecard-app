@@ -21,6 +21,7 @@ import {
 import { useTimePeriod } from '@/lib/TimePeriodContext';
 import { useUserProfile } from '@/lib/UserProfileContext';
 import BonusExceptionModal from '@/components/scorecard/BonusExceptionModal';
+import { isRedZoneApplicable } from '@/lib/redZone';
 
 /**
  * PropertyScorecardDetail
@@ -455,7 +456,7 @@ export default function PropertyScorecardDetail({
               hit={hasForecastData(activeEntry) ? (activeEntry.forecast_kicker || false) : false}
               missingData={!hasForecastData(activeEntry)}
             />
-            <KickerBadge type="redzone" hit={activeEntry.red_zone_kicker || false} />
+            <KickerBadge type="redzone" hit={activeEntry.red_zone_kicker || false} notApplicable={isRedZoneApplicable(property)} />
           </div>
         </div>
 
