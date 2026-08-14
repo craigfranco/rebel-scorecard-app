@@ -16,6 +16,7 @@ function weightedAvg(items, valFn, weightFn) {
   return wsum ? acc / wsum : null;
 }
 function fmt(v, dec = 1) { return v == null ? '—' : v.toFixed(dec); }
+function fmt$(v) { return v == null ? '—' : (v < 0 ? '-' : '') + '$' + Math.abs(Math.round(v)).toLocaleString('en-US'); }
 
 function buildSummaries(groups) {
   return groups.map(([name, rows]) => {
@@ -24,6 +25,24 @@ function buildSummaries(groups) {
     const totalRooms = withData.reduce((s, r) => s + rooms(r), 0);
     const avg = simpleAvg(withData, r => r.sc?.total?.total);
     const portfolio = weightedAvg(withData, r => r.sc?.total?.total, rooms) ?? avg;
+    const gopActual = withData.reduce((s, r) => s + (r.entry?.budgeted_gop_actual || 0), 0);
+    const gopBudget = withData.reduce((s, r) => s + (r.entry?.budgeted_gop_target || 0), 0);
+    const gopVar = gopActual - gopBudget;
+    const gopVarPct = gopBudget > 0 ? (gopVar / gopBudget) * 100 : null;
+    const marginActual = weightedAvg(withData, r => r.entry?.gop_margin_actual, rooms);
+    const marginPrior = weightedAvg(withData, r => r.entry?.gop_margin_prior, rooms);
+    const marginDelta = (marginActual != null && marginPrior != null) ? marginActual - marginPrior : null;
+    const rgiIndex = weightedAvg(withData, r => r.entry?.revpar_index, rooms);
+    const rgiChange = simpleAvg(withData, r => r.entry?.revpar_index_change);
+    const rgiPrior = weightedAvg(withData, r => {
+      const e = r.entry;
+      if (e?.revpar_index_prior != null) return e.revpar_index_prior;
+      if (e?.revpar_index != null && e?.revpar_index_change != null) return e.revpar_index / (1 + e.revpar_index_change / 100);
+      return null;
+    }, rooms);
+    const gssActual = weightedAvg(withData, r => r.sc?.gss?.normActual, rooms);
+    const gssPrior = weightedAvg(withData, r => r.sc?.gss?.normPrior, rooms);
+    const gssDelta = (gssActual != null && gssPrior != null) ? gssActual - gssPrior : null;
     return {
       name,
       hotels: withData.length,
@@ -38,6 +57,10 @@ function buildSummaries(groups) {
       forecastTotal: withData.filter(r => r.forecast != null).length,
       redZoneApplicable: withData.filter(r => r.property?.parent_brand !== 'Independent').length,
       redZoneCompliant: withData.filter(r => r.property?.parent_brand !== 'Independent' && r.redzone === true).length,
+      gopActual, gopBudget, gopVar, gopVarPct,
+      marginActual, marginPrior, marginDelta,
+      rgiIndex, rgiPrior, rgiChange,
+      gssActual, gssPrior, gssDelta,
       rows: withData,
     };
   });
@@ -174,6 +197,51 @@ export default function LeadershipRollupPdfExport({ groups, roleLabel, periodLab
         y += 7;
       });
       y += 6;
+
+      // Summary details (actual KPI rollups) per operator
+      summaries.forEach((g) => {
+        ensureSpace(24);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(9);
+        doc.setTextColor(...NAVY);
+        doc.text(`${g.name} — Summary Details`, M, y);
+        y += 5;
+        const tiles = [
+          { label: 'GOP ACTUAL', value: fmt$(g.gopActual), sub: `Budget ${fmt$(g.gopBudget)}`, foot: g.gopVarPct != null ? `${g.gopVar >= 0 ? '+' : '-'}${fmt$(Math.abs(g.gopVar))} · ${g.gopVarPct >= 0 ? '+' : ''}${g.gopVarPct.toFixed(1)}%` : (g.gopVar != null ? `${g.gopVar >= 0 ? '+' : '-'}${fmt$(Math.abs(g.gopVar))}` : '—'), footColor: g.gopVar >= 0 ? GREEN : RED },
+          { label: 'GOP MARGIN', value: g.marginActual != null ? `${g.marginActual.toFixed(1)}%` : '—', sub: `LY ${g.marginPrior != null ? g.marginPrior.toFixed(1) + '%' : '—'}`, foot: g.marginDelta != null ? `${g.marginDelta >= 0 ? '+' : ''}${g.marginDelta.toFixed(1)} pts` : '—', footColor: g.marginDelta != null && g.marginDelta > 0.1 ? GREEN : g.marginDelta != null && g.marginDelta < 0 ? RED : AMBER },
+          { label: 'RGI INDEX', value: g.rgiIndex != null ? g.rgiIndex.toFixed(1) : '—', sub: `LY ${g.rgiPrior != null ? g.rgiPrior.toFixed(1) : '—'}`, foot: g.rgiChange != null ? `${g.rgiChange >= 0 ? '+' : ''}${g.rgiChange.toFixed(1)}%` : '—', footColor: g.rgiChange != null && g.rgiChange >= 0.1 ? GREEN : RED },
+          { label: 'GSS (NORM)', value: g.gssActual != null ? g.gssActual.toFixed(1) : '—', sub: `LY ${g.gssPrior != null ? g.gssPrior.toFixed(1) : '—'}`, foot: g.gssDelta != null ? `${g.gssDelta >= 0 ? '+' : ''}${g.gssDelta.toFixed(1)}` : '—', footColor: g.gssDelta != null && g.gssDelta > 0 ? GREEN : RED },
+          { label: 'FORECAST', value: `${g.forecastHits}/${g.forecastTotal}`, sub: 'hotels hitting', foot: '', footColor: GREY },
+          { label: 'RED ZONE', value: g.redZoneApplicable > 0 ? `${g.redZoneCompliant}/${g.redZoneApplicable}` : 'N/A', sub: 'hotels earning', foot: '', footColor: GREY },
+        ];
+        const tw = (W - 2 * M - 5 * 2) / 6;
+        const th = 16;
+        tiles.forEach((t, i) => {
+          const tx = M + i * (tw + 2);
+          doc.setFillColor(248, 250, 252);
+          doc.setDrawColor(225, 230, 235);
+          doc.roundedRect(tx, y, tw, th, 1.2, 1.2, 'FD');
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(5.5);
+          doc.setTextColor(...GREY);
+          doc.text(t.label, tx + 1.5, y + 3.5);
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(8.5);
+          doc.setTextColor(30, 53, 71);
+          doc.text(t.value, tx + 1.5, y + 8.5);
+          doc.setFont('helvetica', 'normal');
+          doc.setFontSize(5.5);
+          doc.setTextColor(...GREY);
+          doc.text(t.sub, tx + 1.5, y + 12.5);
+          if (t.foot) {
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(5.8);
+            doc.setTextColor(...t.footColor);
+            doc.text(t.foot, tx + 1.5, y + 15);
+          }
+        });
+        y += th + 6;
+      });
 
       // Per-operator hotel detail
       const hX = { rank: M, hotel: M + 12, gop: M + 82, margin: M + 98, rgi: M + 114, gss: M + 130, total: M + 146, fcst: M + 164, redz: M + 180 };
