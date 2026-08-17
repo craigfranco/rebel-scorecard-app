@@ -76,6 +76,11 @@ export default function KpiBreakdown() {
     queryFn: () => base44.entities.BonusException.filter({ year: selectedYear }),
   });
 
+  const { data: gopQuarterlyReports = [] } = useQuery({
+    queryKey: ['gop-quarterly', selectedYear],
+    queryFn: () => base44.entities.GopQuarterlyReport.filter({ year: selectedYear }),
+  });
+
   const getEntry = (propertyId) => {
     const propEntries = allEntries.filter(e => e.property_id === propertyId);
     if (!propEntries.length) return null;
@@ -89,7 +94,7 @@ export default function KpiBreakdown() {
       return periodEntries[0] || null;
     }
     
-    return aggregateEntries(periodEntries, periodType, selectedMonth, selectedYear, rgiQuarterlyReports, bonusExceptions);
+    return aggregateEntries(periodEntries, periodType, selectedMonth, selectedYear, rgiQuarterlyReports, bonusExceptions, gopQuarterlyReports);
   };
 
   const kpiTab = KPI_TABS.find(k => k.key === activeKpi);

@@ -200,6 +200,7 @@ export function autoDetectMapping(headers, docType) {
       budgeted_gop_prior:  find('prioryearamt', 'lastyearamt', 'prioramt', 'pyramt', 'priorgopamt') ?? null,
       gop_margin_budget:   find('budgetrev', 'budgetmargin', 'budgetpct') ?? null,
       gop_margin_prior:    find('prioryearamt', 'lastyearamt', 'priorgop', 'prioractual') ?? find('prior'),
+      total_revenue:        find('totalrevenue', 'totalrev', 'totalroomrevenue', 'roomrevenue', 'totaloperatingrevenue', 'operatingrevenue') ?? null,
     };
   }
   if (docType === 'RGI/STR Report') {
@@ -254,6 +255,7 @@ export function applyMapping(rows, mapping) {
       budgeted_gop_prior:  num(get(mapping.budgeted_gop_prior)),
       gop_margin_budget:   num(get(mapping.gop_margin_budget)),
       gop_margin_prior:    num(get(mapping.gop_margin_prior)),
+      total_revenue:        num(get(mapping.total_revenue)),
       revpar_index_change: num(get(mapping.revpar_index_change)),
       revpar_index:        num(get(mapping.revpar_index)),
       revpar_index_prior:  num(get(mapping.revpar_index_prior)),
@@ -270,6 +272,7 @@ export function applyMapping(rows, mapping) {
     const hasKpi = r.revpar_index != null || r.revpar_index_change != null || r.revpar_index_prior != null ||
                    r.budgeted_gop_actual != null || r.budgeted_gop_target != null || r.budgeted_gop_prior != null ||
                    r.gop_margin_actual != null || r.gop_margin_budget != null || r.gop_margin_prior != null ||
+                   r.total_revenue != null ||
                    r.gss_actual != null || r.gss_prior != null ||
                    r.forecast_actual_revenue != null || r.forecast_primary_forecast != null;
     return hasName || hasStrId || hasKpi;

@@ -72,6 +72,10 @@ export default function LeadershipScorecard() {
     queryKey: ['bonus-exceptions', selectedYear],
     queryFn: () => base44.entities.BonusException.filter({ year: selectedYear }),
   });
+  const { data: gopQuarterlyReports = [] } = useQuery({
+    queryKey: ['gop-quarterly', selectedYear],
+    queryFn: () => base44.entities.GopQuarterlyReport.filter({ year: selectedYear }),
+  });
 
   const quarter = getQuarterFromMonth(selectedMonth);
 
@@ -102,7 +106,7 @@ export default function LeadershipScorecard() {
         map[p.id] = { property: p, hasData: false, gopActual: null, gopBudget: null };
         return;
       }
-      const entry = aggregateEntries(propEntries, periodType, selectedMonth, selectedYear, rgiQuarterlyReports, bonusExceptions) || {};
+      const entry = aggregateEntries(propEntries, periodType, selectedMonth, selectedYear, rgiQuarterlyReports, bonusExceptions, gopQuarterlyReports) || {};
       const sc = calculateScorecard(entry, p);
       map[p.id] = {
         property: p,
@@ -123,7 +127,7 @@ export default function LeadershipScorecard() {
       };
     });
     return map;
-  }, [filteredProperties, allEntries, periodType, selectedMonth, selectedYear, rgiQuarterlyReports, bonusExceptions]);
+  }, [filteredProperties, allEntries, periodType, selectedMonth, selectedYear, rgiQuarterlyReports, bonusExceptions, gopQuarterlyReports]);
 
   // Group by the selected lead-type leader (default: General Manager)
   const groupField = filters.leadRole || 'property_gm';

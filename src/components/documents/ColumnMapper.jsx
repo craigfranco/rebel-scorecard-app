@@ -10,6 +10,7 @@ const KPI_FIELDS = {
     { key: 'gop_margin_actual',   label: 'Actual % REV' },
     { key: 'gop_margin_budget',   label: 'Budget % REV' },
     { key: 'gop_margin_prior',    label: 'Last Year % REV' },
+    { key: 'total_revenue',        label: 'Total Revenue ($)' },
   ],
   'RGI/STR Report': [
     { key: 'str_id',              label: 'STR Property ID' },

@@ -1,0 +1,37 @@
+{
+  "name": "GopQuarterlyReport",
+  "type": "object",
+  "properties": {
+    "property_id": {
+      "type": "string",
+      "description": "Reference to Property"
+    },
+    "year": {
+      "type": "integer",
+      "description": "Report year"
+    },
+    "quarter": {
+      "type": "integer",
+      "description": "Quarter (1-4)",
+      "minimum": 1,
+      "maximum": 4
+    },
+    "total_revenue": {
+      "type": "number",
+      "description": "Total operating revenue for the quarter ($)"
+    },
+    "gop_actual": {
+      "type": "number",
+      "description": "Actual GOP for the quarter ($)"
+    },
+    "gop_margin": {
+      "type": "number",
+      "description": "GOP margin % for the quarter (GOP / Total Revenue). Stored for reference; aggregation recomputes from gop_actual / total_revenue."
+    }
+  },
+  "required": [
+    "property_id",
+    "year",
+    "quarter"
+  ]
+}

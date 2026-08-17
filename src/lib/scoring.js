@@ -160,12 +160,12 @@ export function calculateScorecard(entry, property) {
 }
 
 // Re-export all from aggregation.js
-export { 
+export {
   MONTHS,
   QUARTERS,
-  aggregateEntries, 
-  aggregateQuarterEntries, 
-  getQuarterFromMonth, 
+  aggregateEntries,
+  aggregateQuarterEntries,
+  getQuarterFromMonth,
   getQuarterMonths,
   getQuarterStartMonth
 } from './aggregation';

@@ -102,6 +102,7 @@ export default function ImportWizard({ file, properties, onClose, onSuccess }) {
     let newPropsCreated = 0;
     const unmatchedNames = [];
     const isQuarterlyRgi = docType === 'RGI/STR Report' && periodMode === 'quarterly';
+    const isQuarterlyGop = docType === 'GOP Report' && periodMode === 'quarterly';
 
     // Upload file first
     const user = await base44.auth.me();
@@ -113,7 +114,7 @@ export default function ImportWizard({ file, properties, onClose, onSuccess }) {
       doc_type: docType,
       scope: 'company-wide',
       property_id: null,
-      period_month: isQuarterlyRgi ? periodQuarter * 3 : periodMonth,
+      period_month: (isQuarterlyRgi || isQuarterlyGop) ? periodQuarter * 3 : periodMonth,
       period_year: periodYear,
       uploaded_by: user?.full_name || user?.email || 'Unknown',
     });
@@ -158,6 +159,26 @@ export default function ImportWizard({ file, properties, onClose, onSuccess }) {
           await base44.entities.RgiQuarterlyReport.update(existingRgi[0].id, rgiPatch);
         } else {
           await base44.entities.RgiQuarterlyReport.create({ property_id: prop.id, year: periodYear, quarter: periodQuarter, ...rgiPatch });
+        }
+        ok++;
+        continue;
+      }
+
+      // Quarterly GOP reports are stored separately and override the margin calculation
+      // (uses true Total Revenue + GOP $ instead of deriving revenue from the forecast field)
+      if (isQuarterlyGop) {
+        const gopPatch = {};
+        if (row.budgeted_gop_actual != null) gopPatch.gop_actual = row.budgeted_gop_actual;
+        if (row.total_revenue != null) gopPatch.total_revenue = row.total_revenue;
+        if (gopPatch.gop_actual != null && gopPatch.total_revenue != null && gopPatch.total_revenue !== 0) {
+          gopPatch.gop_margin = Math.round((gopPatch.gop_actual / gopPatch.total_revenue) * 100 * 100) / 100;
+        }
+        if (Object.keys(gopPatch).length === 0) { fail++; continue; }
+        const existingGop = await base44.entities.GopQuarterlyReport.filter({ property_id: prop.id, year: periodYear, quarter: periodQuarter });
+        if (existingGop.length > 0) {
+          await base44.entities.GopQuarterlyReport.update(existingGop[0].id, gopPatch);
+        } else {
+          await base44.entities.GopQuarterlyReport.create({ property_id: prop.id, year: periodYear, quarter: periodQuarter, ...gopPatch });
         }
         ok++;
         continue;
@@ -210,11 +231,12 @@ export default function ImportWizard({ file, properties, onClose, onSuccess }) {
     queryClient.invalidateQueries({ queryKey: ['documents'] });
     queryClient.invalidateQueries({ queryKey: ['properties'] });
     queryClient.invalidateQueries({ queryKey: ['rgi-quarterly'] });
+    queryClient.invalidateQueries({ queryKey: ['gop-quarterly'] });
     // Refresh time period context so newly imported months become selectable
     await refreshAvailableData();
     setSelectedYear(periodYear);
-    setSelectedMonth(isQuarterlyRgi ? periodQuarter * 3 : periodMonth);
-    setImportResult({ ok, fail, unmatchedNames, newPropsCreated, periodLabel: isQuarterlyRgi ? `Q${periodQuarter} ${periodYear}` : `${MONTHS[periodMonth-1]} ${periodYear}` });
+    setSelectedMonth((isQuarterlyRgi || isQuarterlyGop) ? periodQuarter * 3 : periodMonth);
+    setImportResult({ ok, fail, unmatchedNames, newPropsCreated, periodLabel: (isQuarterlyRgi || isQuarterlyGop) ? `Q${periodQuarter} ${periodYear}` : `${MONTHS[periodMonth-1]} ${periodYear}` });
     setStep('done');
   };
 
@@ -305,7 +327,7 @@ export default function ImportWizard({ file, properties, onClose, onSuccess }) {
           {step === 'period' && (
             <div className="space-y-4">
               <p className="text-sm font-medium">What type of report is this, and what period does it cover?</p>
-              {docType === 'RGI/STR Report' && (
+              {(docType === 'RGI/STR Report' || docType === 'GOP Report') && (
                 <div className="flex items-center gap-2 bg-blue-50 border border-blue-200 rounded-lg p-3">
                   <span className="text-xs font-medium text-blue-800">Report frequency:</span>
                   <button
@@ -319,7 +341,11 @@ export default function ImportWizard({ file, properties, onClose, onSuccess }) {
                     className={`text-xs px-3 py-1 rounded-full font-semibold transition-colors ${periodMode === 'quarterly' ? 'bg-blue-600 text-white' : 'bg-white text-blue-700 border border-blue-200'}`}
                   >Quarterly</button>
                   {periodMode === 'quarterly' && (
-                    <span className="text-[11px] text-blue-600 ml-1">Quarterly reports use exact STR figures instead of averaging monthly data.</span>
+                    <span className="text-[11px] text-blue-600 ml-1">
+                      {docType === 'GOP Report'
+                        ? 'Quarterly reports use true Total Revenue + GOP $ to calculate the margin, instead of deriving revenue from monthly data.'
+                        : 'Quarterly reports use exact STR figures instead of averaging monthly data.'}
+                    </span>
                   )}
                 </div>
               )}
@@ -341,7 +367,7 @@ export default function ImportWizard({ file, properties, onClose, onSuccess }) {
                 </div>
                 <div className="space-y-1">
                   <label className="text-xs font-medium">Period</label>
-                  {docType === 'RGI/STR Report' && periodMode === 'quarterly' ? (
+                  {((docType === 'RGI/STR Report' || docType === 'GOP Report') && periodMode === 'quarterly') ? (
                     <Select value={String(periodQuarter)} onValueChange={v => setPeriodQuarter(Number(v))}>
                       <SelectTrigger className="text-sm"><SelectValue /></SelectTrigger>
                       <SelectContent>

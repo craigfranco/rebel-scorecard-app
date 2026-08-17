@@ -46,6 +46,53 @@ function applyRgiOverride(result, overrides, propertyId, year, quarter) {
 }
 
 /**
+ * Finds a quarterly GOP override for a given property / year / quarter.
+ * When present, the aggregated GOP $ and margin are replaced with the exact
+ * quarterly figures uploaded via the Quarterly GOP report (Total Revenue +
+ * GOP $), so the margin = GOP $ ÷ Total Revenue uses true quarterly totals
+ * instead of deriving revenue from the forecast-accuracy field.
+ */
+function findGopOverride(overrides, propertyId, year, quarter) {
+  if (!overrides || !overrides.length || !propertyId) return null;
+  return overrides.find(o =>
+    o.property_id === propertyId &&
+    o.year === year &&
+    o.quarter === quarter
+  ) || null;
+}
+
+function applyGopOverride(result, overrides, propertyId, year, quarter) {
+  const ov = findGopOverride(overrides, propertyId, year, quarter);
+  if (!ov) return result;
+  if (ov.gop_actual == null && ov.total_revenue == null && ov.gop_margin == null) return result;
+  const patched = { ...result };
+
+  // Authoritative TY GOP $ from the quarterly report
+  if (ov.gop_actual != null) {
+    patched.budgeted_gop_actual = ov.gop_actual;
+  }
+
+  // True quarterly margin = GOP $ ÷ Total Revenue (TY only)
+  if (ov.gop_actual != null && ov.total_revenue != null && ov.total_revenue !== 0) {
+    patched.gop_margin_actual = Math.round((ov.gop_actual / ov.total_revenue) * 100 * 100) / 100;
+    patched.gop_total_revenue = ov.total_revenue;
+  } else if (ov.gop_margin != null) {
+    patched.gop_margin_actual = ov.gop_margin;
+  }
+
+  // Recompute margin improvement (TY − LY) and variance using the report's margin
+  if (patched.gop_margin_actual != null && patched.gop_margin_prior != null) {
+    patched.gop_margin_improvement = Math.round((patched.gop_margin_actual - patched.gop_margin_prior) * 10000) / 10000;
+  }
+  if (patched.gop_margin_actual != null && patched.gop_margin_budget != null) {
+    patched.gop_margin_variance = Math.round((patched.gop_margin_actual - patched.gop_margin_budget) * 100) / 100;
+  }
+
+  patched.gop_source = 'quarterly_report';
+  return patched;
+}
+
+/**
  * Derives the prior-year RevPAR Index from the aggregated index + YOY change.
  * Prior = Current Index ÷ (1 + YOY change / 100).
  * e.g. index 105.3 with +2.5% change → prior = 105.3 / 1.025 = 102.73.
@@ -141,7 +188,7 @@ function applyBonusExceptions(result, bonusExceptions, propertyId, applicableQua
  * full quarter and an override exists, RGI fields use the quarterly report's exact
  * values instead of the monthly average.
  */
-export function aggregateEntries(entries, periodType, selectedMonth, selectedYear, rgiOverrides = [], bonusExceptions = []) {
+export function aggregateEntries(entries, periodType, selectedMonth, selectedYear, rgiOverrides = [], bonusExceptions = [], gopOverrides = []) {
   if (!entries || entries.length === 0) return null;
 
   let filteredEntries = [];
@@ -277,6 +324,11 @@ export function aggregateEntries(entries, periodType, selectedMonth, selectedYea
     finalResult = applyBonusExceptions(result, bonusExceptions, last.property_id, applicableQuarters);
   }
 
+  // Quarterly GOP override: use exact quarterly GOP $ + Total Revenue when available
+  if (periodType === 'quarter') {
+    finalResult = applyGopOverride(finalResult, gopOverrides, last.property_id, selectedYear, getQuarterFromMonth(selectedMonth));
+  }
+
   // Quarterly RGI override: use exact STR quarterly figures when available
   if (periodType === 'quarter') {
     return deriveRgiPrior(applyRgiOverride(finalResult, rgiOverrides, last.property_id, selectedYear, getQuarterFromMonth(selectedMonth)));
@@ -325,7 +377,7 @@ function calculatePriorMargin(sorted, avgField) {
  * exists for this property / year / quarter, RGI fields use the quarterly report's
  * exact values instead of the monthly average.
  */
-export function aggregateQuarterEntries(arr, rgiOverrides = [], bonusExceptions = []) {
+export function aggregateQuarterEntries(arr, rgiOverrides = [], bonusExceptions = [], gopOverrides = []) {
   if (!arr || arr.length === 0) return null;
 
   const sorted = [...arr].sort((a, b) => a.month - b.month);
@@ -405,6 +457,9 @@ export function aggregateQuarterEntries(arr, rgiOverrides = [], bonusExceptions 
   const quarter = sorted[0] ? getQuarterFromMonth(sorted[0].month) : null;
   const withExceptions = applyBonusExceptions(result, bonusExceptions, last.property_id, quarter ? [quarter] : []);
 
+  // Quarterly GOP override: use exact quarterly GOP $ + Total Revenue when available
+  const withGop = applyGopOverride(withExceptions, gopOverrides, last.property_id, year, quarter);
+
   // Quarterly RGI override: use exact STR quarterly figures when available, then derive prior-year index
-  return deriveRgiPrior(applyRgiOverride(withExceptions, rgiOverrides, last.property_id, year, quarter));
+  return deriveRgiPrior(applyRgiOverride(withGop, rgiOverrides, last.property_id, year, quarter));
 }

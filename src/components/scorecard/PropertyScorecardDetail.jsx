@@ -69,7 +69,12 @@ export default function PropertyScorecardDetail({
     queryFn: () => base44.entities.RgiQuarterlyReport.filter({ year: selectedYear }),
   });
 
-  const activeEntry = aggregateEntries(entries, periodType, selectedMonth, selectedYear, rgiQuarterlyReports, bonusExceptions) || {};
+  const { data: gopQuarterlyReports = [] } = useQuery({
+    queryKey: ['gop-quarterly', selectedYear],
+    queryFn: () => base44.entities.GopQuarterlyReport.filter({ year: selectedYear }),
+  });
+
+  const activeEntry = aggregateEntries(entries, periodType, selectedMonth, selectedYear, rgiQuarterlyReports, bonusExceptions, gopQuarterlyReports) || {};
   const scorecard = property ? calculateScorecard(activeEntry, property) : null;
 
   const yoyMargin = activeEntry.gop_margin_improvement != null
