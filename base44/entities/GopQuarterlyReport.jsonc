@@ -16,17 +16,13 @@
       "minimum": 1,
       "maximum": 4
     },
-    "total_revenue": {
-      "type": "number",
-      "description": "Total operating revenue for the quarter ($)"
-    },
     "gop_actual": {
       "type": "number",
       "description": "Actual GOP for the quarter ($)"
     },
     "gop_margin": {
       "type": "number",
-      "description": "GOP margin % for the quarter (GOP / Total Revenue). Stored for reference; aggregation recomputes from gop_actual / total_revenue."
+      "description": "GOP margin % for the quarter (as reported)."
     }
   },
   "required": [

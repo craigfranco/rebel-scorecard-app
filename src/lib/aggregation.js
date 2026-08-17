@@ -61,10 +61,15 @@ function findGopOverride(overrides, propertyId, year, quarter) {
   ) || null;
 }
 
+/**
+ * Applies the quarterly GOP override. The report already contains the
+ * calculated GOP $ and margin, so we use those directly instead of deriving
+ * them from monthly data.
+ */
 function applyGopOverride(result, overrides, propertyId, year, quarter) {
   const ov = findGopOverride(overrides, propertyId, year, quarter);
   if (!ov) return result;
-  if (ov.gop_actual == null && ov.total_revenue == null && ov.gop_margin == null) return result;
+  if (ov.gop_actual == null && ov.gop_margin == null) return result;
   const patched = { ...result };
 
   // Authoritative TY GOP $ from the quarterly report
@@ -72,11 +77,8 @@ function applyGopOverride(result, overrides, propertyId, year, quarter) {
     patched.budgeted_gop_actual = ov.gop_actual;
   }
 
-  // True quarterly margin = GOP $ ÷ Total Revenue (TY only)
-  if (ov.gop_actual != null && ov.total_revenue != null && ov.total_revenue !== 0) {
-    patched.gop_margin_actual = Math.round((ov.gop_actual / ov.total_revenue) * 100 * 100) / 100;
-    patched.gop_total_revenue = ov.total_revenue;
-  } else if (ov.gop_margin != null) {
+  // Reported quarterly margin (as provided on the report)
+  if (ov.gop_margin != null) {
     patched.gop_margin_actual = ov.gop_margin;
   }
 

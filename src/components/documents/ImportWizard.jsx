@@ -165,14 +165,10 @@ export default function ImportWizard({ file, properties, onClose, onSuccess }) {
       }
 
       // Quarterly GOP reports are stored separately and override the margin calculation
-      // (uses true Total Revenue + GOP $ instead of deriving revenue from the forecast field)
       if (isQuarterlyGop) {
         const gopPatch = {};
         if (row.budgeted_gop_actual != null) gopPatch.gop_actual = row.budgeted_gop_actual;
-        if (row.total_revenue != null) gopPatch.total_revenue = row.total_revenue;
-        if (gopPatch.gop_actual != null && gopPatch.total_revenue != null && gopPatch.total_revenue !== 0) {
-          gopPatch.gop_margin = Math.round((gopPatch.gop_actual / gopPatch.total_revenue) * 100 * 100) / 100;
-        }
+        if (row.gop_margin_actual != null) gopPatch.gop_margin = row.gop_margin_actual;
         if (Object.keys(gopPatch).length === 0) { fail++; continue; }
         const existingGop = await base44.entities.GopQuarterlyReport.filter({ property_id: prop.id, year: periodYear, quarter: periodQuarter });
         if (existingGop.length > 0) {
@@ -343,7 +339,7 @@ export default function ImportWizard({ file, properties, onClose, onSuccess }) {
                   {periodMode === 'quarterly' && (
                     <span className="text-[11px] text-blue-600 ml-1">
                       {docType === 'GOP Report'
-                        ? 'Quarterly reports use true Total Revenue + GOP $ to calculate the margin, instead of deriving revenue from monthly data.'
+                        ? 'Quarterly reports use the reported GOP $ and margin directly, instead of averaging monthly data.'
                         : 'Quarterly reports use exact STR figures instead of averaging monthly data.'}
                     </span>
                   )}
