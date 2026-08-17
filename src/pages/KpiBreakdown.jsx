@@ -11,6 +11,7 @@ import { aggregateEntries } from '../lib/aggregation';
 import { useTimePeriod } from '@/lib/TimePeriodContext';
 import { useUserProfile } from '@/lib/UserProfileContext';
 import PropertyFilters from '@/components/filters/PropertyFilters';
+import KpiBreakdownExport from '@/components/scorecard/KpiBreakdownExport';
 
 const EMPTY_FILTERS = { brand: '', subBrand: '', city: '', state: '', leadRole: '', leadPerson: '' };
 
@@ -254,8 +255,8 @@ export default function KpiBreakdown() {
       {/* Time period selector removed - using global selector from TimePeriodContext */}
 
       {/* Summary bar */}
-      <div className="bg-card rounded-2xl border border-border p-4 shadow-sm flex items-center gap-4">
-        <div className="flex-1">
+      <div className="bg-card rounded-2xl border border-border p-4 shadow-sm flex items-center gap-4 flex-wrap">
+        <div className="flex-1 min-w-[200px]">
           <div className="flex items-center gap-2 mb-2">
             <span className="text-sm font-semibold">{passing} of {total} hotels passing <strong>{kpiTab.label}</strong></span>
           </div>
@@ -269,6 +270,7 @@ export default function KpiBreakdown() {
         <div className="text-2xl font-black" style={{ color: '#2d4b5e' }}>
           {total > 0 ? Math.round((passing / total) * 100) : 0}%
         </div>
+        <KpiBreakdownExport rows={sortedRows} activeKpi={activeKpi} kpiTab={kpiTab} periodLabel={periodLabel} />
       </div>
 
       {/* Filters — above table */}
