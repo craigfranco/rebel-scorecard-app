@@ -34,6 +34,15 @@ Deno.serve(async (req) => {
 });
 
 async function syncProperty(base44, event, data) {
+  // Permanent blocklist: properties that must never exist in this app.
+  const BLOCKED_STR_IDS = new Set(['26356', '20251', '40252']);
+  const BLOCKED_NAME_TOKENS = ['skipjack', 'hotel at times square', 'nyma'];
+  const nameLc = (data.name || data.hotel_name || '').toString().toLowerCase();
+  const strId = data.str_id != null ? String(data.str_id).trim() : '';
+  if ((strId && BLOCKED_STR_IDS.has(strId)) || BLOCKED_NAME_TOKENS.some(t => nameLc.includes(t))) {
+    return; // never (re)create blocked properties
+  }
+
   // Map REBEL property fields to this app's Property schema
   const propertyData = {
     name: data.name || data.hotel_name,

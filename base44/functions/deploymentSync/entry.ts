@@ -83,8 +83,8 @@ Deno.serve(async (req) => {
     // --- Permanent blocklist: properties that must never exist in this app ---
     // Matched case-insensitively by str_id or name token. Filtered out of every sync
     // so Dashboard pulls cannot re-create them, and purged if found in existing records.
-    const BLOCKED_STR_IDS = new Set(['26356']);
-    const BLOCKED_NAME_TOKENS = ['skipjack'];
+    const BLOCKED_STR_IDS = new Set(['26356', '20251', '40252']);
+    const BLOCKED_NAME_TOKENS = ['skipjack', 'hotel at times square', 'nyma'];
     const isBlockedProperty = (p) => {
       if (p.str_id && BLOCKED_STR_IDS.has(String(p.str_id).trim())) return true;
       const n = (p.name || '').toLowerCase();
