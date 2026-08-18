@@ -18,6 +18,7 @@ export function hasForecastData(entry) {
 }
 
 export function getGssStandard(parentBrand) {
+  if (parentBrand === 'Choice Hotels') return GSS_STANDARDS['Choice'];
   return GSS_STANDARDS[parentBrand] || GSS_STANDARDS['Independent'];
 }
 
