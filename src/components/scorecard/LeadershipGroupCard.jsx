@@ -231,18 +231,7 @@ export default function LeadershipGroupCard({ groupName, roleLabel, leadRole, ye
                             {r.total != null ? r.total.toFixed(1) : '—'}
                           </span>
                         </td>
-                        <td className="py-2.5 px-3 text-center align-top">
-                          {r.forecast == null ? <NoDataPill /> : (
-                            <div className="flex flex-col items-center gap-0.5">
-                              <KickerPill state={r.forecast} />
-                              {r.forecastPct != null && (
-                                <div className={`text-[10px] font-bold leading-tight ${r.forecastPct >= 100 ? 'text-pass' : 'text-fail'}`}>
-                                  {r.forecastPct.toFixed(1)}%
-                                </div>
-                              )}
-                            </div>
-                          )}
-                        </td>
+                        <td className="py-3 px-3 text-center">{r.forecast == null ? <NoDataPill /> : <KickerPill state={r.forecast} />}</td>
                         <td className="py-3 px-3 text-center">{isRedZoneApplicable(r.property) ? <RedZonePill state={r.redzone} /> : <NaPill />}</td>
                       </>
                     ) : (

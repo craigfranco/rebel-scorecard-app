@@ -121,9 +121,6 @@ export default function LeadershipScorecard() {
         total: sc.total?.total ?? null,
         maxPossible: sc.total?.maxPossible ?? null,
         forecast: hasForecastData(entry) ? (entry.forecast_kicker || false) : null,
-        forecastPct: (entry.forecast_actual_revenue != null && entry.forecast_primary_forecast && entry.forecast_primary_forecast !== 0)
-          ? Math.round((entry.forecast_actual_revenue / entry.forecast_primary_forecast) * 1000) / 10
-          : null,
         redzone: entry.red_zone_kicker ?? null,
         gopActual: entry.budgeted_gop_actual ?? null,
         gopBudget: entry.budgeted_gop_target ?? null,
