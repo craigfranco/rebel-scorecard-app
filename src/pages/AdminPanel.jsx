@@ -32,6 +32,7 @@ export default function AdminPanel() {
   const [editingUser, setEditingUser] = useState(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [resendingId, setResendingId] = useState(null);
+  const [bulkResending, setBulkResending] = useState(false);
   const [toast, setToast] = useState(null); // { type: 'success'|'error', message: string }
   const [copyState, setCopyState] = useState({}); // { [profileId]: 'copied' }
 
@@ -115,6 +116,32 @@ export default function AdminPanel() {
     setTimeout(() => setCopyState(s => ({ ...s, [profileId]: null })), 2000);
   };
 
+  const handleBulkResend = async () => {
+    const pending = profiles.filter(p => p.is_active && p.invite_status === 'invited');
+    if (pending.length === 0) {
+      showToast('error', 'No pending invites to resend');
+      return;
+    }
+    if (!window.confirm(`Resend invite emails to ${pending.length} pending user${pending.length > 1 ? 's' : ''}?`)) return;
+    setBulkResending(true);
+    let ok = 0;
+    let fail = 0;
+    for (const profile of pending) {
+      try {
+        await handleResendInvite(profile);
+        ok++;
+      } catch {
+        fail++;
+      }
+    }
+    setBulkResending(false);
+    if (fail === 0) {
+      showToast('success', `Resent ${ok} invite${ok !== 1 ? 's' : ''}`);
+    } else {
+      showToast('error', `Resent ${ok}, ${fail} failed`);
+    }
+  };
+
   return (
     <div className="p-4 lg:p-8 space-y-8 max-w-7xl mx-auto">
       {/* Toast */}
@@ -190,6 +217,18 @@ export default function AdminPanel() {
                 Clear
               </button>
             )}
+            <button
+              onClick={handleBulkResend}
+              disabled={bulkResending}
+              className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium border border-border bg-background hover:bg-muted disabled:opacity-50"
+              title="Resend invite emails to all users with pending invites"
+            >
+              {bulkResending
+                ? <span className="w-4 h-4 inline-block border-2 border-primary/40 border-t-primary rounded-full animate-spin" />
+                : <Send className="w-4 h-4" />
+              }
+              Resend Pending
+            </button>
             <button
               onClick={() => setShowAddModal(true)}
               className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-white"
