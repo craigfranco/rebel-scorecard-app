@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { Toaster } from "@/components/ui/toaster"
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
@@ -94,16 +93,12 @@ const AuthenticatedApp = () => {
   );
 };
 
-function App() {
-  const [adminAccessRequested] = useState(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    return urlParams.get('legacy_admin') === '1';
-  });
+const APP_RETIRED = true;
 
-  // Show the relocation notice before mounting auth or loading any app data,
-  // including for visitors who already have an authenticated admin session.
-  // This flag only requests admin entry; AuthenticatedApp still checks access.
-  if (!adminAccessRequested) return <MovedNotice />;
+function App() {
+  // The retired app always shows the public relocation notice, even for
+  // signed-in admins and old bookmarked URLs. No app data is loaded.
+  if (APP_RETIRED) return <MovedNotice />;
 
   return (
     <AuthProvider>
