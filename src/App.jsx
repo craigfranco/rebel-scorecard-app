@@ -40,7 +40,7 @@ const LoadingScreen = () => (
 );
 
 const AuthenticatedApp = () => {
-  const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
+  const { isLoadingAuth, isLoadingPublicSettings, authError, isAuthenticated } = useAuth();
   const { isLoadingProfile, profileError, isAdmin } = useUserProfile();
 
   if (isLoadingPublicSettings || isLoadingAuth || isLoadingProfile) {
@@ -50,18 +50,19 @@ const AuthenticatedApp = () => {
   if (authError) {
     if (authError.type === 'user_not_registered') {
       return <UserNotRegisteredError />;
-    } else if (authError.type === 'auth_required') {
-      navigateToLogin();
-      return null;
     }
+  }
+
+  // This app has been relocated — anyone without an active admin session sees
+  // the lock screen and cannot reach the login screen or any app data.
+  if (!isAuthenticated) {
+    return <MovedNotice />;
   }
 
   if (profileError) {
     return <AccessDenied reason={profileError} />;
   }
 
-  // This app has been relocated — non-admin users are locked out and pointed
-  // to the new PMD portal for all future data entry and reporting.
   if (!isAdmin) {
     return <MovedNotice />;
   }

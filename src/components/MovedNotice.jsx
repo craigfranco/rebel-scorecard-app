@@ -1,6 +1,7 @@
 import React from 'react';
 import { ArrowRight, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { base44 } from '@/api/base44Client';
 
 export const NEW_PORTAL_URL = 'https://pmd.rebelbi.com/scorecard';
 
@@ -23,6 +24,12 @@ export default function MovedNotice() {
           </a>
         </Button>
         <p className="mt-6 text-xs text-muted-foreground break-all">{NEW_PORTAL_URL}</p>
+        <button
+          onClick={() => base44.auth.redirectToLogin(window.location.href)}
+          className="mt-8 text-xs text-muted-foreground/60 hover:text-muted-foreground underline underline-offset-2"
+        >
+          Administrator sign in
+        </button>
       </div>
     </div>
   );
