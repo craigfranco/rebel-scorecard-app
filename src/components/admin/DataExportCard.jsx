@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Download, Database } from 'lucide-react';
+import { loadXLSX } from '@/lib/fileParser';
 
 // Entities included in a full export. Label shows in the summary;
 // ScoreEntry carries the manual Key Wins & Risks narratives (key_wins,
@@ -43,22 +44,25 @@ export default function DataExportCard() {
     setExporting(true);
     setError(null);
     try {
-      const data = { exported_at: new Date().toISOString(), entities: {} };
+      const XLSX = await loadXLSX();
+      const wb = XLSX.utils.book_new();
       const nextCounts = {};
-      for (const { key, label } of EXPORT_ENTITIES) {
+      for (const { key } of EXPORT_ENTITIES) {
         const records = await fetchAll(key);
-        data.entities[key] = records;
-        nextCounts[label] = records.length;
+        nextCounts[key] = records.length;
+        // Flatten each record; nested objects/arrays (e.g. kpi_metrics) become JSON strings
+        const rows = records.map(record => {
+          const row = {};
+          Object.keys(record).forEach(field => {
+            const v = record[field];
+            row[field] = (v != null && typeof v === 'object') ? JSON.stringify(v) : v;
+          });
+          return row;
+        });
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), key.slice(0, 31));
       }
       setCounts(nextCounts);
-
-      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `rebel-scorecard-data-export-${new Date().toISOString().slice(0, 10)}.json`;
-      a.click();
-      URL.revokeObjectURL(url);
+      XLSX.writeFile(wb, `rebel-scorecard-data-export-${new Date().toISOString().slice(0, 10)}.xlsx`);
     } catch (err) {
       setError(err.message || 'Export failed');
     }
@@ -73,7 +77,7 @@ export default function DataExportCard() {
           <div>
             <h2 className="font-bold text-lg">Data Export</h2>
             <p className="text-xs text-muted-foreground">
-              Download every record — manual entries, payouts, Key Wins &amp; Risks narratives, staff, and more — as one JSON file.
+              Download every record — manual entries, payouts, Key Wins &amp; Risks narratives, staff, and more — as one Excel workbook with a sheet per record type.
             </p>
           </div>
         </div>

@@ -87,7 +87,7 @@ export function bestMatch(nameOrStrId, properties, strId = null) {
   return result;
 }
 
-async function loadXLSX() {
+export async function loadXLSX() {
   if (window.XLSX) return window.XLSX;
   return new Promise((resolve, reject) => {
     const script = document.createElement('script');
