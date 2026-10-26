@@ -23,6 +23,7 @@ import JobClassifications from '@/pages/JobClassifications';
 import AdminPanel from '@/pages/AdminPanel.jsx';
 import HelpGuide from '@/pages/HelpGuide';
 import LeadershipScorecard from '@/pages/LeadershipScorecard';
+import MovedNotice from '@/components/MovedNotice';
 
 const LoadingScreen = () => (
   <div className="fixed inset-0 flex items-center justify-center" style={{ backgroundColor: '#f0f4f7' }}>
@@ -57,6 +58,12 @@ const AuthenticatedApp = () => {
 
   if (profileError) {
     return <AccessDenied reason={profileError} />;
+  }
+
+  // This app has been relocated — non-admin users are locked out and pointed
+  // to the new PMD portal for all future data entry and reporting.
+  if (!isAdmin) {
+    return <MovedNotice />;
   }
 
   return (
