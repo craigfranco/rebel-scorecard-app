@@ -3,6 +3,7 @@ import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ChevronRight, Plus, Search, Edit2, UserX, UserCheck, X, Users, Building2, Send, Copy, Check, AlertCircle, Trash2 } from 'lucide-react';
 import UserFormModal from '@/components/admin/UserFormModal';
+import DataExportCard from '@/components/admin/DataExportCard';
 import { sendInviteEmail } from '@/functions/sendInviteEmail';
 
 function InviteStatusBadge({ status }) {
@@ -415,6 +416,9 @@ export default function AdminPanel() {
           })}
         </div>
       </div>
+
+      {/* Data Export */}
+      <DataExportCard />
 
       {/* Modals */}
       {(showAddModal || editingUser) && (
