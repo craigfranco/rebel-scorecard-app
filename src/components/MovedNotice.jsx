@@ -25,7 +25,11 @@ export default function MovedNotice() {
         </Button>
         <p className="mt-6 text-xs text-muted-foreground break-all">{NEW_PORTAL_URL}</p>
         <button
-          onClick={() => base44.auth.redirectToLogin(window.location.href)}
+          onClick={() => {
+            const adminUrl = new URL('/', window.location.origin);
+            adminUrl.searchParams.set('legacy_admin', '1');
+            base44.auth.redirectToLogin(adminUrl.href);
+          }}
           className="mt-8 text-xs text-muted-foreground/60 hover:text-muted-foreground underline underline-offset-2"
         >
           Administrator sign in
