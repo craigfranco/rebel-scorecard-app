@@ -86,6 +86,7 @@ const AuthenticatedApp = () => {
         <Route path="/hotel/:id" element={<HotelDetail />} />
         <Route path="/help" element={<HelpGuide />} />
       </Route>
+      <Route path="/moved" element={<MovedNotice />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );
