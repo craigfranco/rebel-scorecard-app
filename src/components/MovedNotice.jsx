@@ -3,7 +3,7 @@ import { ArrowRight, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 
-export const NEW_PORTAL_URL = 'https://pmd.rebelbi.com/scorecard';
+export const NEW_PORTAL_URL = 'https://rebelbi.com/scorecard';
 
 export default function MovedNotice() {
   return (
@@ -15,11 +15,11 @@ export default function MovedNotice() {
         <h1 className="text-2xl font-bold text-foreground">The Scorecard has moved</h1>
         <p className="mt-3 text-muted-foreground">
           This application is now closed for data entry and reporting. All future scorecard
-          activity takes place in the new PMD portal.
+          activity takes place in Rebel BI.
         </p>
         <Button asChild size="lg" className="mt-8 h-11 px-8 text-base">
           <a href={NEW_PORTAL_URL}>
-            Go to the new portal
+            Go to Rebel BI
             <ArrowRight className="ml-1" />
           </a>
         </Button>
